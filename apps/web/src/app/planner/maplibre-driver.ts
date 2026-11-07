@@ -42,6 +42,7 @@ export async function createMapLibreDriver(
   const finePointer =
     typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches;
   let destroyed = false;
+  let dragging = false;
 
   /** Adds the source and layers. Idempotent: a new style (language change) removes them. */
   const ensureLayers = () => {
@@ -77,6 +78,10 @@ export async function createMapLibreDriver(
     point: { x: number; y: number };
     lngLat: { lng: number; lat: number };
   }) => {
+    // A marker lies over the map: its own handlers deal with the click.
+    const target = (event as { originalEvent?: MouseEvent }).originalEvent
+      ?.target as Element | null | undefined;
+    if (target?.closest?.('.planner-marker')) return;
     const { x, y } = event.point;
     const hits = map.getLayer(ALTERNATIVE_LAYER)
       ? map.queryRenderedFeatures(
@@ -173,8 +178,23 @@ export async function createMapLibreDriver(
         const element = document.createElement('div');
         element.className = `planner-marker planner-marker--${spec.role}${spec.loop ? ' planner-marker--loop' : ''}`;
         element.textContent = spec.label;
-        element.setAttribute('role', 'img');
-        element.setAttribute('aria-label', spec.ariaLabel);
+        if (spec.closable) {
+          // The start marker invites to close the loop: it grows under the pointer (the magnet).
+          element.classList.add('planner-marker--closable');
+          element.dataset['hint'] = spec.closable;
+          element.setAttribute('role', 'button');
+          element.setAttribute(
+            'aria-label',
+            `${spec.ariaLabel}: ${spec.closable}`,
+          );
+          element.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (!dragging) handlers.onCloseLoop();
+          });
+        } else {
+          element.setAttribute('role', 'img');
+          element.setAttribute('aria-label', spec.ariaLabel);
+        }
         // Right click removes the point (the panel offers a button too).
         element.addEventListener('contextmenu', (event) => {
           event.preventDefault();
@@ -183,7 +203,12 @@ export async function createMapLibreDriver(
         const marker = new maplibre.Marker({ element, draggable: true })
           .setLngLat(spec.lngLat)
           .addTo(map);
+        marker.on('dragstart', () => {
+          dragging = true;
+        });
         marker.on('dragend', () => {
+          // The click that ends a drag must not count as a click on the marker.
+          setTimeout(() => (dragging = false), 0);
           const { lng, lat } = marker.getLngLat();
           handlers.onMovePoint(index, [lng, lat] as LngLat);
         });

@@ -3,6 +3,46 @@
 
   <p class="help-bar" role="status">{{ helpKey() | transloco }}</p>
 
+  @if (loopDialogOpen()) {
+  <div class="loop-dialog" (click)="loopDialogOpen.set(false)">
+    <div
+      class="loop-dialog__box"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="loop-dialog-title"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="loopDialogOpen.set(false)"
+    >
+      <h2 id="loop-dialog-title">{{ 'planner.loop.title' | transloco }}</h2>
+      <button type="button" class="loop-choice" (click)="closeLoop()">
+        <strong>{{ 'planner.loop.back' | transloco }}</strong>
+        <span>{{ 'planner.loop.backDescription' | transloco }}</span>
+      </button>
+      <button type="button" class="loop-choice" disabled>
+        <strong
+          >{{ 'planner.loop.avoid' | transloco }}
+          <em>{{ 'planner.loop.soon' | transloco }}</em></strong
+        >
+        <span>{{ 'planner.loop.avoidDescription' | transloco }}</span>
+      </button>
+      <button type="button" class="loop-choice" disabled>
+        <strong
+          >{{ 'planner.loop.distance' | transloco }}
+          <em>{{ 'planner.loop.soon' | transloco }}</em></strong
+        >
+        <span>{{ 'planner.loop.distanceDescription' | transloco }}</span>
+      </button>
+      <button
+        type="button"
+        class="loop-cancel"
+        (click)="loopDialogOpen.set(false)"
+      >
+        {{ 'planner.loop.cancel' | transloco }}
+      </button>
+    </div>
+  </div>
+  }
+
   <section class="panel" [attr.aria-label]="'planner.title' | transloco">
     <h2>{{ 'planner.title' | transloco }}</h2>
 
@@ -51,6 +91,11 @@
       </li>
       }
     </ol>
+    @if (canClose()) {
+    <button type="button" class="loop" (click)="loopDialogOpen.set(true)">
+      {{ 'planner.loop.button' | transloco }}
+    </button>
+    }
     <button type="button" class="clear" (click)="store.clear()">
       {{ 'planner.clear' | transloco }}
     </button>

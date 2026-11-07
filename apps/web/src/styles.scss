@@ -54,6 +54,32 @@ body {
   }
 }
 
+/* The start marker of an open route offers to close the loop: it grows and says so. */
+.planner-marker--closable {
+  cursor: pointer;
+  transition: transform 0.1s;
+
+  &:hover,
+  &:focus-visible {
+    transform: scale(1.35);
+    z-index: 1;
+  }
+
+  &:hover::after,
+  &:focus-visible::after {
+    content: attr(data-hint);
+    position: absolute;
+    top: -1.75rem;
+    left: 50%;
+    transform: translateX(-50%) scale(calc(1 / 1.35));
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    background: rgb(16 24 40 / 90%);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+}
+
 /* Follows the mouse and shows what the next click creates. Never takes the pointer. */
 .planner-ghost {
   display: flex;
@@ -89,4 +115,14 @@ body {
   background: #1570ef;
   box-shadow: 0 1px 3px rgb(0 0 0 / 50%);
   pointer-events: none;
+}
+
+/* Choice offered when the loop is closed. */
+.loop-dialog {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  background: rgb(16 24 40 / 35%);
 }

@@ -145,6 +145,52 @@ describe('Planner', () => {
     );
   });
 
+  describe('loop', () => {
+    it('offers to close the loop on the start marker from two points on', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      TestBed.tick();
+      expect(view.driver.markers[0].closable).toBeUndefined();
+      view.click(3.249, 45.544);
+      TestBed.tick();
+      expect(view.driver.markers[0].closable).toBe('Close the loop');
+      expect(view.driver.markers[1].closable).toBeUndefined();
+    });
+
+    it('asks how to close the loop, with only "back to the start" available', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.click(3.249, 45.544);
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.loop-dialog')).toBeNull();
+      (view.root.querySelector('.loop') as HTMLButtonElement).click();
+      view.fixture.detectChanges();
+      const choices = Array.from(
+        view.root.querySelectorAll<HTMLButtonElement>('.loop-choice'),
+      );
+      expect(choices.map((c) => c.disabled)).toEqual([false, true, true]);
+      expect(choices[1].textContent).toContain('Soon');
+      choices[0].click();
+      view.fixture.detectChanges();
+      expect(TestBed.inject(PlannerStore).isLoop()).toBe(true);
+      expect(view.root.querySelector('.loop-dialog')).toBeNull();
+      expect(view.root.querySelector('.loop')).toBeNull();
+    });
+
+    it('opens the same dialog from a click on the start marker, and can be cancelled', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.click(3.249, 45.544);
+      view.driver.handlers.onCloseLoop();
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.loop-dialog')).not.toBeNull();
+      (view.root.querySelector('.loop-cancel') as HTMLButtonElement).click();
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.loop-dialog')).toBeNull();
+      expect(TestBed.inject(PlannerStore).isLoop()).toBe(false);
+    });
+  });
+
   it('shows a ghost that says what the next click creates', async () => {
     const view = await render();
     TestBed.tick();

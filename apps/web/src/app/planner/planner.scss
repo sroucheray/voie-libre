@@ -139,3 +139,58 @@ fieldset.profiles {
     bottom: 0.75rem;
   }
 }
+
+.loop-dialog__box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(22rem, calc(100% - 2rem));
+  padding: 1rem;
+  background: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 30%);
+  font-size: 0.875rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+  }
+}
+
+.loop-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #c9cdd3;
+  border-radius: 0.375rem;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    border-color: #1570ef;
+    background: #eff8ff;
+  }
+
+  &:disabled {
+    color: #667085;
+    background: #f9fafb;
+    cursor: not-allowed;
+  }
+
+  em {
+    margin-left: 0.25rem;
+    padding: 0 0.375rem;
+    border-radius: 0.25rem;
+    background: #eaecf0;
+    font-size: 0.75rem;
+    font-style: normal;
+    font-weight: 500;
+  }
+}
+
+.loop,
+.loop-cancel {
+  margin-top: 0.5rem;
+}

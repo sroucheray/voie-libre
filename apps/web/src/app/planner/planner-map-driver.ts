@@ -13,6 +13,8 @@ export interface MarkerSpec {
   ariaLabel: string;
   /** The start and end share a place: one combined marker stands for both. */
   loop?: boolean;
+  /** Set on the start marker when clicking it can close the loop: the translated hint. */
+  closable?: string;
 }
 
 /** The translucent marker that follows the pointer and shows what the next click creates. */
@@ -30,6 +32,8 @@ export interface PlannerMapHandlers {
   onClick(point: LngLat): void;
   /** A click on an alternative route. */
   onSelectRoute(index: number): void;
+  /** The start marker was clicked while it offers to close the loop. */
+  onCloseLoop(): void;
   onMovePoint(index: number, point: LngLat): void;
   onRemovePoint(index: number): void;
   /** The pointer is over the selected route (`point`), or left it (`null`). */

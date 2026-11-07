@@ -71,6 +71,19 @@
       "start": "Cliquer pour placer le départ",
       "end": "Cliquer pour placer l'arrivée",
       "waypoint": "Cliquer pour ajouter une étape"
+    },
+    "loop": {
+      "button": "Boucle",
+      "hint": "Fermer la boucle",
+      "title": "Fermer la boucle",
+      "back": "Retour au départ",
+      "backDescription": "L'arrivée est placée sur le départ. Le parcours suit vos étapes.",
+      "avoid": "Éviter le même chemin au retour",
+      "avoidDescription": "Revenir par d'autres routes quand c'est possible.",
+      "distance": "Boucle selon la distance",
+      "distanceDescription": "Laisser le planificateur tracer une boucle d'une longueur donnée.",
+      "soon": "Bientôt",
+      "cancel": "Annuler"
     }
   },
   "saved": {

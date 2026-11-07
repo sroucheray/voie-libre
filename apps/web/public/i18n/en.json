@@ -71,6 +71,19 @@
       "start": "Click to set the start",
       "end": "Click to set the end",
       "waypoint": "Click to add a stop"
+    },
+    "loop": {
+      "button": "Loop",
+      "hint": "Close the loop",
+      "title": "Close the loop",
+      "back": "Back to the start",
+      "backDescription": "The end goes on the start. The route follows your stops.",
+      "avoid": "Avoid the same way back",
+      "avoidDescription": "Come back by other roads where possible.",
+      "distance": "Loop by distance",
+      "distanceDescription": "Let the planner draw a loop of a given length.",
+      "soon": "Soon",
+      "cancel": "Cancel"
     }
   },
   "saved": {

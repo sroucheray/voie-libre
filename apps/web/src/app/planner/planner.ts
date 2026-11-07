@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
   computed,
   effect,
   inject,
@@ -19,6 +20,7 @@ import {
 } from './planner-map-driver';
 import {
   MAX_ALTERNATIVES,
+  MAX_POINTS,
   PROFILES,
   PlannerStore,
   type Profile,
@@ -58,6 +60,16 @@ export class Planner {
     return this.store.isLoop() ? 'planner.hint.loop' : 'planner.hint.route';
   });
 
+  /** The dialog that asks how to close the loop. */
+  protected readonly loopDialogOpen = signal(false);
+  protected readonly canClose = computed(
+    () =>
+      this.store.points().length >= 2 &&
+      this.store.points().length < MAX_POINTS &&
+      !this.store.isLoop(),
+  );
+
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly transloco = inject(TranslocoService);
   /** The active language, emitted only after its translations are loaded. */
   private readonly loadedLanguage = toSignal(
@@ -85,6 +97,8 @@ export class Planner {
       const driver = this.driver();
       const points = this.store.points();
       if (!driver) return;
+      const language = this.loadedLanguage();
+      if (!language) return;
       const loop = isLoopOf(points);
       driver.setMarkers(
         points.flatMap((lngLat, index) => {
@@ -105,9 +119,23 @@ export class Planner {
                       : `${index}`,
               ariaLabel: this.pointName(index),
               loop: loop && role === 'start',
+              closable:
+                role === 'start' && this.canClose()
+                  ? this.transloco.translate('planner.loop.hint', {}, language)
+                  : undefined,
             },
           ];
         }),
+      );
+    });
+
+    // The dialog takes the focus when it opens, so the keyboard works at once.
+    effect(() => {
+      if (!this.loopDialogOpen()) return;
+      queueMicrotask(() =>
+        this.host.nativeElement
+          .querySelector<HTMLElement>('.loop-dialog button:not([disabled])')
+          ?.focus(),
       );
     });
 
@@ -161,6 +189,7 @@ export class Planner {
       const driver = await this.createDriver(map, {
         onClick: (point) => this.store.addPoint(point),
         onSelectRoute: (index) => this.store.selectRoute(index),
+        onCloseLoop: () => this.loopDialogOpen.set(true),
         onMovePoint: (index, point) => this.store.movePoint(index, point),
         onRemovePoint: (index) => this.store.removePoint(index),
         onHoverRoute: (point) => this.hoverRoute(point),
@@ -198,6 +227,11 @@ export class Planner {
       { n: index },
       language,
     );
+  }
+
+  protected closeLoop(): void {
+    this.store.closeLoop();
+    this.loopDialogOpen.set(false);
   }
 
   protected selectProfile(profile: Profile): void {
