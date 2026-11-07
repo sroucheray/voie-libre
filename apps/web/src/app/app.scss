@@ -19,3 +19,17 @@
 main {
   padding: 1rem;
 }
+
+.api-status {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+
+  &[data-status='ok'] {
+    color: #1a7f37;
+  }
+
+  &[data-status='degraded'],
+  &[data-status='unreachable'] {
+    color: #b42318;
+  }
+}

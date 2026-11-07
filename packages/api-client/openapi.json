@@ -1,0 +1,114 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Voie Libre API",
+    "description": "Route planning API for road, gravel and trail.",
+    "version": "0.0.0",
+    "license": {
+      "name": "AGPL-3.0-only",
+      "identifier": "AGPL-3.0-only"
+    }
+  },
+  "components": {
+    "schemas": {}
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "State of the API and of its database",
+        "tags": ["system"],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "api", "database"],
+                  "properties": {
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["ok"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["degraded"]
+                        }
+                      ]
+                    },
+                    "api": {
+                      "type": "string",
+                      "enum": ["up"]
+                    },
+                    "database": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["up"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["down"]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "api", "database"],
+                  "properties": {
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["ok"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["degraded"]
+                        }
+                      ]
+                    },
+                    "api": {
+                      "type": "string",
+                      "enum": ["up"]
+                    },
+                    "database": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["up"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["down"]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "system",
+      "description": "Health and diagnostics"
+    }
+  ]
+}

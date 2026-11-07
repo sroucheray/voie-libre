@@ -14,7 +14,8 @@
     "skipLibCheck": true,
     "strict": true,
     "paths": {
-      "@voie-libre/shared": ["./libs/shared/src/index.ts"]
+      "@voie-libre/shared": ["./libs/shared/src/index.ts"],
+      "@voie-libre/api-client": ["./packages/api-client/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

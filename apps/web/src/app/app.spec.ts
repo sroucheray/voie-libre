@@ -1,6 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { provideTestTransloco } from '../testing/transloco-testing';
+import { createApiClient } from '@voie-libre/api-client';
 import { App } from './app';
+import { API_CLIENT } from './core/api/api-client';
+import { HealthService } from './core/api/health.service';
 import { LanguageService } from './core/i18n/language.service';
 
 describe('App', () => {
@@ -8,7 +11,20 @@ describe('App', () => {
     localStorage.clear();
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideTestTransloco()],
+      providers: [
+        provideTestTransloco(),
+        {
+          provide: API_CLIENT,
+          useValue: createApiClient({
+            baseUrl: 'http://api.test',
+            fetch: async () =>
+              new Response(
+                JSON.stringify({ status: 'ok', api: 'up', database: 'up' }),
+                { headers: { 'content-type': 'application/json' } },
+              ),
+          }),
+        },
+      ],
     }).compileComponents();
     TestBed.inject(LanguageService).init();
   });
@@ -44,5 +60,18 @@ describe('App', () => {
       (fixture.nativeElement as HTMLElement).querySelectorAll('option'),
     ).map((o) => o.textContent?.trim());
     expect(options).toEqual(['English', 'français']);
+  });
+
+  it('shows the API status, translated', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    // fetch is not tracked by whenStable: wait for the health check explicitly.
+    await TestBed.inject(HealthService).check();
+    fixture.detectChanges();
+    const status = (fixture.nativeElement as HTMLElement).querySelector(
+      '.api-status',
+    );
+    expect(status?.getAttribute('data-status')).toBe('ok');
+    expect(status?.textContent).toContain('API: online');
   });
 });

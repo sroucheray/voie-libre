@@ -5,5 +5,13 @@
   },
   "language": {
     "label": "Language"
+  },
+  "api": {
+    "status": {
+      "checking": "API: checking…",
+      "ok": "API: online",
+      "degraded": "API: database unavailable",
+      "unreachable": "API: unreachable"
+    }
   }
 }
