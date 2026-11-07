@@ -15,9 +15,10 @@ Each step ends with the project starting and its tests passing. Targeted tests d
     10a. **Elevation profile** (added). Chart of distance against elevation under the map, from the selected route's stored geometry; hovering it (or arrow keys) moves a dot on the map, hovering the route on the map moves the cursor on the chart; collapsible; grade in the tooltip, no colouring yet. Check: unit tests; manual check on a saved route.
     10b. **GPX import** (added, done). `<trk>` first, `<rte>` as a fallback; saved as a local route without calling `POST /route`; no elevation → imported with an unknown climb (profile hidden, sharing disabled); the "compute the climb?" question comes with 10c, once the relief service exists.
     10c. **Relief service** (added, done). `ElevationProvider` interface in the API and an endpoint that returns elevations for points; used by the import's "compute climb" choice.
-11. **Wrap-up.** Full test run once, README quick start, update `docs/architecture.md` if anything diverged.
+11. **Wrap-up** (done). Full test run once, README quick start, update `docs/architecture.md` if anything diverged.
 
 ## Open points
 
 - Confirm the assumption that alternatives belong to phase 1.
 - Shared routes: immutable, delete token (hashed), a single `shared_routes` table (PostGIS line), strict write limits. QR code: not done yet (needs a library, permission to install pending).
+- Left for later (known at the end of milestone 1): the QR code for the share link (needs a library, permission pending); the GPX export is validated against the schema and read back by a parser, but not yet opened in a real GPX viewer; `ngsw-config.json` writes the tiles host (`http://localhost:8081`) by hand, to update with the production host; static hosting in production needs an `index.html` fallback for `/p/...`; the Copernicus credit is shown only under the profile of routes whose climb was computed (BRouter's own elevations are not credited yet).

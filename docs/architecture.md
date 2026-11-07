@@ -101,7 +101,7 @@ Chaque parcours est enregistré sur l'appareil ; l'envoi au serveur n'a lieu que
 
 1. **Synchronisation :** avec un compte (connexion OSM), les parcours « privé synchronisé » apparaissent sur tous ses appareils. Si un parcours est modifié des deux côtés, la version la plus récente l'emporte.
 2. **Lien ou QR code :** l'ordinateur affiche un code que le téléphone scanne, sans compte.
-3. **Fichier :** export GPX ou JSON depuis l'ordinateur, puis import dans l'application.
+3. **Fichier :** export GPX depuis l'ordinateur, puis import dans l'application (fait en phase 1 : trace `<trk>` ou itinéraire `<rte>`, lus sur l'appareil ; sans altitude, le dénivelé peut être calculé à la demande par `POST /elevation`).
 
 ## Signalements et zones à éviter
 
@@ -152,12 +152,16 @@ L'API est petite : elle calcule, enregistre, partage et signale. Les endpoints c
 | `POST /route` | Calcule un itinéraire (points, profil, zones à éviter, alternatives) via le fournisseur de routage | Non, avec limitation de débit |
 | `POST /loops` | Propose des boucles (point de départ, distance, dénivelé, graine) | Non, avec limitation de débit |
 | `GET /p/{id}` | Lit un parcours partagé | Non pour lien ou public |
-| `PUT /p/{id}` | Crée ou met à jour un parcours partagé | Oui |
+| `PUT /p/{id}` | Crée un parcours partagé sous l'identifiant tiré sur l'appareil (jamais mis à jour : un identifiant existant répond 409) ; renvoie une fois un jeton de suppression | Non, avec limitation de débit stricte |
+| `DELETE /p/{id}` | Supprime un parcours partagé | Jeton de suppression (en-tête `Authorization: Bearer`) |
+| `POST /elevation` | Altitude de jusqu'à 5000 points, lue localement dans les dalles Copernicus GLO-30 | Non, avec limitation de débit |
 | `GET /p/{id}.gpx` | Exporte le GPX | Idem lecture |
 | `GET /avoid?bbox=` | Zones à éviter communautaires dans une emprise | Non |
 | `POST /reports` | Crée un signalement | Oui |
 | `POST /reports/{id}/confirm` | Confirme un signalement | Oui |
 | `POST /reports/{id}/osm-note` | Envoie le signalement comme note OSM | Oui, via OAuth 2 OSM |
+
+**État de la phase 1 (écart avec la proposition) :** le partage de la phase 1 se fait sans compte : parcours immuables, jeton de suppression dont seul l'empreinte SHA-256 est stockée, ouverture dans l'application sur `/p/:id`. `PUT /p/{id}` ne met donc pas à jour (la synchronisation de la phase 2 reste à concevoir) et le QR code n'est pas encore fait. `POST /loops` et les endpoints de signalement ne sont pas implémentés.
 
 **Protections :** limitation de débit par adresse sur `/route` et `/loops`, taille maximale des requêtes, et mise en cache des itinéraires identiques.
 
