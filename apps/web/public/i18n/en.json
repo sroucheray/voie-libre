@@ -24,5 +24,45 @@
       "contributors": "contributors"
     },
     "unavailable": "The map could not be displayed. Your browser may not support WebGL2."
+  },
+  "planner": {
+    "title": "Route planner",
+    "hint": {
+      "start": "Click the map to set the start.",
+      "end": "Click the map to set the end."
+    },
+    "profile": {
+      "label": "Profile",
+      "road": "Road",
+      "gravel": "Gravel",
+      "trail": "Trail"
+    },
+    "alternatives": {
+      "label": "Alternatives"
+    },
+    "points": {
+      "label": "Route points",
+      "start": "Start",
+      "end": "End",
+      "waypoint": "Waypoint {{n}}",
+      "remove": "Remove {{name}}"
+    },
+    "clear": "Clear all points",
+    "status": {
+      "loading": "Computing the route…"
+    },
+    "routes": {
+      "label": "Computed routes",
+      "route": "Route {{n}}",
+      "summary": "{{distance}}, {{ascent}} climb, {{duration}}"
+    },
+    "errors": {
+      "invalid_request": "These points or options cannot be used to plan a route.",
+      "no_route": "No route found between these points. Move a point closer to a road or path inside the covered area.",
+      "unavailable": "The routing service is not available. Try again in a moment.",
+      "provider_error": "The routing service answered with an error. Try again.",
+      "rate_limited": "Too many requests. Wait a moment before changing the route again.",
+      "unknown": "The route could not be computed."
+    }
   }
 }

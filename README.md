@@ -45,6 +45,10 @@ npm run dev                           # API and web app together
 
 BRouter listens on http://localhost:17777. The segment `E0_N45` covers Clermont-Ferrand (lon 0-5, lat 45-50); other regions need other tiles: `./scripts/download-segments.sh E5_N45`.
 
+### Planning a route
+
+Click the map to set the start, then the end; further clicks add waypoints just before the end. Drag a marker to move a point (right-click removes it, and so does the × in the panel). Pick a profile (road, gravel, trail) and 1 to 3 alternatives: the route is recomputed through `POST /route` after a short pause, the selected one is drawn in blue and the others in grey (click one to select it). It needs the API, BRouter with the segment for the region, and PostgreSQL is not required for routing. A point outside the covered area gives a translated "no route" message.
+
 ### Basemap
 
 The map reads a PMTiles extract of OpenStreetMap data (Protomaps) plus fonts and sprites, all served locally by the `tiles` service on http://localhost:8081, so the map makes no request to an external domain. `./scripts/download-basemap.sh` writes them to `data/basemap` (not committed): it extracts the region `2.6,45.3,3.7,46.1` up to zoom 14 from the latest Protomaps planet build, downloading only the needed byte ranges (the `pmtiles` CLI is used if installed, otherwise its Docker image). Override with `BASEMAP_BBOX`, `BASEMAP_MAXZOOM` or `BASEMAP_BUILD`. The map needs a browser with WebGL2; without it the app shows a message instead of the map.

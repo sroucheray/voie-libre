@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideFakeMap } from '../testing/fake-map';
+import { provideFakePlannerDriver } from '../testing/fake-planner-driver';
 import { provideTestTransloco } from '../testing/transloco-testing';
 import { createApiClient } from '@voie-libre/api-client';
 import { App } from './app';
@@ -15,6 +16,7 @@ describe('App', () => {
       providers: [
         provideTestTransloco(),
         provideFakeMap(),
+        provideFakePlannerDriver(),
         {
           provide: API_CLIENT,
           useValue: createApiClient({
@@ -45,7 +47,9 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;
-    const select = element.querySelector('select') as HTMLSelectElement;
+    const select = element.querySelector(
+      'vl-language-switch select',
+    ) as HTMLSelectElement;
     select.value = 'fr';
     select.dispatchEvent(new Event('change'));
     await fixture.whenStable();
@@ -59,7 +63,9 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const options = Array.from(
-      (fixture.nativeElement as HTMLElement).querySelectorAll('option'),
+      (fixture.nativeElement as HTMLElement).querySelectorAll(
+        'vl-language-switch option',
+      ),
     ).map((o) => o.textContent?.trim());
     expect(options).toEqual(['English', 'français']);
   });

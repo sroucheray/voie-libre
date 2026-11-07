@@ -15,3 +15,31 @@
 body {
   margin: 0;
 }
+
+/* Markers are created by MapLibre outside Angular's view encapsulation. */
+.planner-marker {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
+  color: #fff;
+  font:
+    700 0.75rem system-ui,
+    sans-serif;
+  cursor: grab;
+
+  &--start {
+    background: #067647;
+  }
+
+  &--end {
+    background: #b42318;
+  }
+
+  &--waypoint {
+    background: #1570ef;
+  }
+}

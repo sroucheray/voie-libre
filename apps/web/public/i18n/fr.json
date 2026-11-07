@@ -24,5 +24,45 @@
       "contributors": "contributeurs"
     },
     "unavailable": "La carte n'a pas pu être affichée. Votre navigateur ne gère peut-être pas WebGL2."
+  },
+  "planner": {
+    "title": "Planificateur de parcours",
+    "hint": {
+      "start": "Cliquez sur la carte pour placer le départ.",
+      "end": "Cliquez sur la carte pour placer l'arrivée."
+    },
+    "profile": {
+      "label": "Profil",
+      "road": "Route",
+      "gravel": "Gravel",
+      "trail": "Trail"
+    },
+    "alternatives": {
+      "label": "Alternatives"
+    },
+    "points": {
+      "label": "Points du parcours",
+      "start": "Départ",
+      "end": "Arrivée",
+      "waypoint": "Étape {{n}}",
+      "remove": "Supprimer {{name}}"
+    },
+    "clear": "Effacer tous les points",
+    "status": {
+      "loading": "Calcul du parcours…"
+    },
+    "routes": {
+      "label": "Parcours calculés",
+      "route": "Parcours {{n}}",
+      "summary": "{{distance}}, {{ascent}} de dénivelé positif, {{duration}}"
+    },
+    "errors": {
+      "invalid_request": "Ces points ou ces options ne permettent pas de planifier un parcours.",
+      "no_route": "Aucun parcours trouvé entre ces points. Rapprochez un point d'une route ou d'un chemin dans la zone couverte.",
+      "unavailable": "Le service de calcul d'itinéraire n'est pas disponible. Réessayez dans un instant.",
+      "provider_error": "Le service de calcul d'itinéraire a répondu par une erreur. Réessayez.",
+      "rate_limited": "Trop de requêtes. Patientez un instant avant de modifier à nouveau le parcours.",
+      "unknown": "Le parcours n'a pas pu être calculé."
+    }
   }
 }
