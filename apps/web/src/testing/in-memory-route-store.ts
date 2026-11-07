@@ -8,6 +8,7 @@ import {
   NewSavedRoute,
   SAVED_ROUTE_SCHEMA_VERSION,
   SavedRoute,
+  ShareInfo,
 } from '../app/storage/saved-route';
 
 /**
@@ -45,6 +46,15 @@ export class InMemoryRouteStore implements RouteStore {
     const existing = this.records.get(id);
     if (!existing) throw new RouteStoreError('not_found');
     const updated = { ...existing, name, updatedAt: existing.updatedAt + 1 };
+    this.records.set(id, updated);
+    return updated;
+  }
+  async setShare(id: string, share: ShareInfo | null): Promise<SavedRoute> {
+    this.check();
+    const existing = this.records.get(id);
+    if (!existing) throw new RouteStoreError('not_found');
+    const { share: _previous, ...rest } = existing;
+    const updated = share ? { ...rest, share } : rest;
     this.records.set(id, updated);
     return updated;
   }

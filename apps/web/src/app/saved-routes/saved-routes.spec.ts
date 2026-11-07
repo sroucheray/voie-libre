@@ -38,6 +38,13 @@ describe('Saved routes', () => {
   let routeStore: InMemoryRouteStore;
   let downloads: { content: string; fileName: string; mimeType: string }[];
   let downloadFails: boolean;
+  let sharingCalls: {
+    method: string;
+    path: string;
+    authorization: string | null;
+    body: unknown;
+  }[];
+  let shareRespond: () => Response;
 
   beforeEach(async () => {
     vi.useFakeTimers();
@@ -58,6 +65,8 @@ describe('Saved routes', () => {
     routeStore = new InMemoryRouteStore();
     downloads = [];
     downloadFails = false;
+    sharingCalls = [];
+    shareRespond = () => json({ id: 'x', deleteToken: 'secret-token' }, 201);
     await TestBed.configureTestingModule({
       imports: [Planner],
       providers: [
@@ -76,7 +85,18 @@ describe('Saved routes', () => {
           provide: API_CLIENT,
           useValue: createApiClient({
             baseUrl: 'http://api.test',
-            fetch: async () => {
+            fetch: async (request) => {
+              const path = new URL(request.url).pathname;
+              if (path.startsWith('/p/')) {
+                const text = await request.clone().text();
+                sharingCalls.push({
+                  method: request.method,
+                  path,
+                  authorization: request.headers.get('authorization'),
+                  body: text ? JSON.parse(text) : undefined,
+                });
+                return shareRespond();
+              }
               calls++;
               return respond();
             },
@@ -396,6 +416,158 @@ describe('Saved routes', () => {
       await view.settle();
       expect(downloads).toHaveLength(0);
       expect(view.alert()).toContain('no longer exists');
+    });
+  });
+
+  describe('sharing', () => {
+    const shareButton = (view: Awaited<ReturnType<typeof render>>) =>
+      view.button('Share Road, 41 km by link');
+
+    async function renderWithSharedRoute() {
+      const view = await renderWithSavedRoute();
+      shareButton(view).click();
+      await view.settle();
+      return view;
+    }
+
+    it('shares only when the user asks: saving sends nothing to the server', async () => {
+      await renderWithSavedRoute();
+      expect(sharingCalls).toEqual([]);
+    });
+
+    it('puts the route under its own id and keeps the delete token on the device only', async () => {
+      const view = await renderWithSavedRoute();
+      const [saved] = [...routeStore.records.values()];
+      shareButton(view).click();
+      await view.settle();
+
+      expect(sharingCalls).toHaveLength(1);
+      expect(sharingCalls[0].method).toBe('PUT');
+      expect(sharingCalls[0].path).toBe(`/p/${saved.id}`);
+      expect(sharingCalls[0].body).toMatchObject({
+        name: 'Road, 41 km',
+        profile: 'road',
+        distanceMeters: 41007,
+      });
+      expect(routeStore.records.get(saved.id)?.share?.deleteToken).toBe(
+        'secret-token',
+      );
+      expect(view.root.textContent).not.toContain('secret-token');
+      expect(
+        (view.root.querySelector('.share-link input') as HTMLInputElement)
+          .value,
+      ).toMatch(new RegExp(`/p/${saved.id}$`));
+      expect(view.root.querySelector('.badge')?.textContent).toContain(
+        'Shared',
+      );
+      expect(view.button('Share Road, 41 km by link')).toBeNull();
+      expect(view.alert()).toBeNull();
+    });
+
+    it('copies the link', async () => {
+      const view = await renderWithSharedRoute();
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
+      (view.root.querySelector('.copy') as HTMLButtonElement).click();
+      await view.settle();
+      expect(writeText).toHaveBeenCalledWith(
+        expect.stringMatching(/\/p\/[a-z2-9]{10}$/),
+      );
+      expect(view.text()).toContain('Link copied');
+      vi.unstubAllGlobals();
+    });
+
+    it('stops sharing with the token, then offers to share again', async () => {
+      const view = await renderWithSharedRoute();
+      sharingCalls.length = 0;
+      shareRespond = () => new Response(null, { status: 204 });
+      view.button('Stop sharing Road, 41 km').click();
+      await view.settle();
+      expect(sharingCalls).toHaveLength(1);
+      expect(sharingCalls[0].method).toBe('DELETE');
+      expect(sharingCalls[0].authorization).toBe('Bearer secret-token');
+      expect([...routeStore.records.values()][0].share).toBeUndefined();
+      expect(view.root.querySelector('.share-link')).toBeNull();
+      expect(shareButton(view)).not.toBeNull();
+    });
+
+    it('unshares before deleting a shared route, and says so in the confirmation', async () => {
+      const view = await renderWithSharedRoute();
+      sharingCalls.length = 0;
+      shareRespond = () => new Response(null, { status: 204 });
+      view.button('Delete Road, 41 km').click();
+      await view.settle();
+      expect(view.root.querySelector('.confirm')?.textContent).toContain(
+        'stop sharing it',
+      );
+      view.confirmButton('Delete').click();
+      await view.settle();
+      expect(sharingCalls.map((c) => c.method)).toEqual(['DELETE']);
+      expect(routeStore.records.size).toBe(0);
+    });
+
+    it('keeps the route, and its token, when the server cannot be reached to unshare it', async () => {
+      const view = await renderWithSharedRoute();
+      shareRespond = () => {
+        throw new TypeError('Failed to fetch');
+      };
+      view.button('Delete Road, 41 km').click();
+      await view.settle();
+      view.confirmButton('Delete').click();
+      await view.settle();
+      expect(routeStore.records.size).toBe(1);
+      expect([...routeStore.records.values()][0].share?.deleteToken).toBe(
+        'secret-token',
+      );
+      expect(view.alert()).toContain('cannot be reached');
+    });
+
+    it.each([
+      [
+        429,
+        { statusCode: 429, message: 'Rate limit exceeded' },
+        'Too many routes',
+        'Trop de parcours',
+      ],
+      [
+        409,
+        { code: 'already_exists', message: 'x' },
+        'already uses this identifier',
+        'utilise déjà cet identifiant',
+      ],
+      [
+        413,
+        { code: 'payload_too_large', message: 'x' },
+        'too large to share',
+        'trop volumineux',
+      ],
+    ] as const)(
+      'translates a %i and keeps the route local',
+      async (status, body, english, french) => {
+        const view = await renderWithSavedRoute();
+        shareRespond = () => json(body, status);
+        shareButton(view).click();
+        await view.settle();
+        expect(view.alert()).toContain(english);
+        expect(view.alert()).not.toContain('Rate limit exceeded');
+        expect([...routeStore.records.values()][0].share).toBeUndefined();
+        expect(view.driver.routes).toHaveLength(1);
+
+        TestBed.inject(LanguageService).use('fr');
+        await view.settle();
+        await view.settle();
+        expect(view.alert()).toContain(french);
+      },
+    );
+
+    it('reports an unreachable server when sharing', async () => {
+      const view = await renderWithSavedRoute();
+      shareRespond = () => {
+        throw new TypeError('Failed to fetch');
+      };
+      shareButton(view).click();
+      await view.settle();
+      expect(view.alert()).toContain('cannot be reached');
     });
   });
 

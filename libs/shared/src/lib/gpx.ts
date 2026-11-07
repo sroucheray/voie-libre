@@ -1,10 +1,13 @@
-import type { SavedRoute } from '../storage/saved-route';
-
-/** The parts of a saved route a GPX file is built from. */
-export type GpxSource = Pick<
-  SavedRoute,
-  'name' | 'geometry' | 'createdAt' | 'points'
->;
+/** The parts of a route a GPX file is built from. */
+export interface GpxSource {
+  name: string;
+  /** `[longitude, latitude]` of the start, the waypoints and the end. */
+  points: readonly (readonly [number, number])[];
+  /** `[longitude, latitude, elevation in meters]` per point of the itinerary. */
+  geometry: readonly (readonly [number, number, number])[];
+  /** Milliseconds since the epoch. */
+  createdAt: number;
+}
 
 const XML_ESCAPES: Record<string, string> = {
   '&': '&amp;',
@@ -76,4 +79,29 @@ export function gpxFileName(name: string): string {
     .slice(0, 60)
     .replace(/-+$/g, '');
   return `${slug || 'route'}.gpx`;
+}
+
+const POINT_NAMES = {
+  en: { start: 'Start', end: 'End', waypoint: 'Waypoint' },
+  fr: { start: 'Départ', end: 'Arrivée', waypoint: 'Étape' },
+} as const;
+
+export type GpxLanguage = keyof typeof POINT_NAMES;
+
+export const GPX_LANGUAGES = Object.keys(POINT_NAMES) as GpxLanguage[];
+
+/**
+ * Names of the waypoints of a route with `count` points, for GPX files built where there is no
+ * translation layer (the API). The web app uses its own translation keys: a test keeps both in
+ * step.
+ */
+export function gpxPointNames(language: GpxLanguage, count: number): string[] {
+  const names = POINT_NAMES[language];
+  return Array.from({ length: count }, (_, index) =>
+    index === 0
+      ? names.start
+      : index === count - 1
+        ? names.end
+        : `${names.waypoint} ${index}`,
+  );
 }

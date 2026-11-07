@@ -110,5 +110,33 @@
       "quota": "Espace de stockage insuffisant sur cet appareil pour la carte.",
       "unknown": "La carte n'a pas pu être enregistrée pour une utilisation hors-ligne."
     }
+  },
+  "sharing": {
+    "share": "Partager",
+    "shareNamed": "Partager {{name}} par lien",
+    "shared": "Partagé",
+    "link": "Lien vers le parcours partagé",
+    "copy": "Copier le lien",
+    "copied": "Lien copié",
+    "stop": "Arrêter le partage",
+    "stopNamed": "Arrêter le partage de {{name}}",
+    "confirmDeleteShared": "Supprimer « {{name}} » de cet appareil et arrêter son partage ? Cette action est définitive.",
+    "page": {
+      "title": "Parcours partagé",
+      "loading": "Chargement du parcours partagé…",
+      "keep": "Garder sur cet appareil",
+      "kept": "Enregistré sur cet appareil.",
+      "close": "Fermer"
+    },
+    "errors": {
+      "network": "Le serveur est injoignable. Le partage demande une connexion réseau.",
+      "rate_limited": "Trop de parcours ont été partagés récemment. Réessayez plus tard.",
+      "payload_too_large": "Ce parcours est trop volumineux pour être partagé.",
+      "already_exists": "Un parcours partagé utilise déjà cet identifiant : celui-ci ne peut pas être partagé.",
+      "invalid_request": "Ce parcours ne peut pas être partagé.",
+      "forbidden": "Le serveur a refusé d'arrêter le partage de ce parcours.",
+      "not_found": "Ce parcours partagé n'existe pas, ou n'est plus partagé.",
+      "unknown": "Le partage a échoué."
+    }
   }
 }

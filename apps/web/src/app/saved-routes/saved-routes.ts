@@ -15,8 +15,13 @@ import {
 } from '@jsverse/transloco';
 import { FormattingService } from '../core/format/formatting.service';
 import { FILE_DOWNLOADER } from '../export/file-download';
-import { buildGpx, gpxFileName } from '../export/gpx';
+import { buildGpx, gpxFileName } from '@voie-libre/shared';
 import { PlannerStore, pointRole } from '../planner/planner-store';
+import {
+  ShareError,
+  type ShareErrorCode,
+  ShareService,
+} from '../sharing/share.service';
 import {
   ROUTE_STORE,
   RouteStoreError,
@@ -45,13 +50,18 @@ export class SavedRoutes {
   private readonly routeStore = inject(ROUTE_STORE);
   private readonly download = inject(FILE_DOWNLOADER);
   private readonly transloco = inject(TranslocoService);
+  private readonly sharing = inject(ShareService);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly routes = signal<SavedRoute[]>([]);
   protected readonly error = signal<
-    RouteStoreErrorCode | 'export_failed' | null
+    RouteStoreErrorCode | ShareErrorCode | 'export_failed' | null
   >(null);
+  /** The route whose share or unshare request is running. */
+  protected readonly busyId = signal<string | null>(null);
+  /** The route whose link was just copied. */
+  protected readonly copiedId = signal<string | null>(null);
   protected readonly renamingId = signal<string | null>(null);
   protected readonly confirmingId = signal<string | null>(null);
   protected readonly savable = this.planner.savable;
@@ -127,6 +137,82 @@ export class SavedRoutes {
     });
   }
 
+  /** Translation key of an error: sharing failures have their own messages. */
+  protected errorKey(code: string): string {
+    const sharing: readonly string[] = [
+      'network',
+      'rate_limited',
+      'payload_too_large',
+      'already_exists',
+      'invalid_request',
+      'forbidden',
+    ];
+    return sharing.includes(code)
+      ? `sharing.errors.${code}`
+      : `saved.errors.${code}`;
+  }
+
+  /** Deleting a shared route also stops sharing it: the confirmation says so. */
+  protected confirmDeleteKey(route: SavedRoute): string {
+    return route.share ? 'sharing.confirmDeleteShared' : 'saved.confirmDelete';
+  }
+
+  protected linkFor(id: string): string {
+    return this.sharing.linkFor(id);
+  }
+
+  /** Sends the route to the server on request, and keeps the delete token on the device. */
+  protected async share(id: string): Promise<void> {
+    await this.withRoute(id, async (route) => {
+      const info = await this.sharing.share(route);
+      this.replace(await this.routeStore.setShare(id, info));
+    });
+  }
+
+  protected async stopSharing(id: string): Promise<void> {
+    await this.withRoute(id, async (route) => {
+      await this.sharing.unshare(route);
+      this.replace(await this.routeStore.setShare(id, null));
+    });
+  }
+
+  protected async copyLink(id: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(this.linkFor(id));
+      this.copiedId.set(id);
+    } catch {
+      // No clipboard access (insecure page, denied): the link stays selectable in its field.
+      this.copiedId.set(null);
+    }
+  }
+
+  protected selectLink(event: Event): void {
+    (event.target as HTMLInputElement).select();
+  }
+
+  /** Runs a request on one route, disabling its buttons meanwhile. */
+  private async withRoute(
+    id: string,
+    operation: (route: SavedRoute) => Promise<void>,
+  ): Promise<void> {
+    await this.attempt(async () => {
+      const route = this.routes().find((r) => r.id === id);
+      if (!route) throw new RouteStoreError('not_found');
+      this.busyId.set(id);
+      try {
+        await operation(route);
+      } finally {
+        this.busyId.set(null);
+      }
+    });
+  }
+
+  private replace(updated: SavedRoute): void {
+    this.routes.update((routes) =>
+      routes.map((r) => (r.id === updated.id ? updated : r)),
+    );
+  }
+
   /** "Start", "Waypoint 1", "End" in the active language: the names of the GPX waypoints. */
   private pointNames(saved: SavedRoute): string[] {
     return saved.points.map((_, index) =>
@@ -176,9 +262,18 @@ export class SavedRoutes {
 
   protected async confirmDelete(id: string): Promise<void> {
     await this.attempt(async () => {
-      await this.routeStore.delete(id);
-      this.routes.update((routes) => routes.filter((r) => r.id !== id));
-      this.confirmingId.set(null);
+      const route = this.routes().find((r) => r.id === id);
+      this.busyId.set(id);
+      try {
+        // A shared route is unshared first: once deleted here, its token would be lost and the
+        // public copy could never be removed. If the server cannot be reached, nothing is deleted.
+        if (route?.share) await this.sharing.unshare(route);
+        await this.routeStore.delete(id);
+        this.routes.update((routes) => routes.filter((r) => r.id !== id));
+        this.confirmingId.set(null);
+      } finally {
+        this.busyId.set(null);
+      }
     });
   }
 
@@ -197,7 +292,7 @@ export class SavedRoutes {
       this.error.set(
         error instanceof ExportError
           ? 'export_failed'
-          : error instanceof RouteStoreError
+          : error instanceof RouteStoreError || error instanceof ShareError
             ? error.code
             : 'unknown',
       );

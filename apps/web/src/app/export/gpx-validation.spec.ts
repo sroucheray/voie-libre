@@ -1,7 +1,7 @@
 import { gpx as gpxToGeoJson } from '@tmcw/togeojson';
 import { validateXML } from 'xmllint-wasm';
 import { GPX_1_1_SCHEMA as schema } from '../../testing/fixtures/gpx-1.1-schema';
-import { buildGpx } from './gpx';
+import { buildGpx } from '@voie-libre/shared';
 
 const route = {
   name: 'Été & "Ventouse" <test>',

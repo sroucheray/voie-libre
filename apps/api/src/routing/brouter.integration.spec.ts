@@ -1,4 +1,5 @@
 import { buildApp } from '../app/app';
+import { createMemorySharedRoutes } from '../db/shared-routes';
 import { loadConfig } from '../app/config';
 import { BRouterProvider } from './brouter-provider';
 
@@ -43,7 +44,11 @@ run('BRouter integration', () => {
   it('answers through POST /route', async () => {
     const server = await buildApp({
       config: loadConfig(),
-      db: { ping: async () => true, close: async () => undefined },
+      db: {
+        ping: async () => true,
+        close: async () => undefined,
+        sharedRoutes: createMemorySharedRoutes(),
+      },
       routing: provider,
     });
     const response = await server.inject({

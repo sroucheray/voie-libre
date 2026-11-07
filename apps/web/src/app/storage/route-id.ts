@@ -1,8 +1,7 @@
-/**
- * 32 lowercase letters and digits without the look-alikes `0`, `1`, `l` and `o` (and so without
- * `O` and `I`). 32 divides 256, so masking a random byte introduces no modulo bias.
- */
-export const ROUTE_ID_ALPHABET = 'abcdefghijkmnpqrstuvwxyz23456789';
+import { ROUTE_ID_ALPHABET } from '@voie-libre/shared';
+
+// 32 divides 256, so masking a random byte introduces no modulo bias.
+export { ROUTE_ID_ALPHABET };
 
 /** 10 characters, 50 bits: enough to stay unique without a server, short enough for `/p/{id}`. */
 export const ROUTE_ID_LENGTH = 10;

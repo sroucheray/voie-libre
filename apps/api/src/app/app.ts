@@ -9,6 +9,7 @@ import type { RoutingProvider } from '../routing/routing-provider';
 import type { Config } from './config';
 import { healthRoutes } from './routes/health';
 import { routeRoutes } from './routes/route';
+import { sharedRoutes } from './routes/shared';
 
 export interface AppOptions {
   config: Config;
@@ -50,6 +51,10 @@ export async function buildApp({
       tags: [
         { name: 'system', description: 'Health and diagnostics' },
         { name: 'routing', description: 'Route computation' },
+        {
+          name: 'sharing',
+          description: 'Routes shared by link, without an account',
+        },
       ],
     },
   });
@@ -66,6 +71,12 @@ export async function buildApp({
     routing,
     rateLimitMax: config.routeRateLimitMax,
     rateLimitWindowMs: config.rateLimitWindowMs,
+  });
+  await fastify.register(sharedRoutes, {
+    store: db.sharedRoutes,
+    writeRateLimitMax: config.shareRateLimitMax,
+    writeRateLimitWindowMs: config.shareRateLimitWindowMs,
+    bodyLimitBytes: config.shareBodyLimitBytes,
   });
   return fastify;
 }

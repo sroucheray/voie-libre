@@ -9,6 +9,7 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildApp } from '../apps/api/src/app/app';
 import { loadConfig } from '../apps/api/src/app/config';
+import { createMemorySharedRoutes } from '../apps/api/src/db/shared-routes';
 
 const root = join(__dirname, '..');
 const clientDir = join(root, 'packages/api-client');
@@ -18,7 +19,11 @@ const schemaPath = join(clientDir, 'src/schema.d.ts');
 async function main() {
   const app = await buildApp({
     config: loadConfig({}),
-    db: { ping: async () => true, close: async () => undefined },
+    db: {
+      ping: async () => true,
+      close: async () => undefined,
+      sharedRoutes: createMemorySharedRoutes(),
+    },
     // Only the schemas matter here: nothing is routed while generating.
     routing: { name: 'none', route: async () => [] },
   });

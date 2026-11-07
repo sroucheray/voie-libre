@@ -1,9 +1,14 @@
 import { Pool } from 'pg';
+import {
+  type SharedRouteStore,
+  createPostgresSharedRoutes,
+} from './shared-routes';
 
 /** Minimal database surface used by the app, so tests can inject a fake. */
 export interface Database {
   /** Resolves true when PostgreSQL answers a trivial query. Never throws. */
   ping(): Promise<boolean>;
+  readonly sharedRoutes: SharedRouteStore;
   close(): Promise<void>;
 }
 
@@ -13,6 +18,7 @@ export function createDatabase(connectionString: string): Database {
   // Avoid crashing the process when an idle client errors (e.g. the database restarts).
   pool.on('error', () => undefined);
   return {
+    sharedRoutes: createPostgresSharedRoutes(pool),
     async ping() {
       try {
         await pool.query('SELECT 1');

@@ -473,6 +473,662 @@
           }
         }
       }
+    },
+    "/p/{id}": {
+      "put": {
+        "operationId": "shareRoute",
+        "summary": "Share a route by link, without an account",
+        "tags": ["sharing"],
+        "description": "Creates the shared route under the id drawn on the device. Shared routes are immutable: an id already in use answers 409. The delete token is returned once.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "profile",
+                  "points",
+                  "geometry",
+                  "distanceMeters",
+                  "ascentMeters",
+                  "durationSeconds",
+                  "createdAt"
+                ],
+                "properties": {
+                  "name": {
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "type": "string"
+                  },
+                  "profile": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": ["road"]
+                      },
+                      {
+                        "type": "string",
+                        "enum": ["gravel"]
+                      },
+                      {
+                        "type": "string",
+                        "enum": ["trail"]
+                      }
+                    ]
+                  },
+                  "points": {
+                    "minItems": 2,
+                    "maxItems": 20,
+                    "description": "Start, optional waypoints, end, in order: [longitude, latitude].",
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": [
+                        {
+                          "minimum": -180,
+                          "maximum": 180,
+                          "type": "number"
+                        },
+                        {
+                          "minimum": -90,
+                          "maximum": 90,
+                          "type": "number"
+                        }
+                      ],
+                      "additionalItems": false,
+                      "minItems": 2,
+                      "maxItems": 2
+                    }
+                  },
+                  "geometry": {
+                    "minItems": 2,
+                    "maxItems": 5000,
+                    "description": "[longitude, latitude, elevation in meters] per point.",
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": [
+                        {
+                          "minimum": -180,
+                          "maximum": 180,
+                          "type": "number"
+                        },
+                        {
+                          "minimum": -90,
+                          "maximum": 90,
+                          "type": "number"
+                        },
+                        {
+                          "minimum": -1000,
+                          "maximum": 10000,
+                          "type": "number"
+                        }
+                      ],
+                      "additionalItems": false,
+                      "minItems": 3,
+                      "maxItems": 3
+                    }
+                  },
+                  "distanceMeters": {
+                    "minimum": 0,
+                    "maximum": 1000000000,
+                    "type": "number"
+                  },
+                  "ascentMeters": {
+                    "minimum": 0,
+                    "maximum": 1000000000,
+                    "type": "number"
+                  },
+                  "durationSeconds": {
+                    "minimum": 0,
+                    "maximum": 1000000000,
+                    "type": "number"
+                  },
+                  "createdAt": {
+                    "minimum": 0,
+                    "maximum": 8640000000000000,
+                    "description": "When the route was saved on the device, in milliseconds since the epoch.",
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "pattern": "^[abcdefghijkmnpqrstuvwxyz23456789]{8,10}$",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["id", "deleteToken"],
+                  "properties": {
+                    "id": {
+                      "pattern": "^[abcdefghijkmnpqrstuvwxyz23456789]{8,10}$",
+                      "type": "string"
+                    },
+                    "deleteToken": {
+                      "description": "Shown once. Keep it on the device: it is the only way to remove the shared route.",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["code", "message"],
+                  "properties": {
+                    "code": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["invalid_request"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["not_found"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["already_exists"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["forbidden"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["payload_too_large"]
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["code", "message"],
+                  "properties": {
+                    "code": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["invalid_request"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["not_found"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["already_exists"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["forbidden"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["payload_too_large"]
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["code", "message"],
+                  "properties": {
+                    "code": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["invalid_request"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["not_found"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["already_exists"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["forbidden"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["payload_too_large"]
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getSharedRoute",
+        "summary": "Read a shared route",
+        "tags": ["sharing"],
+        "parameters": [
+          {
+            "schema": {
+              "pattern": "^[abcdefghijkmnpqrstuvwxyz23456789]{8,10}$",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "profile",
+                    "points",
+                    "geometry",
+                    "distanceMeters",
+                    "ascentMeters",
+                    "durationSeconds",
+                    "createdAt",
+                    "id",
+                    "sharedAt"
+                  ],
+                  "properties": {
+                    "name": {
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "type": "string"
+                    },
+                    "profile": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["road"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["gravel"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["trail"]
+                        }
+                      ]
+                    },
+                    "points": {
+                      "minItems": 2,
+                      "maxItems": 20,
+                      "description": "Start, optional waypoints, end, in order: [longitude, latitude].",
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "items": [
+                          {
+                            "minimum": -180,
+                            "maximum": 180,
+                            "type": "number"
+                          },
+                          {
+                            "minimum": -90,
+                            "maximum": 90,
+                            "type": "number"
+                          }
+                        ],
+                        "additionalItems": false,
+                        "minItems": 2,
+                        "maxItems": 2
+                      }
+                    },
+                    "geometry": {
+                      "minItems": 2,
+                      "maxItems": 5000,
+                      "description": "[longitude, latitude, elevation in meters] per point.",
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "items": [
+                          {
+                            "minimum": -180,
+                            "maximum": 180,
+                            "type": "number"
+                          },
+                          {
+                            "minimum": -90,
+                            "maximum": 90,
+                            "type": "number"
+                          },
+                          {
+                            "minimum": -1000,
+                            "maximum": 10000,
+                            "type": "number"
+                          }
+                        ],
+                        "additionalItems": false,
+                        "minItems": 3,
+                        "maxItems": 3
+                      }
+                    },
+                    "distanceMeters": {
+                      "minimum": 0,
+                      "maximum": 1000000000,
+                      "type": "number"
+                    },
+                    "ascentMeters": {
+                      "minimum": 0,
+                      "maximum": 1000000000,
+                      "type": "number"
+                    },
+                    "durationSeconds": {
+                      "minimum": 0,
+                      "maximum": 1000000000,
+                      "type": "number"
+                    },
+                    "createdAt": {
+                      "minimum": 0,
+                      "maximum": 8640000000000000,
+                      "description": "When the route was saved on the device, in milliseconds since the epoch.",
+                      "type": "integer"
+                    },
+                    "id": {
+                      "pattern": "^[abcdefghijkmnpqrstuvwxyz23456789]{8,10}$",
+                      "type": "string"
+                    },
+                    "sharedAt": {
+                      "description": "When the route reached the server, in milliseconds.",
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["code", "message"],
+                  "properties": {
+                    "code": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["invalid_request"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["not_found"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["already_exists"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["forbidden"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["payload_too_large"]
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteSharedRoute",
+        "summary": "Stop sharing a route",
+        "tags": ["sharing"],
+        "description": "Needs the delete token returned when the route was shared: `Authorization: Bearer <token>`.",
+        "parameters": [
+          {
+            "schema": {
+              "pattern": "^[abcdefghijkmnpqrstuvwxyz23456789]{8,10}$",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["code", "message"],
+                  "properties": {
+                    "code": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["invalid_request"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["not_found"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["already_exists"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["forbidden"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["payload_too_large"]
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["code", "message"],
+                  "properties": {
+                    "code": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["invalid_request"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["not_found"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["already_exists"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["forbidden"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["payload_too_large"]
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/p/{id}.gpx": {
+      "get": {
+        "operationId": "getSharedRouteGpx",
+        "summary": "Download a shared route as a GPX file",
+        "tags": ["sharing"],
+        "parameters": [
+          {
+            "schema": {
+              "default": "en",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": ["en"]
+                },
+                {
+                  "type": "string",
+                  "enum": ["fr"]
+                }
+              ]
+            },
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "description": "Language of the waypoint names (start, end)."
+          },
+          {
+            "schema": {
+              "pattern": "^[abcdefghijkmnpqrstuvwxyz23456789]{8,10}$",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A GPX 1.1 document.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "A GPX 1.1 document.",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["code", "message"],
+                  "properties": {
+                    "code": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["invalid_request"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["not_found"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["already_exists"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["forbidden"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["payload_too_large"]
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "tags": [
@@ -483,6 +1139,10 @@
     {
       "name": "routing",
       "description": "Route computation"
+    },
+    {
+      "name": "sharing",
+      "description": "Routes shared by link, without an account"
     }
   ]
 }

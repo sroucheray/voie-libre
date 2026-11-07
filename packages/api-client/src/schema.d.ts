@@ -38,6 +38,48 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/p/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read a shared route */
+    get: operations['getSharedRoute'];
+    /**
+     * Share a route by link, without an account
+     * @description Creates the shared route under the id drawn on the device. Shared routes are immutable: an id already in use answers 409. The delete token is returned once.
+     */
+    put: operations['shareRoute'];
+    post?: never;
+    /**
+     * Stop sharing a route
+     * @description Needs the delete token returned when the route was shared: `Authorization: Bearer <token>`.
+     */
+    delete: operations['deleteSharedRoute'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/p/{id}.gpx': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Download a shared route as a GPX file */
+    get: operations['getSharedRouteGpx'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -207,6 +249,249 @@ export interface operations {
           'application/json': {
             code:
               'invalid_request' | 'no_route' | 'unavailable' | 'provider_error';
+            message: string;
+          };
+        };
+      };
+    };
+  };
+  getSharedRoute: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            name: string;
+            profile: 'road' | 'gravel' | 'trail';
+            /** @description Start, optional waypoints, end, in order: [longitude, latitude]. */
+            points: [number, number][];
+            /** @description [longitude, latitude, elevation in meters] per point. */
+            geometry: [number, number, number][];
+            distanceMeters: number;
+            ascentMeters: number;
+            durationSeconds: number;
+            /** @description When the route was saved on the device, in milliseconds since the epoch. */
+            createdAt: number;
+            id: string;
+            /** @description When the route reached the server, in milliseconds. */
+            sharedAt: number;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            code:
+              | 'invalid_request'
+              | 'not_found'
+              | 'already_exists'
+              | 'forbidden'
+              | 'payload_too_large';
+            message: string;
+          };
+        };
+      };
+    };
+  };
+  shareRoute: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          name: string;
+          profile: 'road' | 'gravel' | 'trail';
+          /** @description Start, optional waypoints, end, in order: [longitude, latitude]. */
+          points: [number, number][];
+          /** @description [longitude, latitude, elevation in meters] per point. */
+          geometry: [number, number, number][];
+          distanceMeters: number;
+          ascentMeters: number;
+          durationSeconds: number;
+          /** @description When the route was saved on the device, in milliseconds since the epoch. */
+          createdAt: number;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            id: string;
+            /** @description Shown once. Keep it on the device: it is the only way to remove the shared route. */
+            deleteToken: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            code:
+              | 'invalid_request'
+              | 'not_found'
+              | 'already_exists'
+              | 'forbidden'
+              | 'payload_too_large';
+            message: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            code:
+              | 'invalid_request'
+              | 'not_found'
+              | 'already_exists'
+              | 'forbidden'
+              | 'payload_too_large';
+            message: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            code:
+              | 'invalid_request'
+              | 'not_found'
+              | 'already_exists'
+              | 'forbidden'
+              | 'payload_too_large';
+            message: string;
+          };
+        };
+      };
+    };
+  };
+  deleteSharedRoute: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            code:
+              | 'invalid_request'
+              | 'not_found'
+              | 'already_exists'
+              | 'forbidden'
+              | 'payload_too_large';
+            message: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            code:
+              | 'invalid_request'
+              | 'not_found'
+              | 'already_exists'
+              | 'forbidden'
+              | 'payload_too_large';
+            message: string;
+          };
+        };
+      };
+    };
+  };
+  getSharedRouteGpx: {
+    parameters: {
+      query?: {
+        /** @description Language of the waypoint names (start, end). */
+        lang?: 'en' | 'fr';
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description A GPX 1.1 document. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': string;
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            code:
+              | 'invalid_request'
+              | 'not_found'
+              | 'already_exists'
+              | 'forbidden'
+              | 'payload_too_large';
             message: string;
           };
         };

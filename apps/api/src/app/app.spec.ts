@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { Database } from '../db/database';
+import { createMemorySharedRoutes } from '../db/shared-routes';
 import type { RoutingProvider } from '../routing/routing-provider';
 import { buildApp } from './app';
 import { loadConfig } from './config';
@@ -8,6 +9,7 @@ const fakeRouting: RoutingProvider = { name: 'fake', route: async () => [] };
 
 const fakeDb = (up: boolean): Database => ({
   ping: async () => up,
+  sharedRoutes: createMemorySharedRoutes(),
   close: async () => undefined,
 });
 

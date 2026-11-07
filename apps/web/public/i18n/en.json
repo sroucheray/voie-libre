@@ -110,5 +110,33 @@
       "quota": "Not enough storage space on this device for the map.",
       "unknown": "The map could not be saved for offline use."
     }
+  },
+  "sharing": {
+    "share": "Share",
+    "shareNamed": "Share {{name}} by link",
+    "shared": "Shared",
+    "link": "Link to the shared route",
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "stop": "Stop sharing",
+    "stopNamed": "Stop sharing {{name}}",
+    "confirmDeleteShared": "Delete \"{{name}}\" from this device and stop sharing it? This cannot be undone.",
+    "page": {
+      "title": "Shared route",
+      "loading": "Loading the shared route…",
+      "keep": "Keep on this device",
+      "kept": "Saved on this device.",
+      "close": "Close"
+    },
+    "errors": {
+      "network": "The server cannot be reached. Sharing needs a network connection.",
+      "rate_limited": "Too many routes were shared recently. Try again later.",
+      "payload_too_large": "This route is too large to share.",
+      "already_exists": "A shared route already uses this identifier, so this one cannot be shared.",
+      "invalid_request": "This route cannot be shared.",
+      "forbidden": "The server refused to stop sharing this route.",
+      "not_found": "This shared route does not exist, or is no longer shared.",
+      "unknown": "Sharing failed."
+    }
   }
 }

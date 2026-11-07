@@ -1,6 +1,6 @@
 import { InjectionToken } from '@angular/core';
 import { IndexedDbRouteStore } from './indexeddb-route-store';
-import type { NewSavedRoute, SavedRoute } from './saved-route';
+import type { NewSavedRoute, SavedRoute, ShareInfo } from './saved-route';
 
 /**
  * Why a storage operation failed. The UI translates these codes under `saved.errors.*`.
@@ -34,6 +34,8 @@ export interface RouteStore {
   get(id: string): Promise<SavedRoute | undefined>;
   /** Throws `not_found` when no route has this id. */
   rename(id: string, name: string): Promise<SavedRoute>;
+  /** Remembers that the route is shared (or no longer, with `null`). Throws `not_found`. */
+  setShare(id: string, share: ShareInfo | null): Promise<SavedRoute>;
   /** Deleting an id that does not exist is not an error. */
   delete(id: string): Promise<void>;
 }

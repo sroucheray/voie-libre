@@ -95,6 +95,31 @@ describe('IndexedDbRouteStore', () => {
     expect(await store.get(saved.id)).toEqual(renamed);
   });
 
+  it('remembers that a route is shared, and forgets it', async () => {
+    const saved = await store.save(route('A'));
+    const shared = await store.setShare(saved.id, {
+      deleteToken: 'secret',
+      sharedAt: 5,
+    });
+    expect(shared.share).toEqual({ deleteToken: 'secret', sharedAt: 5 });
+    expect((await store.get(saved.id))?.share?.deleteToken).toBe('secret');
+    // Sharing does not touch the rest of the record, nor the modification date.
+    expect({ ...shared, share: undefined }).toEqual({
+      ...saved,
+      share: undefined,
+    });
+    const unshared = await store.setShare(saved.id, null);
+    expect('share' in unshared).toBe(false);
+    expect('share' in ((await store.get(saved.id)) ?? {})).toBe(false);
+  });
+
+  it('keeps the share when a shared route is renamed', async () => {
+    const saved = await store.save(route('old'));
+    await store.setShare(saved.id, { deleteToken: 'secret', sharedAt: 5 });
+    const renamed = await store.rename(saved.id, 'new');
+    expect(renamed.share?.deleteToken).toBe('secret');
+  });
+
   it('deletes a route', async () => {
     const keep = await store.save(route('keep'));
     const drop = await store.save(route('drop'));
@@ -113,6 +138,16 @@ describe('IndexedDbRouteStore', () => {
         'not_found',
       );
       expect(await store.list()).toEqual([]);
+    });
+
+    it('setShare fails with not_found', async () => {
+      expect(
+        (
+          await rejection(
+            store.setShare('nope', { deleteToken: 't', sharedAt: 1 }),
+          )
+        ).code,
+      ).toBe('not_found');
     });
 
     it('delete is not an error', async () => {

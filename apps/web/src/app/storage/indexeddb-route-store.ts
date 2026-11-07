@@ -4,6 +4,7 @@ import {
   NewSavedRoute,
   SAVED_ROUTE_SCHEMA_VERSION,
   SavedRoute,
+  ShareInfo,
 } from './saved-route';
 
 export const DATABASE_NAME = 'voie-libre';
@@ -96,6 +97,25 @@ export class IndexedDbRouteStore implements RouteStore {
   }
 
   async rename(id: string, name: string): Promise<SavedRoute> {
+    return this.update(id, (route) => ({
+      ...route,
+      name,
+      updatedAt: Date.now(),
+    }));
+  }
+
+  async setShare(id: string, share: ShareInfo | null): Promise<SavedRoute> {
+    return this.update(id, (route) => {
+      const { share: _previous, ...rest } = route;
+      return share ? { ...rest, share } : rest;
+    });
+  }
+
+  /** Reads, changes and writes a record in one transaction. `not_found` when it does not exist. */
+  private async update(
+    id: string,
+    change: (route: SavedRoute) => SavedRoute,
+  ): Promise<SavedRoute> {
     const db = await this.open();
     try {
       const tx = db.transaction(STORE, 'readwrite');
@@ -105,7 +125,7 @@ export class IndexedDbRouteStore implements RouteStore {
         tx.abort();
         throw new RouteStoreError('not_found');
       }
-      const updated = { ...existing, name, updatedAt: Date.now() };
+      const updated = change(existing);
       store.put(updated);
       await transactionDone(tx);
       return updated;

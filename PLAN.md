@@ -17,4 +17,4 @@ Each step ends with the project starting and its tests passing. Targeted tests d
 ## Open points
 
 - Confirm the assumption that alternatives belong to phase 1.
-- Share storage on the server needs the PostGIS schema from the architecture document; keep it minimal (routes table only) in this milestone.
+- Shared routes: immutable, delete token (hashed), a single `shared_routes` table (PostGIS line), strict write limits. QR code: not done yet (needs a library, permission to install pending).

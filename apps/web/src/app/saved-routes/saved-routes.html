@@ -17,7 +17,7 @@
   </form>
 
   @if (error(); as code) {
-  <p class="error" role="alert">{{ 'saved.errors.' + code | transloco }}</p>
+  <p class="error" role="alert">{{ errorKey(code) | transloco }}</p>
   } @if (routes().length === 0) {
   <p class="empty">{{ 'saved.empty' | transloco }}</p>
   } @else {
@@ -50,16 +50,48 @@
         format.elevation(route.ascentMeters), date: format.date(route.createdAt)
         } }}
       </span>
-      @if (confirmingId() === route.id) {
+      @if (route.share) {
+      <div class="share-link">
+        <span class="badge">{{ 'sharing.shared' | transloco }}</span>
+        <input
+          type="text"
+          readonly
+          [value]="linkFor(route.id)"
+          [attr.aria-label]="'sharing.link' | transloco"
+          (focus)="selectLink($event)"
+        />
+        <button type="button" class="copy" (click)="copyLink(route.id)">
+          {{ 'sharing.copy' | transloco }}
+        </button>
+        <button
+          type="button"
+          class="stop-sharing"
+          [disabled]="busyId() === route.id"
+          [attr.aria-label]="'sharing.stopNamed' | transloco : { name: route.name }"
+          (click)="stopSharing(route.id)"
+        >
+          {{ 'sharing.stop' | transloco }}
+        </button>
+        @if (copiedId() === route.id) {
+        <span role="status">{{ 'sharing.copied' | transloco }}</span>
+        }
+      </div>
+      } @if (confirmingId() === route.id) {
       <div
         class="confirm"
         role="group"
-        [attr.aria-label]="'saved.confirmDelete' | transloco : { name: route.name }"
+        [attr.aria-label]="confirmDeleteKey(route) | transloco : { name: route.name }"
       >
         <span
-          >{{ 'saved.confirmDelete' | transloco : { name: route.name } }}</span
+          >{{ confirmDeleteKey(route) | transloco : { name: route.name }
+          }}</span
         >
-        <button type="button" class="danger" (click)="confirmDelete(route.id)">
+        <button
+          type="button"
+          class="danger"
+          [disabled]="busyId() === route.id"
+          (click)="confirmDelete(route.id)"
+        >
           {{ 'saved.confirmDeleteYes' | transloco }}
         </button>
         <button type="button" (click)="cancelDelete()">
@@ -76,6 +108,17 @@
         >
           {{ 'saved.open' | transloco }}
         </button>
+        @if (!route.share) {
+        <button
+          type="button"
+          class="share"
+          [disabled]="busyId() === route.id"
+          [attr.aria-label]="'sharing.shareNamed' | transloco : { name: route.name }"
+          (click)="share(route.id)"
+        >
+          {{ 'sharing.share' | transloco }}
+        </button>
+        }
         <button
           type="button"
           class="export"

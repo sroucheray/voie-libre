@@ -7,6 +7,14 @@ import type { PlannedRoute, Profile } from '../planner/planner-store';
  */
 export const SAVED_ROUTE_SCHEMA_VERSION = 1;
 
+/** Kept with a route once it is shared by link: what is needed to stop sharing it later. */
+export interface ShareInfo {
+  /** Secret returned once by the API; the only way to remove the shared route. Never shown. */
+  deleteToken: string;
+  /** Milliseconds since the epoch. */
+  sharedAt: number;
+}
+
 /**
  * A route kept on the device. Only the selected itinerary is stored, never the alternatives, so
  * opening it needs neither the API nor a new computation.
@@ -22,6 +30,8 @@ export interface SavedRoute extends PlannedRoute {
   /** Milliseconds since the epoch. */
   createdAt: number;
   updatedAt: number;
+  /** Present while the route is shared by link. The shared copy is a snapshot, never updated. */
+  share?: ShareInfo;
 }
 
 /** What the caller provides; the store adds the id, the dates and the schema version. */

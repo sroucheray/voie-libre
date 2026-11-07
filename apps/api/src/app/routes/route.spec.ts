@@ -4,6 +4,7 @@ import {
   RoutingError,
   type RoutingProvider,
 } from '../../routing/routing-provider';
+import { createMemorySharedRoutes } from '../../db/shared-routes';
 import { buildApp } from '../app';
 import { loadConfig } from '../config';
 
@@ -29,7 +30,11 @@ describe('POST /route', () => {
     const routing: RoutingProvider = { name: 'fake', route };
     server = await buildApp({
       config: loadConfig(env),
-      db: { ping: async () => true, close: async () => undefined },
+      db: {
+        ping: async () => true,
+        close: async () => undefined,
+        sharedRoutes: createMemorySharedRoutes(),
+      },
       routing,
     });
     await server.ready();

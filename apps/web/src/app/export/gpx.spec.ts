@@ -1,4 +1,11 @@
-import { buildGpx, escapeXml, gpxFileName } from './gpx';
+import {
+  buildGpx,
+  escapeXml,
+  gpxFileName,
+  gpxPointNames,
+} from '@voie-libre/shared';
+import en from '../../../public/i18n/en.json';
+import fr from '../../../public/i18n/fr.json';
 
 const route = {
   name: 'Col de la Ventouse',
@@ -140,5 +147,20 @@ describe('gpxFileName', () => {
 
   it('caps the length', () => {
     expect(gpxFileName('a'.repeat(200))).toHaveLength(60 + '.gpx'.length);
+  });
+});
+
+describe('gpxPointNames and the translation files', () => {
+  // The API names GPX waypoints without Transloco: its names must not drift from the app's.
+  it.each([
+    ['en', en],
+    ['fr', fr],
+  ] as const)('match planner.points in %s.json', (language, translations) => {
+    const points = translations.planner.points;
+    expect(gpxPointNames(language, 3)).toEqual([
+      points.start,
+      points.waypoint.replace('{{n}}', '1'),
+      points.end,
+    ]);
   });
 });

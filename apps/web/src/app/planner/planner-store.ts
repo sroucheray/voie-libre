@@ -2,6 +2,17 @@ import { Injectable, computed, signal } from '@angular/core';
 import type { LngLat } from '../core/map/map-factory';
 import type { SavedRoute } from '../storage/saved-route';
 
+/** What it takes to show a route as it was: a saved route, or one opened from a shared link. */
+export type RestorableRoute = Pick<
+  SavedRoute,
+  | 'points'
+  | 'profile'
+  | 'geometry'
+  | 'distanceMeters'
+  | 'ascentMeters'
+  | 'durationSeconds'
+>;
+
 export const PROFILES = ['road', 'gravel', 'trail'] as const;
 export type Profile = (typeof PROFILES)[number];
 
@@ -146,7 +157,7 @@ export class PlannerStore {
    * come from the record. Only the selected route was saved, so alternatives go back to 1. The
    * first edit made afterwards computes normally.
    */
-  loadSaved(saved: SavedRoute): void {
+  loadSaved(saved: RestorableRoute): void {
     this.restored = inputsSignature(saved.points, saved.profile, 1);
     this.pointsState.set(saved.points.map((p) => [p[0], p[1]] as LngLat));
     this.profileState.set(saved.profile);
