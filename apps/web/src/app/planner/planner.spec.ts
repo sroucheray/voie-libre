@@ -127,6 +127,24 @@ describe('Planner', () => {
     expect(view.driver.markers[1].lngLat).toEqual([3.15, 45.65]);
   });
 
+  it('changes the help bar with the state of the route', async () => {
+    const view = await render();
+    const bar = () => view.root.querySelector('.help-bar')?.textContent ?? '';
+    expect(bar()).toContain('set the start');
+    view.click(3.087, 45.777);
+    view.fixture.detectChanges();
+    expect(bar()).toContain('set the end');
+    view.click(3.249, 45.544);
+    view.fixture.detectChanges();
+    expect(bar()).toContain('Drag a marker to move it');
+    TestBed.inject(PlannerStore).closeLoop();
+    view.fixture.detectChanges();
+    expect(bar()).toContain('Loop closed');
+    expect(view.root.querySelector('.help-bar')?.getAttribute('role')).toBe(
+      'status',
+    );
+  });
+
   it('shows a ghost that says what the next click creates', async () => {
     const view = await render();
     TestBed.tick();

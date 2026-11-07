@@ -1,6 +1,8 @@
 <div class="map-area">
   <vl-map-view class="map" (mapReady)="onMapReady($event)" />
 
+  <p class="help-bar" role="status">{{ helpKey() | transloco }}</p>
+
   <section class="panel" [attr.aria-label]="'planner.title' | transloco">
     <h2>{{ 'planner.title' | transloco }}</h2>
 
@@ -31,11 +33,7 @@
       </select>
     </label>
 
-    @if (store.points().length === 0) {
-    <p class="hint">{{ 'planner.hint.start' | transloco }}</p>
-    } @else if (store.points().length === 1) {
-    <p class="hint">{{ 'planner.hint.end' | transloco }}</p>
-    } @if (store.points().length > 0) {
+    @if (store.points().length > 0) {
     <ol class="points" [attr.aria-label]="'planner.points.label' | transloco">
       @for (point of store.points(); track $index; let i = $index) {
       <li>

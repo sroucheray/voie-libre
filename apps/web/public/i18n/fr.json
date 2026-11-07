@@ -29,7 +29,9 @@
     "title": "Planificateur de parcours",
     "hint": {
       "start": "Cliquez sur la carte pour placer le départ.",
-      "end": "Cliquez sur la carte pour placer l'arrivée."
+      "end": "Cliquez sur la carte pour placer l'arrivée.",
+      "route": "Cliquez pour ajouter une étape. Glissez un marqueur pour le déplacer, glissez le tracé pour ajouter une étape à cet endroit. Clic droit ou appui long sur un marqueur pour le supprimer.",
+      "loop": "Boucle fermée. Cliquez pour ajouter une étape, glissez un marqueur pour le déplacer, clic droit ou appui long pour le supprimer."
     },
     "profile": {
       "label": "Profil",

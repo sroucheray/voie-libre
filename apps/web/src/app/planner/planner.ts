@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   effect,
   inject,
   signal,
@@ -48,6 +49,14 @@ export class Planner {
     { length: MAX_ALTERNATIVES },
     (_, i) => i + 1,
   );
+
+  /** What the help bar says: it depends on how far the route is. */
+  protected readonly helpKey = computed(() => {
+    const count = this.store.points().length;
+    if (count === 0) return 'planner.hint.start';
+    if (count === 1) return 'planner.hint.end';
+    return this.store.isLoop() ? 'planner.hint.loop' : 'planner.hint.route';
+  });
 
   private readonly transloco = inject(TranslocoService);
   /** The active language, emitted only after its translations are loaded. */
