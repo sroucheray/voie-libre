@@ -22,4 +22,4 @@ All steps done. Known limits:
 
 - A route that goes out and back along the same road is ambiguous for drag-to-insert: the press matches the nearest vertex, which may belong to the return leg, so the waypoint can land one segment later than expected.
 - A press that starts on the selected route claims the gesture from the map, so panning by grabbing the route itself drags the route instead (touch tolerance is 14 px).
-- "Avoid the same way back" and "loop by distance" are disabled in the dialog; they need server work.
+- Both extra loop choices are now implemented (API `loop`, BRouter round trip + no-go polyline). Limits: direction of a loop by distance is fixed (north first, then evenly spaced for alternatives), not chosen by the user; lengths are within about 10% when BRouter allows it; kilometres only (no imperial units yet).

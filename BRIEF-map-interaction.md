@@ -21,13 +21,13 @@ The author, on desktop (mouse) and also on touch (phone, tablet; Android app lat
 4. **Loop.**
    - A "Loop" button from two points on.
    - A magnet on the start marker: near it, it grows and says "Close the loop"; a click closes it.
-   - Closing asks the user how: *back to start* (end = start, computed by BRouter, **active**); *avoid going back the same way* and *generated loop by distance* are shown **disabled with "soon"** (they need server work: penalised segments, GraphHopper).
+   - Closing asks the user how: *back to start* (end = start, computed by BRouter, **active**); *avoid going back the same way* and *loop by distance* (added afterwards, see PLAN-map-interaction.md: API `loop` option on `POST /route`).
 5. **Insert a point on the route.** Dragging the selected route creates a waypoint at the drop position, inserted at the right place in the order (the segment that was dragged), instead of "always before the end".
 6. **Touch.** Long press on the map opens a small menu: set as start, add a stop, set as end. Long press on a marker removes it (with a confirmation or undo).
 
 ## Out of scope
 
-Server-side avoid-the-outbound-path routing, distance-based loop generation, GraphHopper, undo/redo history, reverse direction, accounts.
+GraphHopper, undo/redo history, reverse direction, accounts.
 
 ## Constraints
 
