@@ -216,6 +216,46 @@ describe('Saved routes', () => {
       );
     });
 
+    it('credits the elevation source: SRTM for a planned route, kept when saved and reopened', async () => {
+      const view = await render();
+      await view.plan();
+      expect(
+        view.root.querySelector('.profile .source')?.textContent,
+      ).toContain('SRTM');
+      view.save().click();
+      await view.settle();
+      expect((await routeStore.list())[0].elevationSource).toBe('srtm');
+      view.driver.handlers.onClick([3.0, 45.0]); // leaves the saved route
+      view.button('Open Road, 41 km').click();
+      await view.settle();
+      expect(
+        view.root.querySelector('.profile .source')?.textContent,
+      ).toContain('SRTM');
+    });
+
+    it('does not credit an imported track that brings its own elevation', async () => {
+      await routeStore.save({
+        name: 'From a GPS',
+        profile: 'road',
+        points: [
+          [3, 45],
+          [3, 45.01],
+        ],
+        geometry: [
+          [3, 45, 100],
+          [3, 45.01, 160],
+        ],
+        distanceMeters: 1100,
+        ascentMeters: 60,
+        durationSeconds: 300,
+      });
+      const view = await render();
+      view.button('Open From a GPS').click();
+      await view.settle();
+      expect(view.root.querySelector('.profile')).not.toBeNull();
+      expect(view.root.querySelector('.profile .source')).toBeNull();
+    });
+
     it('saves under the name the user typed, and falls back to the proposal when blank', async () => {
       const view = await render();
       await view.plan();

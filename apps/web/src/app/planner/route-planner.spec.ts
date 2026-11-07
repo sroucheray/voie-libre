@@ -39,6 +39,7 @@ describe('errorCodeFrom', () => {
     [503, { code: 'unavailable' }, 'unavailable'],
     [502, { code: 'provider_error' }, 'provider_error'],
     [429, { statusCode: 429, message: 'Rate limit exceeded' }, 'rate_limited'],
+    [504, undefined, 'unavailable'], // answered by the service worker when offline
     [500, { message: 'boom' }, 'unknown'],
     [418, undefined, 'unknown'],
     [400, { code: 'something_new' }, 'unknown'],

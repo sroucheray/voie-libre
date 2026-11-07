@@ -126,6 +126,7 @@ export class SavedRoutes {
         distanceMeters: route.distanceMeters,
         ascentMeters: route.ascentMeters,
         durationSeconds: route.durationSeconds,
+        elevationSource: route.elevationSource,
       });
       this.routes.update((routes) => [saved, ...routes]);
       this.draft.set(null);

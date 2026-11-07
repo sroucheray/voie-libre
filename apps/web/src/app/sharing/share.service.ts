@@ -35,6 +35,8 @@ const API_CODES: readonly ShareErrorCode[] = [
 export function shareErrorFrom(status: number, body: unknown): ShareErrorCode {
   if (status === 429) return 'rate_limited';
   if (status === 413) return 'payload_too_large';
+  // The service worker answers 504 for a request the network could not carry (offline).
+  if (status === 504) return 'network';
   const code = (body as { code?: unknown } | undefined)?.code;
   return API_CODES.find((known) => known === code) ?? 'unknown';
 }

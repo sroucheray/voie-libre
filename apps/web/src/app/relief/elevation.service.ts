@@ -63,11 +63,13 @@ export class ElevationService {
     const { data, response } = result;
     if (!data) {
       throw new ElevationError(
-        response.status === 429
-          ? 'elevation_rate_limited'
-          : response.status === 503
-            ? 'elevation_unavailable'
-            : 'elevation_unknown',
+        response.status === 504
+          ? 'elevation_network'
+          : response.status === 429
+            ? 'elevation_rate_limited'
+            : response.status === 503
+              ? 'elevation_unavailable'
+              : 'elevation_unknown',
       );
     }
     const values = data.elevations;

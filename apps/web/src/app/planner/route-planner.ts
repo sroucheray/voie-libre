@@ -22,6 +22,8 @@ const API_ERROR_CODES: readonly PlannerErrorCode[] = [
 /** Maps an HTTP status and an error body to a code the UI translates. */
 export function errorCodeFrom(status: number, body: unknown): PlannerErrorCode {
   if (status === 429) return 'rate_limited';
+  // The service worker answers 504 for a request the network could not carry (offline).
+  if (status === 504) return 'unavailable';
   const code = (body as { code?: unknown } | undefined)?.code;
   return API_ERROR_CODES.find((known) => known === code) ?? 'unknown';
 }
@@ -84,7 +86,13 @@ export class RoutePlanner {
       if (signal.aborted) return;
       if (data) {
         // The compiler widens the generated `[lon, lat, ele]` tuples to number[]: restore them.
-        this.store.setRoutes(data.routes as PlannedRoute[]);
+        // BRouter's elevations come from SRTM, which asks to be credited.
+        this.store.setRoutes(
+          (data.routes as PlannedRoute[]).map((route) => ({
+            ...route,
+            elevationSource: 'srtm' as const,
+          })),
+        );
       } else {
         this.store.setError(errorCodeFrom(response.status, error));
       }

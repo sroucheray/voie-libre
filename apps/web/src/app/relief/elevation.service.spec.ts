@@ -109,6 +109,9 @@ describe('ElevationService', () => {
       ),
     ).toBe('elevation_unknown');
     expect(
+      await code(service(() => json({}, 504)).service.forGeometry(geometry)),
+    ).toBe('elevation_network');
+    expect(
       await code(
         service(() => {
           throw new TypeError('offline');

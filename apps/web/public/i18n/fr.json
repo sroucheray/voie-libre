@@ -149,7 +149,8 @@
     "chart": "Altitude le long du parcours, de {{min}} à {{max}}. Utilisez les flèches gauche et droite pour vous déplacer.",
     "tooltip": "{{distance}} · {{elevation}} · {{grade}}",
     "source": {
-      "copernicus": "Altitude : Copernicus DEM GLO-30, fourni dans le cadre de COPERNICUS par l'Union européenne et l'ESA."
+      "copernicus": "Altitude : Copernicus DEM GLO-30, fourni dans le cadre de COPERNICUS par l'Union européenne et l'ESA.",
+      "srtm": "Altitude : SRTM (NASA, NGA) v4.1 via BRouter."
     }
   },
   "gpxImport": {

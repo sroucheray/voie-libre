@@ -38,6 +38,7 @@ describe('shareErrorFrom', () => {
     [400, { code: 'invalid_request' }, 'invalid_request'],
     [403, { code: 'forbidden' }, 'forbidden'],
     [404, { code: 'not_found' }, 'not_found'],
+    [504, undefined, 'network'], // answered by the service worker when offline
     [500, { message: 'boom' }, 'unknown'],
     [409, { code: 'something_new' }, 'unknown'],
     [502, undefined, 'unknown'],

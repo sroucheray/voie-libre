@@ -24,8 +24,10 @@
     {
       "name": "basemap-assets",
       "urls": [
-        "http://localhost:8081/fonts/**",
-        "http://localhost:8081/sprites/**"
+        "http://*/fonts/**",
+        "https://*/fonts/**",
+        "http://*/sprites/**",
+        "https://*/sprites/**"
       ],
       "cacheConfig": {
         "strategy": "performance",

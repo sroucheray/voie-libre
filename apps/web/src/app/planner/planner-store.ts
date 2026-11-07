@@ -33,7 +33,7 @@ export interface PlannedRoute {
 }
 
 /** Elevation data that carries an attribution requirement. */
-export type ElevationSource = 'copernicus';
+export type ElevationSource = 'copernicus' | 'srtm';
 
 export type PlannerStatus = 'idle' | 'loading' | 'ready' | 'error';
 
