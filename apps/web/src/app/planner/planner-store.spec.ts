@@ -82,6 +82,61 @@ describe('PlannerStore', () => {
       expect(store.points().length).toBe(3);
     });
 
+    it('keeps the way-back mode while it fits the points', () => {
+      store.addPoint([1, 1]);
+      store.addPoint([2, 2]);
+      store.closeLoop({ mode: 'avoid_outbound' });
+      expect(store.points()).toEqual([
+        [1, 1],
+        [2, 2],
+        [1, 1],
+      ]);
+      expect(store.loop()).toEqual({ mode: 'avoid_outbound' });
+      store.setEnd([5, 5]);
+      expect(store.loop()).toBeNull();
+    });
+
+    it('draws a loop by distance from the start alone', () => {
+      store.addPoint([1, 1]);
+      store.addPoint([2, 2]);
+      store.closeLoop({ mode: 'distance', distanceMeters: 40_000 });
+      expect(store.points()).toEqual([
+        [1, 1],
+        [1, 1],
+      ]);
+      expect(store.isLoop()).toBe(true);
+      expect(store.loop()).toEqual({
+        mode: 'distance',
+        distanceMeters: 40_000,
+      });
+    });
+
+    it('stops sending the distance once a stop is added, and keeps it within limits', () => {
+      store.addPoint([1, 1]);
+      store.addPoint([2, 2]);
+      store.closeLoop({ mode: 'distance', distanceMeters: 40_000 });
+      store.setLoopDistance(1);
+      expect(store.loop()).toEqual({ mode: 'distance', distanceMeters: 2_000 });
+      store.setLoopDistance(9_000_000);
+      expect(store.loop()).toEqual({
+        mode: 'distance',
+        distanceMeters: 200_000,
+      });
+      store.addPoint([3, 3]);
+      expect(store.loop()).toBeNull();
+    });
+
+    it('forgets the mode when everything is cleared', () => {
+      store.addPoint([1, 1]);
+      store.addPoint([2, 2]);
+      store.closeLoop({ mode: 'avoid_outbound' });
+      store.clear();
+      store.addPoint([1, 1]);
+      store.addPoint([2, 2]);
+      store.closeLoop();
+      expect(store.loop()).toBeNull();
+    });
+
     it('does not close a loop with fewer than two points', () => {
       store.addPoint([1, 1]);
       store.closeLoop();

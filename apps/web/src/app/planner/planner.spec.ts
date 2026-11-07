@@ -42,7 +42,12 @@ const flush = () => vi.advanceTimersByTimeAsync(0);
 
 describe('Planner', () => {
   let drivers: FakePlannerDriver[];
-  let requests: { points: unknown[]; profile: string; alternatives: number }[];
+  let requests: {
+    points: unknown[];
+    profile: string;
+    alternatives: number;
+    loop?: unknown;
+  }[];
   let respond: (count: number) => Response;
 
   beforeEach(async () => {
@@ -157,7 +162,7 @@ describe('Planner', () => {
       expect(view.driver.markers[1].closable).toBeUndefined();
     });
 
-    it('asks how to close the loop, with only "back to the start" available', async () => {
+    it('asks how to close the loop, with three choices', async () => {
       const view = await render();
       view.click(3.087, 45.777);
       view.click(3.249, 45.544);
@@ -168,13 +173,68 @@ describe('Planner', () => {
       const choices = Array.from(
         view.root.querySelectorAll<HTMLButtonElement>('.loop-choice'),
       );
-      expect(choices.map((c) => c.disabled)).toEqual([false, true, true]);
-      expect(choices[1].textContent).toContain('Soon');
+      expect(choices.map((c) => c.disabled)).toEqual([false, false, false]);
       choices[0].click();
       view.fixture.detectChanges();
       expect(TestBed.inject(PlannerStore).isLoop()).toBe(true);
       expect(view.root.querySelector('.loop-dialog')).toBeNull();
       expect(view.root.querySelector('.loop')).toBeNull();
+    });
+
+    it('closes the loop asking for another way back and sends the mode to the API', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.click(3.249, 45.544);
+      await view.settle();
+      (view.root.querySelector('.loop') as HTMLButtonElement).click();
+      view.fixture.detectChanges();
+      view.root.querySelectorAll<HTMLButtonElement>('.loop-choice')[1].click();
+      view.fixture.detectChanges();
+      await view.settle();
+      const last = requests[requests.length - 1];
+      expect(last.points).toHaveLength(3);
+      expect(last.loop).toEqual({ mode: 'avoid_outbound' });
+    });
+
+    it('draws a loop by distance from the start only, in kilometres', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.click(3.249, 45.544);
+      await view.settle();
+      (view.root.querySelector('.loop') as HTMLButtonElement).click();
+      view.fixture.detectChanges();
+      view.root.querySelectorAll<HTMLButtonElement>('.loop-choice')[2].click();
+      view.fixture.detectChanges();
+      const input = view.root.querySelector(
+        '.loop-dialog input',
+      ) as HTMLInputElement;
+      expect(input.value).toBe('30');
+      input.value = '45';
+      input.dispatchEvent(new Event('input'));
+      view.root
+        .querySelector<HTMLButtonElement>('.loop-dialog .loop-choice')
+        ?.click();
+      view.fixture.detectChanges();
+      await view.settle();
+      const last = requests[requests.length - 1];
+      expect(last.points).toEqual([
+        { lon: 3.087, lat: 45.777 },
+        { lon: 3.087, lat: 45.777 },
+      ]);
+      expect(last.loop).toEqual({ mode: 'distance', distanceMeters: 45000 });
+      // The length can be changed afterwards, from the panel.
+      const field = view.root.querySelector(
+        '.panel .loop-length input',
+      ) as HTMLInputElement;
+      expect(field.value).toBe('45');
+      field.value = '20';
+      field.dispatchEvent(new Event('change'));
+      view.fixture.detectChanges();
+      await view.settle();
+      expect(requests[requests.length - 1].loop).toEqual({
+        mode: 'distance',
+        distanceMeters: 20000,
+      });
     });
 
     it('opens the same dialog from a click on the start marker, and can be cancelled', async () => {

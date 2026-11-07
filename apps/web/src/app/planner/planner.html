@@ -58,24 +58,43 @@
       (keydown.escape)="loopDialogOpen.set(false)"
     >
       <h2 id="loop-dialog-title">{{ 'planner.loop.title' | transloco }}</h2>
+      @if (loopStep() === 'choose') {
       <button type="button" class="loop-choice" (click)="closeLoop()">
         <strong>{{ 'planner.loop.back' | transloco }}</strong>
         <span>{{ 'planner.loop.backDescription' | transloco }}</span>
       </button>
-      <button type="button" class="loop-choice" disabled>
-        <strong
-          >{{ 'planner.loop.avoid' | transloco }}
-          <em>{{ 'planner.loop.soon' | transloco }}</em></strong
-        >
+      <button
+        type="button"
+        class="loop-choice"
+        (click)="closeLoop({ mode: 'avoid_outbound' })"
+      >
+        <strong>{{ 'planner.loop.avoid' | transloco }}</strong>
         <span>{{ 'planner.loop.avoidDescription' | transloco }}</span>
       </button>
-      <button type="button" class="loop-choice" disabled>
-        <strong
-          >{{ 'planner.loop.distance' | transloco }}
-          <em>{{ 'planner.loop.soon' | transloco }}</em></strong
-        >
+      <button
+        type="button"
+        class="loop-choice"
+        (click)="loopStep.set('distance')"
+      >
+        <strong>{{ 'planner.loop.distance' | transloco }}</strong>
         <span>{{ 'planner.loop.distanceDescription' | transloco }}</span>
       </button>
+      } @else {
+      <label class="loop-length">
+        {{ 'planner.loop.distanceLabel' | transloco }}
+        <input
+          type="number"
+          [min]="distanceMinKm"
+          [max]="distanceMaxKm"
+          step="1"
+          [value]="loopKm()"
+          (input)="loopKm.set(+$any($event.target).value)"
+        />
+      </label>
+      <button type="button" class="loop-choice" (click)="drawLoopByDistance()">
+        <strong>{{ 'planner.loop.draw' | transloco }}</strong>
+      </button>
+      }
       <button
         type="button"
         class="loop-cancel"
@@ -135,7 +154,19 @@
       </li>
       }
     </ol>
-    @if (canClose()) {
+    @if (store.loop(); as loop) { @if (loop.mode === 'distance') {
+    <label class="loop-length">
+      {{ 'planner.loop.length' | transloco }}
+      <input
+        type="number"
+        [min]="distanceMinKm"
+        [max]="distanceMaxKm"
+        step="1"
+        [value]="loop.distanceMeters / 1000"
+        (change)="setLoopKm($any($event.target).value)"
+      />
+    </label>
+    } } @if (canClose()) {
     <button type="button" class="loop" (click)="loopDialogOpen.set(true)">
       {{ 'planner.loop.button' | transloco }}
     </button>

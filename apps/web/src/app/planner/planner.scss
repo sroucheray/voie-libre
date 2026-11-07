@@ -270,3 +270,14 @@ fieldset.profiles {
 .loop-dialog__box {
   position: relative;
 }
+
+.loop-length {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+
+  input {
+    width: 5rem;
+  }
+}

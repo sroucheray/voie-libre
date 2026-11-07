@@ -7,6 +7,7 @@ import {
   effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -20,6 +21,10 @@ import {
 } from './planner-map-driver';
 import {
   MAX_ALTERNATIVES,
+  LOOP_DISTANCE_DEFAULT_METERS,
+  LOOP_DISTANCE_MAX_METERS,
+  LOOP_DISTANCE_MIN_METERS,
+  type LoopMode,
   MAX_POINTS,
   PROFILES,
   PlannerStore,
@@ -73,6 +78,10 @@ export class Planner {
 
   /** The dialog that asks how to close the loop. */
   protected readonly loopDialogOpen = signal(false);
+  protected readonly loopStep = signal<'choose' | 'distance'>('choose');
+  protected readonly loopKm = signal(LOOP_DISTANCE_DEFAULT_METERS / 1000);
+  protected readonly distanceMinKm = LOOP_DISTANCE_MIN_METERS / 1000;
+  protected readonly distanceMaxKm = LOOP_DISTANCE_MAX_METERS / 1000;
   protected readonly canClose = computed(
     () =>
       this.store.points().length >= 2 &&
@@ -159,7 +168,10 @@ export class Planner {
 
     // The dialog takes the focus when it opens, so the keyboard works at once.
     effect(() => {
-      if (!this.loopDialogOpen()) return;
+      if (!this.loopDialogOpen()) {
+        untracked(() => this.loopStep.set('choose'));
+        return;
+      }
       queueMicrotask(() =>
         this.host.nativeElement
           .querySelector<HTMLElement>('.loop-dialog button:not([disabled])')
@@ -280,9 +292,27 @@ export class Planner {
     else this.store.addPoint(menu.point);
   }
 
-  protected closeLoop(): void {
-    this.store.closeLoop();
+  protected closeLoop(mode?: LoopMode): void {
+    this.store.closeLoop(mode);
     this.loopDialogOpen.set(false);
+  }
+
+  protected drawLoopByDistance(): void {
+    const km = this.loopKm();
+    const meters = Number.isFinite(km)
+      ? Math.round(km * 1000)
+      : LOOP_DISTANCE_DEFAULT_METERS;
+    this.closeLoop({
+      mode: 'distance',
+      distanceMeters: Math.min(
+        LOOP_DISTANCE_MAX_METERS,
+        Math.max(LOOP_DISTANCE_MIN_METERS, meters),
+      ),
+    });
+  }
+
+  protected setLoopKm(value: string): void {
+    this.store.setLoopDistance(Number(value) * 1000);
   }
 
   protected selectProfile(profile: Profile): void {

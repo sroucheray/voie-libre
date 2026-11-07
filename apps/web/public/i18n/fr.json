@@ -79,11 +79,13 @@
       "back": "Retour au départ",
       "backDescription": "L'arrivée est placée sur le départ. Le parcours suit vos étapes.",
       "avoid": "Éviter le même chemin au retour",
-      "avoidDescription": "Revenir par d'autres routes quand c'est possible.",
+      "avoidDescription": "Aller jusqu'à votre dernière étape, puis revenir par d'autres routes quand c'est possible.",
       "distance": "Boucle selon la distance",
-      "distanceDescription": "Laisser le planificateur tracer une boucle d'une longueur donnée.",
-      "soon": "Bientôt",
-      "cancel": "Annuler"
+      "distanceDescription": "Tracer depuis le départ une boucle de la longueur de votre choix.",
+      "cancel": "Annuler",
+      "distanceLabel": "Longueur (km)",
+      "draw": "Tracer la boucle",
+      "length": "Longueur de la boucle (km)"
     },
     "menu": {
       "label": "Placer sur la carte",

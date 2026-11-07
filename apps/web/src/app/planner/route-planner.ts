@@ -5,6 +5,7 @@ import {
   PlannerErrorCode,
   PlannerStore,
   inputsSignature,
+  type LoopMode,
   type Profile,
 } from './planner-store';
 import type { LngLat } from '../core/map/map-factory';
@@ -43,6 +44,7 @@ export class RoutePlanner {
       const points = this.store.points();
       const profile = this.store.profile();
       const alternatives = this.store.alternatives();
+      const loop = this.store.loop();
 
       if (points.length < 2) {
         untracked(() => {
@@ -51,14 +53,20 @@ export class RoutePlanner {
         });
         return;
       }
-      const signature = inputsSignature(points, profile, alternatives);
+      const signature = inputsSignature(points, profile, alternatives, loop);
       if (untracked(() => this.store.isRestored(signature))) return;
       untracked(() => this.store.forgetRestored());
       untracked(() => this.store.startLoading());
       const controller = new AbortController();
       const timer = setTimeout(
         () =>
-          void this.compute(points, profile, alternatives, controller.signal),
+          void this.compute(
+            points,
+            profile,
+            alternatives,
+            loop,
+            controller.signal,
+          ),
         ROUTE_DEBOUNCE_MS,
       );
       onCleanup(() => {
@@ -72,6 +80,7 @@ export class RoutePlanner {
     points: LngLat[],
     profile: Profile,
     alternatives: number,
+    loop: LoopMode | null,
     signal: AbortSignal,
   ): Promise<void> {
     try {
@@ -80,6 +89,7 @@ export class RoutePlanner {
           points: points.map(([lon, lat]) => ({ lon, lat })),
           profile,
           alternatives,
+          ...(loop ? { loop } : {}),
         },
         signal,
       });

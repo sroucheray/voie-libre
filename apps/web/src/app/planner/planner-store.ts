@@ -54,6 +54,18 @@ export function pointRole(index: number, total: number): PointRole {
   return index === total - 1 ? 'end' : 'waypoint';
 }
 
+/**
+ * How a loop is closed, beyond "back to the start" (no mode). Sent to the API with the points:
+ * - `avoid_outbound`: the points go out and end on the start; the way back avoids the way out.
+ * - `distance`: the points are the start twice; the loop has about this length.
+ */
+export type LoopMode =
+  { mode: 'avoid_outbound' } | { mode: 'distance'; distanceMeters: number };
+
+export const LOOP_DISTANCE_MIN_METERS = 2_000;
+export const LOOP_DISTANCE_MAX_METERS = 200_000;
+export const LOOP_DISTANCE_DEFAULT_METERS = 30_000;
+
 /** A route of two points or more whose end is exactly on its start. */
 export function isLoopOf(points: readonly LngLat[]): boolean {
   if (points.length < 2) return false;
@@ -67,8 +79,9 @@ export function inputsSignature(
   points: readonly LngLat[],
   profile: Profile,
   alternatives: number,
+  loop: LoopMode | null = null,
 ): string {
-  return JSON.stringify([points, profile, alternatives]);
+  return JSON.stringify([points, profile, alternatives, loop]);
 }
 
 /** The selected route with what it was computed from: what "Save" stores. */
@@ -120,6 +133,21 @@ export class PlannerStore {
 
   /** True when the end is on the start. */
   readonly isLoop = computed(() => isLoopOf(this.pointsState()));
+
+  private readonly loopState = signal<LoopMode | null>(null);
+
+  /**
+   * The loop mode that applies to the current points, or null (plain route, or plain loop back to
+   * the start). A mode stops applying when edits no longer fit it, e.g. a stop added to a loop
+   * by distance, which then goes through that stop like any route.
+   */
+  readonly loop = computed<LoopMode | null>(() => {
+    const mode = this.loopState();
+    const points = this.pointsState();
+    if (!mode || !isLoopOf(points)) return null;
+    if (mode.mode === 'avoid_outbound') return points.length >= 3 ? mode : null;
+    return points.length === 2 ? mode : null;
+  });
 
   /** What the next click on the map will create. */
   readonly nextRole = computed<PointRole>(() => {
@@ -185,13 +213,40 @@ export class PlannerStore {
     });
   }
 
-  /** Makes the route a loop: the end is put on the start. No-op if it already is one. */
-  closeLoop(): void {
-    this.pointsState.update((points) => {
-      if (points.length < 2 || points.length >= MAX_POINTS) return points;
-      if (isLoopOf(points)) return points;
-      return [...points, points[0]];
-    });
+  /**
+   * Makes the route a loop. Without a mode the end is put on the start. `avoid_outbound` does the
+   * same and asks for another way back. `distance` keeps only the start: the loop is drawn by
+   * the engine around it. No-op if the route has no two points yet.
+   */
+  closeLoop(mode?: LoopMode): void {
+    const points = this.pointsState();
+    if (points.length < 1) return;
+    if (mode?.mode === 'distance') {
+      this.pointsState.set([points[0], points[0]]);
+      this.loopState.set(mode);
+      return;
+    }
+    if (points.length < 2) return;
+    if (!isLoopOf(points)) {
+      if (points.length >= MAX_POINTS) return;
+      this.pointsState.set([...points, points[0]]);
+    }
+    this.loopState.set(mode ?? null);
+  }
+
+  /** Changes the length of a loop by distance, within the limits the API accepts. */
+  setLoopDistance(distanceMeters: number): void {
+    if (
+      this.loopState()?.mode !== 'distance' ||
+      !Number.isFinite(distanceMeters)
+    ) {
+      return;
+    }
+    const clamped = Math.min(
+      LOOP_DISTANCE_MAX_METERS,
+      Math.max(LOOP_DISTANCE_MIN_METERS, Math.round(distanceMeters)),
+    );
+    this.loopState.set({ mode: 'distance', distanceMeters: clamped });
   }
 
   /** The start and the end of a loop move together, so that it stays closed. */
@@ -252,6 +307,7 @@ export class PlannerStore {
 
   clear(): void {
     this.removedState.set(null);
+    this.loopState.set(null);
     this.pointsState.set([]);
   }
 
@@ -277,6 +333,7 @@ export class PlannerStore {
    * first edit made afterwards computes normally.
    */
   loadSaved(saved: RestorableRoute): void {
+    this.loopState.set(null);
     this.restored = inputsSignature(saved.points, saved.profile, 1);
     this.pointsState.set(saved.points.map((p) => [p[0], p[1]] as LngLat));
     this.profileState.set(saved.profile);

@@ -79,11 +79,13 @@
       "back": "Back to the start",
       "backDescription": "The end goes on the start. The route follows your stops.",
       "avoid": "Avoid the same way back",
-      "avoidDescription": "Come back by other roads where possible.",
+      "avoidDescription": "Go out to your last stop, then come back by other roads where possible.",
       "distance": "Loop by distance",
-      "distanceDescription": "Let the planner draw a loop of a given length.",
-      "soon": "Soon",
-      "cancel": "Cancel"
+      "distanceDescription": "Draw a loop of a length you choose, from the start.",
+      "cancel": "Cancel",
+      "distanceLabel": "Length (km)",
+      "draw": "Draw the loop",
+      "length": "Loop length (km)"
     },
     "menu": {
       "label": "Place on the map",
