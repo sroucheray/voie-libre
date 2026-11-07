@@ -11,6 +11,7 @@ export type RestorableRoute = Pick<
   | 'distanceMeters'
   | 'ascentMeters'
   | 'durationSeconds'
+  | 'elevationSource'
 >;
 
 export const PROFILES = ['road', 'gravel', 'trail'] as const;
@@ -27,7 +28,12 @@ export interface PlannedRoute {
   /** `null` when unknown: an imported file without elevation. */
   ascentMeters: number | null;
   durationSeconds: number;
+  /** Where the elevations come from when it must be credited (see `ELEVATION_SOURCES`). */
+  elevationSource?: ElevationSource;
 }
+
+/** Elevation data that carries an attribution requirement. */
+export type ElevationSource = 'copernicus';
 
 export type PlannerStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -100,6 +106,11 @@ export class PlannerStore {
   /** False for an imported route without elevation: its geometry carries zeros, not altitudes. */
   readonly elevationKnown = computed(
     () => this.routesState()[this.selectedState()]?.ascentMeters !== null,
+  );
+
+  /** The source to credit under the profile, if the elevations need one. */
+  readonly elevationSource = computed(
+    () => this.routesState()[this.selectedState()]?.elevationSource ?? null,
   );
 
   /** Geometry of the selected route, which the profile is drawn from. */
@@ -186,6 +197,7 @@ export class PlannerStore {
         distanceMeters: saved.distanceMeters,
         ascentMeters: saved.ascentMeters,
         durationSeconds: saved.durationSeconds,
+        elevationSource: saved.elevationSource,
       },
     ]);
     this.selectedState.set(0);

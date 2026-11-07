@@ -53,6 +53,9 @@
       <span>{{ format.distance(0) }}</span>
       <span>{{ format.distance(p.totalDistance) }}</span>
     </div>
+    @if (store.elevationSource(); as source) {
+    <p class="source">{{ 'profile.source.' + source | transloco }}</p>
+    }
   </div>
   }
 </section>

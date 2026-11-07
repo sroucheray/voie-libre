@@ -1,3 +1,4 @@
+import type { ElevationSource } from '../app/planner/planner-store';
 import {
   RouteStore,
   RouteStoreError,
@@ -62,6 +63,7 @@ export class InMemoryRouteStore implements RouteStore {
     id: string,
     geometry: [number, number, number][],
     ascentMeters: number,
+    elevationSource?: ElevationSource,
   ): Promise<SavedRoute> {
     this.check();
     const existing = this.records.get(id);
@@ -70,6 +72,7 @@ export class InMemoryRouteStore implements RouteStore {
       ...existing,
       geometry,
       ascentMeters,
+      ...(elevationSource ? { elevationSource } : {}),
       updatedAt: Date.now(),
     };
     this.records.set(id, updated);

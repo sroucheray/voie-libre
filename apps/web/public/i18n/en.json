@@ -147,7 +147,10 @@
     "show": "Show the elevation profile",
     "hide": "Hide the elevation profile",
     "chart": "Elevation along the route, from {{min}} to {{max}}. Use the left and right arrow keys to move along it.",
-    "tooltip": "{{distance}} · {{elevation}} · {{grade}}"
+    "tooltip": "{{distance}} · {{elevation}} · {{grade}}",
+    "source": {
+      "copernicus": "Elevation: Copernicus DEM GLO-30, provided under COPERNICUS by the European Union and ESA."
+    }
   },
   "gpxImport": {
     "button": "Import a GPX file",

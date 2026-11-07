@@ -147,7 +147,10 @@
     "show": "Afficher le profil d'altitude",
     "hide": "Masquer le profil d'altitude",
     "chart": "Altitude le long du parcours, de {{min}} à {{max}}. Utilisez les flèches gauche et droite pour vous déplacer.",
-    "tooltip": "{{distance}} · {{elevation}} · {{grade}}"
+    "tooltip": "{{distance}} · {{elevation}} · {{grade}}",
+    "source": {
+      "copernicus": "Altitude : Copernicus DEM GLO-30, fourni dans le cadre de COPERNICUS par l'Union européenne et l'ESA."
+    }
   },
   "gpxImport": {
     "button": "Importer un fichier GPX",

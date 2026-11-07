@@ -1,5 +1,6 @@
 import { InjectionToken } from '@angular/core';
 import { IndexedDbRouteStore } from './indexeddb-route-store';
+import type { ElevationSource } from '../planner/planner-store';
 import type { NewSavedRoute, SavedRoute, ShareInfo } from './saved-route';
 
 /**
@@ -41,6 +42,7 @@ export interface RouteStore {
     id: string,
     geometry: [number, number, number][],
     ascentMeters: number,
+    elevationSource?: ElevationSource,
   ): Promise<SavedRoute>;
   /** Deleting an id that does not exist is not an error. */
   delete(id: string): Promise<void>;

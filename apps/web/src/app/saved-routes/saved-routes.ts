@@ -185,6 +185,7 @@ export class SavedRoutes {
         id,
         geometry,
         ascentMeters,
+        'copernicus',
       );
       this.replace(updated);
       if (show) this.planner.loadSaved(updated);

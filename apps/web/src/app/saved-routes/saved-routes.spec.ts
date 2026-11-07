@@ -814,6 +814,10 @@ describe('Saved routes', () => {
       expect(elevationRequests).toBe(1);
       const [saved] = await routeStore.list();
       expect(saved.ascentMeters).toBe(20);
+      expect(saved.elevationSource).toBe('copernicus');
+      expect(
+        view.root.querySelector('.profile .source')?.textContent,
+      ).toContain('Copernicus');
       expect(saved.geometry.map((p) => p[2])).toEqual([100, 120]);
       expect(view.root.querySelector('.notice')).toBeNull();
       expect(

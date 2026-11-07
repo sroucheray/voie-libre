@@ -1,3 +1,4 @@
+import type { ElevationSource } from '../planner/planner-store';
 import { RouteStore, RouteStoreError } from './route-store';
 import { createRouteId } from './route-id';
 import {
@@ -115,11 +116,13 @@ export class IndexedDbRouteStore implements RouteStore {
     id: string,
     geometry: [number, number, number][],
     ascentMeters: number,
+    elevationSource?: ElevationSource,
   ): Promise<SavedRoute> {
     return this.update(id, (route) => ({
       ...route,
       geometry,
       ascentMeters,
+      ...(elevationSource ? { elevationSource } : {}),
       updatedAt: Date.now(),
     }));
   }

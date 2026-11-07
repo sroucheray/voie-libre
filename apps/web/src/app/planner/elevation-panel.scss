@@ -99,3 +99,9 @@
   display: flex;
   justify-content: space-between;
 }
+
+.source {
+  grid-column: 2;
+  margin: 0.25rem 0 0;
+  font-size: 0.6875rem;
+}
