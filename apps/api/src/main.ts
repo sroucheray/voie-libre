@@ -1,0 +1,43 @@
+#!/usr/bin/env tsx
+// @nx-target-name: serve
+import Fastify from 'fastify';
+import { app } from './app/app';
+
+const host = process.env.HOST ?? 'localhost';
+const port = process.env.PORT ? Number(process.env.PORT) : 3000;
+
+// Instantiate Fastify with some config
+const server = Fastify({
+  logger: true,
+});
+
+// Register your application as a normal plugin.
+server.register(app);
+
+// Start listening.
+server.listen({ port, host }, (err) => {
+  if (err) {
+    server.log.error(err);
+    process.exit(1);
+  } else {
+    console.log(`[ ready ] http://${host}:${port}`);
+    // Set when Nx waits for this server to be ready
+    if (process.env.NX_READY_SIGNAL_SOCKET) {
+      // Function keeps TypeScript and bundlers from rewriting or bundling the import.
+      // Not awaited: Fastify warns when a listen callback is async.
+      const load = new Function('s', 'return import(s)') as (
+        s: string,
+      ) => Promise<{ emitReadySignal(server: unknown): boolean }>;
+      load('@nx/js/ready-signal')
+        .then((readySignal) => readySignal.emitReadySignal(server.server))
+        .catch(() => {
+          // @nx/js isn't installed
+        });
+    }
+  }
+});
+
+process.on('SIGTERM', async () => {
+  await server.close();
+  process.exit(0);
+});
