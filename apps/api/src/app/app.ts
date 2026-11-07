@@ -5,12 +5,15 @@ import swaggerUi from '@fastify/swagger-ui';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { Database } from '../db/database';
+import type { RoutingProvider } from '../routing/routing-provider';
 import type { Config } from './config';
 import { healthRoutes } from './routes/health';
+import { routeRoutes } from './routes/route';
 
 export interface AppOptions {
   config: Config;
   db: Database;
+  routing: RoutingProvider;
   logger?: boolean | { level: string };
 }
 
@@ -21,6 +24,7 @@ export interface AppOptions {
 export async function buildApp({
   config,
   db,
+  routing,
   logger = false,
 }: AppOptions): Promise<FastifyInstance> {
   const fastify = Fastify({ logger }).withTypeProvider<TypeBoxTypeProvider>();
@@ -43,7 +47,10 @@ export async function buildApp({
         version: '0.0.0',
         license: { name: 'AGPL-3.0-only', identifier: 'AGPL-3.0-only' },
       },
-      tags: [{ name: 'system', description: 'Health and diagnostics' }],
+      tags: [
+        { name: 'system', description: 'Health and diagnostics' },
+        { name: 'routing', description: 'Route computation' },
+      ],
     },
   });
   await fastify.register(swaggerUi, { routePrefix: '/docs' });
@@ -55,5 +62,10 @@ export async function buildApp({
   );
 
   await fastify.register(healthRoutes, { db });
+  await fastify.register(routeRoutes, {
+    routing,
+    rateLimitMax: config.routeRateLimitMax,
+    rateLimitWindowMs: config.rateLimitWindowMs,
+  });
   return fastify;
 }

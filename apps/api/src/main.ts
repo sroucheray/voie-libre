@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { buildApp } from './app/app';
 import { loadConfig } from './app/config';
 import { createDatabase } from './db/database';
+import { BRouterProvider } from './routing/brouter-provider';
 
 // Load a local .env when present (from the project or the workspace root). Real environment wins.
 for (const dir of [process.cwd(), join(process.cwd(), '../..')]) {
@@ -21,6 +22,7 @@ async function main() {
   const server = await buildApp({
     config,
     db,
+    routing: new BRouterProvider(config.brouterUrl),
     logger: { level: config.logLevel },
   });
 

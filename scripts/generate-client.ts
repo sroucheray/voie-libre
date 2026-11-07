@@ -19,6 +19,8 @@ async function main() {
   const app = await buildApp({
     config: loadConfig({}),
     db: { ping: async () => true, close: async () => undefined },
+    // Only the schemas matter here: nothing is routed while generating.
+    routing: { name: 'none', route: async () => [] },
   });
   await app.ready();
   const response = await app.inject({ method: 'GET', url: '/openapi.json' });

@@ -67,7 +67,9 @@ During development, run only the tests of the project you changed (`npx nx test 
 
 ## Routing provider
 
-`apps/api/src/routing/routing-provider.ts` defines `RoutingProvider.route(points, profile, avoidZones, alternatives)`. `BRouterProvider` implements it over BRouter's HTTP server. There is no public endpoint yet.
+`apps/api/src/routing/routing-provider.ts` defines `RoutingProvider.route(points, profile, avoidZones, alternatives)`. `BRouterProvider` implements it over BRouter's HTTP server. `POST /route` exposes it: points, profile (`road`, `gravel`, `trail`), optional avoid zones and 1 to 4 alternatives. Errors carry a stable `code` (`invalid_request` 400, `no_route` 422, `provider_error` 502, `unavailable` 503) that the web app translates. The endpoint has its own, stricter rate limit (`ROUTE_RATE_LIMIT_MAX`).
+
+Tests against a real BRouter are opt-in: `docker compose up -d brouter`, then `BROUTER_INTEGRATION=1 npx nx test api -- integration`.
 
 ## Principles
 

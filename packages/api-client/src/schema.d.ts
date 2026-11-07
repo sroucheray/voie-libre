@@ -21,6 +21,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/route': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Compute a route between points, with optional alternatives */
+    post: operations['computeRoute'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -67,6 +84,130 @@ export interface operations {
             /** @enum {string} */
             api: 'up';
             database: 'up' | 'down';
+          };
+        };
+      };
+    };
+  };
+  computeRoute: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @description Start, optional waypoints, end, in order. */
+          points: {
+            lon: number;
+            lat: number;
+          }[];
+          profile: 'road' | 'gravel' | 'trail';
+          /** @default [] */
+          avoidZones?: (
+            | {
+                /** @enum {string} */
+                kind: 'circle';
+                center: {
+                  lon: number;
+                  lat: number;
+                };
+                radiusMeters: number;
+              }
+            | {
+                /** @enum {string} */
+                kind: 'polyline';
+                points: {
+                  lon: number;
+                  lat: number;
+                }[];
+              }
+            | {
+                /** @enum {string} */
+                kind: 'polygon';
+                points: {
+                  lon: number;
+                  lat: number;
+                }[];
+              }
+          )[];
+          /**
+           * @description Number of routes to return; the first is the best.
+           * @default 1
+           */
+          alternatives?: number;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            routes: {
+              /** @description [longitude, latitude, elevation in meters] per point. */
+              geometry: [number, number, number][];
+              distanceMeters: number;
+              ascentMeters: number;
+              durationSeconds: number;
+            }[];
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            code:
+              'invalid_request' | 'no_route' | 'unavailable' | 'provider_error';
+            message: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            code:
+              'invalid_request' | 'no_route' | 'unavailable' | 'provider_error';
+            message: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            code:
+              'invalid_request' | 'no_route' | 'unavailable' | 'provider_error';
+            message: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            code:
+              'invalid_request' | 'no_route' | 'unavailable' | 'provider_error';
+            message: string;
           };
         };
       };

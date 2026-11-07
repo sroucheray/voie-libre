@@ -1,7 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import type { Database } from '../db/database';
+import type { RoutingProvider } from '../routing/routing-provider';
 import { buildApp } from './app';
 import { loadConfig } from './config';
+
+const fakeRouting: RoutingProvider = { name: 'fake', route: async () => [] };
 
 const fakeDb = (up: boolean): Database => ({
   ping: async () => up,
@@ -16,7 +19,11 @@ describe('API', () => {
   });
 
   const start = async (up: boolean, env: NodeJS.ProcessEnv = {}) => {
-    server = await buildApp({ config: loadConfig(env), db: fakeDb(up) });
+    server = await buildApp({
+      config: loadConfig(env),
+      db: fakeDb(up),
+      routing: fakeRouting,
+    });
     await server.ready();
   };
 

@@ -8,6 +8,8 @@ export interface Config {
   rateLimitMax: number;
   /** Rate-limit window in milliseconds. */
   rateLimitWindowMs: number;
+  /** Stricter limit for POST /route, which calls the routing engine. */
+  routeRateLimitMax: number;
   brouterUrl: string;
   logLevel: string;
 }
@@ -43,6 +45,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       'RATE_LIMIT_WINDOW_MS',
       env['RATE_LIMIT_WINDOW_MS'],
       60_000,
+    ),
+    routeRateLimitMax: integer(
+      'ROUTE_RATE_LIMIT_MAX',
+      env['ROUTE_RATE_LIMIT_MAX'],
+      20,
     ),
     brouterUrl: env['BROUTER_URL'] || 'http://localhost:17777',
     logLevel: env['LOG_LEVEL'] || 'info',

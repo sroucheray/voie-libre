@@ -103,12 +103,386 @@
           }
         }
       }
+    },
+    "/route": {
+      "post": {
+        "operationId": "computeRoute",
+        "summary": "Compute a route between points, with optional alternatives",
+        "tags": ["routing"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["points", "profile"],
+                "properties": {
+                  "points": {
+                    "minItems": 2,
+                    "maxItems": 20,
+                    "description": "Start, optional waypoints, end, in order.",
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["lon", "lat"],
+                      "properties": {
+                        "lon": {
+                          "minimum": -180,
+                          "maximum": 180,
+                          "type": "number"
+                        },
+                        "lat": {
+                          "minimum": -90,
+                          "maximum": 90,
+                          "type": "number"
+                        }
+                      }
+                    }
+                  },
+                  "profile": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": ["road"]
+                      },
+                      {
+                        "type": "string",
+                        "enum": ["gravel"]
+                      },
+                      {
+                        "type": "string",
+                        "enum": ["trail"]
+                      }
+                    ]
+                  },
+                  "avoidZones": {
+                    "maxItems": 20,
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["kind", "center", "radiusMeters"],
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": ["circle"]
+                            },
+                            "center": {
+                              "type": "object",
+                              "required": ["lon", "lat"],
+                              "properties": {
+                                "lon": {
+                                  "minimum": -180,
+                                  "maximum": 180,
+                                  "type": "number"
+                                },
+                                "lat": {
+                                  "minimum": -90,
+                                  "maximum": 90,
+                                  "type": "number"
+                                }
+                              }
+                            },
+                            "radiusMeters": {
+                              "exclusiveMinimum": 0,
+                              "maximum": 50000,
+                              "type": "number"
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": ["kind", "points"],
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": ["polyline"]
+                            },
+                            "points": {
+                              "minItems": 2,
+                              "maxItems": 100,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": ["lon", "lat"],
+                                "properties": {
+                                  "lon": {
+                                    "minimum": -180,
+                                    "maximum": 180,
+                                    "type": "number"
+                                  },
+                                  "lat": {
+                                    "minimum": -90,
+                                    "maximum": 90,
+                                    "type": "number"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": ["kind", "points"],
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": ["polygon"]
+                            },
+                            "points": {
+                              "minItems": 3,
+                              "maxItems": 100,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": ["lon", "lat"],
+                                "properties": {
+                                  "lon": {
+                                    "minimum": -180,
+                                    "maximum": 180,
+                                    "type": "number"
+                                  },
+                                  "lat": {
+                                    "minimum": -90,
+                                    "maximum": 90,
+                                    "type": "number"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "alternatives": {
+                    "minimum": 1,
+                    "maximum": 4,
+                    "default": 1,
+                    "description": "Number of routes to return; the first is the best.",
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["routes"],
+                  "properties": {
+                    "routes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "geometry",
+                          "distanceMeters",
+                          "ascentMeters",
+                          "durationSeconds"
+                        ],
+                        "properties": {
+                          "geometry": {
+                            "description": "[longitude, latitude, elevation in meters] per point.",
+                            "type": "array",
+                            "items": {
+                              "type": "array",
+                              "items": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "additionalItems": false,
+                              "minItems": 3,
+                              "maxItems": 3
+                            }
+                          },
+                          "distanceMeters": {
+                            "type": "number"
+                          },
+                          "ascentMeters": {
+                            "type": "number"
+                          },
+                          "durationSeconds": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["code", "message"],
+                  "properties": {
+                    "code": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["invalid_request"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["no_route"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["unavailable"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["provider_error"]
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["code", "message"],
+                  "properties": {
+                    "code": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["invalid_request"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["no_route"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["unavailable"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["provider_error"]
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["code", "message"],
+                  "properties": {
+                    "code": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["invalid_request"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["no_route"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["unavailable"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["provider_error"]
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["code", "message"],
+                  "properties": {
+                    "code": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["invalid_request"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["no_route"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["unavailable"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["provider_error"]
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "tags": [
     {
       "name": "system",
       "description": "Health and diagnostics"
+    },
+    {
+      "name": "routing",
+      "description": "Route computation"
     }
   ]
 }
