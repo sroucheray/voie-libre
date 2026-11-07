@@ -127,7 +127,7 @@ export async function createMapLibreDriver(
       clearMarkers();
       markers = specs.map((spec, index) => {
         const element = document.createElement('div');
-        element.className = `planner-marker planner-marker--${spec.role}`;
+        element.className = `planner-marker planner-marker--${spec.role}${spec.loop ? ' planner-marker--loop' : ''}`;
         element.textContent = spec.label;
         element.setAttribute('role', 'img');
         element.setAttribute('aria-label', spec.ariaLabel);

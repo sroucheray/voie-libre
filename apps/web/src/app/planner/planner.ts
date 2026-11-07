@@ -21,6 +21,7 @@ import {
   PROFILES,
   PlannerStore,
   type Profile,
+  isLoopOf,
   pointRole,
 } from './planner-store';
 import { buildProfile, sampleNearest } from './elevation-profile';
@@ -75,15 +76,28 @@ export class Planner {
       const driver = this.driver();
       const points = this.store.points();
       if (!driver) return;
+      const loop = isLoopOf(points);
       driver.setMarkers(
-        points.map((lngLat, index) => {
+        points.flatMap((lngLat, index) => {
           const role = pointRole(index, points.length);
-          return {
-            lngLat,
-            role,
-            label: role === 'start' ? 'A' : role === 'end' ? 'B' : `${index}`,
-            ariaLabel: this.pointName(index),
-          };
+          // A loop is drawn once: its end sits under its start.
+          if (loop && role === 'end') return [];
+          return [
+            {
+              lngLat,
+              role,
+              label:
+                loop && role === 'start'
+                  ? '↻'
+                  : role === 'start'
+                    ? 'A'
+                    : role === 'end'
+                      ? 'B'
+                      : `${index}`,
+              ariaLabel: this.pointName(index),
+              loop: loop && role === 'start',
+            },
+          ];
         }),
       );
     });

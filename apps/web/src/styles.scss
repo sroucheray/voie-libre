@@ -35,12 +35,22 @@ body {
     background: #067647;
   }
 
+  /* Shapes differ as well as colours: round start, square end, small round waypoints. */
   &--end {
     background: #b42318;
+    border-radius: 0.25rem;
   }
 
   &--waypoint {
     background: #1570ef;
+    width: 1.375rem;
+    height: 1.375rem;
+  }
+
+  /* Start and end on the same place: half green, half red. */
+  &--loop {
+    background: linear-gradient(90deg, #067647 50%, #b42318 50%);
+    font-size: 1rem;
   }
 }
 

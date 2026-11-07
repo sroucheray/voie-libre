@@ -11,6 +11,8 @@ export interface MarkerSpec {
   label: string;
   /** Accessible name, e.g. "Waypoint 1". */
   ariaLabel: string;
+  /** The start and end share a place: one combined marker stands for both. */
+  loop?: boolean;
 }
 
 /** What the user does on the map, reported to the planner. */

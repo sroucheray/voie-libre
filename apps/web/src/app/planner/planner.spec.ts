@@ -10,6 +10,7 @@ import { provideInMemoryRouteStore } from '../../testing/in-memory-route-store';
 import { API_CLIENT } from '../core/api/api-client';
 import { LanguageService } from '../core/i18n/language.service';
 import { Planner } from './planner';
+import { PlannerStore } from './planner-store';
 import { ROUTE_DEBOUNCE_MS } from './route-planner';
 
 const line = (offset: number) => [
@@ -124,6 +125,18 @@ describe('Planner', () => {
       ['end', 'B', 'End'],
     ]);
     expect(view.driver.markers[1].lngLat).toEqual([3.15, 45.65]);
+  });
+
+  it('draws a closed loop as one combined marker', async () => {
+    const view = await render();
+    view.click(3.087, 45.777);
+    view.click(3.249, 45.544);
+    TestBed.inject(PlannerStore).closeLoop();
+    TestBed.tick();
+    expect(view.driver.markers.map((m) => [m.role, m.label, m.loop])).toEqual([
+      ['start', '↻', true],
+      ['waypoint', '1', false],
+    ]);
   });
 
   it('computes the route and draws it, with distance, climb and duration', async () => {
