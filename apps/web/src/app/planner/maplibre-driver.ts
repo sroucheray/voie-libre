@@ -230,26 +230,10 @@ export async function createMapLibreDriver(
   map.on('touchstart', startRouteDrag);
 
   /**
-   * Right click, or long press on a touch screen: the menu to place a point. Android reports a
-   * long press as a context menu; iOS does not, so the long press is timed here as well, and
-   * whichever comes first wins.
+   * Right click, or long press on a touch screen (MapLibre reports both as a context menu): the
+   * menu to place a point. A route press that turns into a long press is not a drag.
    */
   const LONG_PRESS_MS = 600;
-  const LONG_PRESS_SLOP = 10;
-  let pressTimer: ReturnType<typeof setTimeout> | undefined;
-  let menuAt = 0;
-  const openMenu = (
-    point: { x: number; y: number },
-    lngLat: { lng: number; lat: number },
-  ) => {
-    if (Date.now() - menuAt < 800) return;
-    menuAt = Date.now();
-    handlers.onContextMenu([lngLat.lng, lngLat.lat], point);
-  };
-  const cancelPress = () => {
-    clearTimeout(pressTimer);
-    pressTimer = undefined;
-  };
   const onContextMenu = (event: {
     point: { x: number; y: number };
     lngLat: { lng: number; lat: number };
@@ -258,46 +242,12 @@ export async function createMapLibreDriver(
     const target = event.originalEvent?.target as Element | null | undefined;
     if (target?.closest?.('.planner-marker')) return;
     event.originalEvent?.preventDefault();
-    cancelPress();
-    openMenu(event.point, event.lngLat);
-  };
-  const onTouchStart = (event: {
-    point: { x: number; y: number };
-    lngLat: { lng: number; lat: number };
-    originalEvent?: TouchEvent;
-  }) => {
-    cancelPress();
-    const target = event.originalEvent?.target as Element | null | undefined;
-    if (target?.closest?.('.planner-marker')) return;
-    if ((event.originalEvent?.touches?.length ?? 1) > 1) return;
-    const { point, lngLat } = event;
-    pressTimer = setTimeout(() => {
-      pressTimer = undefined;
-      // A long press that began on the route is not a drag.
-      endRouteDrag();
-      suppressClick = true;
-      setTimeout(() => (suppressClick = false), 400);
-      openMenu(point, lngLat);
-    }, LONG_PRESS_MS);
-    pressOrigin = point;
-  };
-  let pressOrigin = { x: 0, y: 0 };
-  const onTouchMove = (event: { point: { x: number; y: number } }) => {
-    if (
-      pressTimer &&
-      Math.hypot(event.point.x - pressOrigin.x, event.point.y - pressOrigin.y) >
-        LONG_PRESS_SLOP
-    ) {
-      cancelPress();
-    }
+    endRouteDrag();
+    suppressClick = true;
+    setTimeout(() => (suppressClick = false), 400);
+    handlers.onContextMenu([event.lngLat.lng, event.lngLat.lat], event.point);
   };
   map.on('contextmenu', onContextMenu);
-  map.on('touchstart', onTouchStart);
-  map.on('touchmove', onTouchMove);
-  map.on('touchend', cancelPress);
-  map.on('touchcancel', cancelPress);
-  map.on('dragstart', cancelPress);
-  map.on('zoomstart', cancelPress);
 
   /** Hovering the selected route tells the planner where, to show the point on the profile. */
   let hovering = false;
@@ -485,14 +435,7 @@ export async function createMapLibreDriver(
       ghostMarker = null;
       container.removeEventListener('mouseleave', hideGhost);
       map.off('mousemove', moveGhost);
-      cancelPress();
       map.off('contextmenu', onContextMenu);
-      map.off('touchstart', onTouchStart);
-      map.off('touchmove', onTouchMove);
-      map.off('touchend', cancelPress);
-      map.off('touchcancel', cancelPress);
-      map.off('dragstart', cancelPress);
-      map.off('zoomstart', cancelPress);
       map.off('mousedown', startRouteDrag);
       map.off('touchstart', startRouteDrag);
       endRouteDrag();

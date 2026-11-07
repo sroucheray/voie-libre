@@ -15,3 +15,11 @@ Brief: [BRIEF-map-interaction.md](BRIEF-map-interaction.md). Each step ends with
 
 - Segment index for drag-to-insert: map the dragged position to the nearest route vertex, then to the waypoint segment (waypoints are not stored as route vertices, so match by cumulative distance).
 - Undo for marker removal: a simple toast with "Undo" for a few seconds, no history stack.
+
+## Status
+
+All steps done. Known limits:
+
+- A route that goes out and back along the same road is ambiguous for drag-to-insert: the press matches the nearest vertex, which may belong to the return leg, so the waypoint can land one segment later than expected.
+- A press that starts on the selected route claims the gesture from the map, so panning by grabbing the route itself drags the route instead (touch tolerance is 14 px).
+- "Avoid the same way back" and "loop by distance" are disabled in the dialog; they need server work.
