@@ -8,6 +8,7 @@ import {
   type RoutingErrorCode,
   type RoutingProvider,
 } from '../../routing/routing-provider';
+import { routeLoop } from '../../routing/loops';
 
 const Position = Type.Object({
   lon: Type.Number({ minimum: -180, maximum: 180 }),
@@ -34,6 +35,28 @@ const AvoidZone = Type.Union([
   }),
 ]);
 
+const MIN_LOOP_METERS = 2_000;
+const MAX_LOOP_METERS = 200_000;
+
+const LoopRequest = Type.Union(
+  [
+    Type.Object({
+      mode: Type.Literal('avoid_outbound'),
+    }),
+    Type.Object({
+      mode: Type.Literal('distance'),
+      distanceMeters: Type.Number({
+        minimum: MIN_LOOP_METERS,
+        maximum: MAX_LOOP_METERS,
+      }),
+    }),
+  ],
+  {
+    description:
+      'Closes the route. `avoid_outbound`: points go out and end on the start, the way back avoids the way out where it can. `distance`: points are the start twice, the engine draws a loop of about this length (alternatives head in different directions).',
+  },
+);
+
 const RouteRequest = Type.Object({
   points: Type.Array(Position, {
     minItems: 2,
@@ -44,6 +67,7 @@ const RouteRequest = Type.Object({
   avoidZones: Type.Optional(
     Type.Array(AvoidZone, { maxItems: MAX_ZONES, default: [] }),
   ),
+  loop: Type.Optional(LoopRequest),
   alternatives: Type.Optional(
     Type.Integer({
       minimum: 1,
@@ -140,7 +164,20 @@ export const routeRoutes: FastifyPluginAsyncTypebox<RouteOptions> = async (
         profile,
         avoidZones = [],
         alternatives = 1,
+        loop,
       } = request.body;
+      if (loop) {
+        return {
+          routes: await routeLoop(
+            routing,
+            points,
+            profile,
+            avoidZones,
+            alternatives,
+            loop,
+          ),
+        };
+      }
       return {
         routes: await routing.route(points, profile, avoidZones, alternatives),
       };

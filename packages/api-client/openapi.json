@@ -257,6 +257,36 @@
                       ]
                     }
                   },
+                  "loop": {
+                    "description": "Closes the route. `avoid_outbound`: points go out and end on the start, the way back avoids the way out where it can. `distance`: points are the start twice, the engine draws a loop of about this length (alternatives head in different directions).",
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": ["mode"],
+                        "properties": {
+                          "mode": {
+                            "type": "string",
+                            "enum": ["avoid_outbound"]
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": ["mode", "distanceMeters"],
+                        "properties": {
+                          "mode": {
+                            "type": "string",
+                            "enum": ["distance"]
+                          },
+                          "distanceMeters": {
+                            "minimum": 2000,
+                            "maximum": 200000,
+                            "type": "number"
+                          }
+                        }
+                      }
+                    ]
+                  },
                   "alternatives": {
                     "minimum": 1,
                     "maximum": 4,

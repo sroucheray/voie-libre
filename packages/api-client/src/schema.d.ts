@@ -192,6 +192,17 @@ export interface operations {
                 }[];
               }
           )[];
+          /** @description Closes the route. `avoid_outbound`: points go out and end on the start, the way back avoids the way out where it can. `distance`: points are the start twice, the engine draws a loop of about this length (alternatives head in different directions). */
+          loop?:
+            | {
+                /** @enum {string} */
+                mode: 'avoid_outbound';
+              }
+            | {
+                /** @enum {string} */
+                mode: 'distance';
+                distanceMeters: number;
+              };
           /**
            * @description Number of routes to return; the first is the best.
            * @default 1

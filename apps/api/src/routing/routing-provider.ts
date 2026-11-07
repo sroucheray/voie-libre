@@ -65,6 +65,25 @@ export interface RoutingProvider {
     avoidZones: AvoidZone[],
     alternatives: number,
   ): Promise<RouteResult[]>;
+
+  /**
+   * Draws loops from `start` of about `distanceMeters`, one per alternative, each one heading
+   * a different way. Optional: an engine without it answers "loop by distance" with an error.
+   */
+  roundTrip?(
+    start: Position,
+    profile: RoutingProfile,
+    avoidZones: AvoidZone[],
+    alternatives: number,
+    distanceMeters: number,
+  ): Promise<RouteResult[]>;
 }
+
+/** How a closed route is built (see {@link RoutingProvider.roundTrip} and `routeLoop`). */
+export type LoopRequest =
+  /** `points` end where they start; the way back avoids the way out where it can. */
+  | { mode: 'avoid_outbound' }
+  /** `points` are the start twice; the engine draws a loop of about this length. */
+  | { mode: 'distance'; distanceMeters: number };
 
 export const MAX_ALTERNATIVES = 4;

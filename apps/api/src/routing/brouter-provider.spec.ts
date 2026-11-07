@@ -134,4 +134,87 @@ describe('avoidZoneParams', () => {
   it('is empty without zones', () => {
     expect(avoidZoneParams([])).toBe('');
   });
+
+  describe('roundTrip', () => {
+    /** A loop of a given length, as if BRouter had answered. */
+    const loopOf = (meters: number) =>
+      JSON.stringify({
+        features: [
+          {
+            properties: {
+              'track-length': String(meters),
+              'filtered ascend': '100',
+              'total-time': '3600',
+            },
+            geometry: {
+              coordinates: [
+                [3.087, 45.777, 400],
+                [3.1, 45.8, 410],
+                [3.087, 45.777, 400],
+              ],
+            },
+          },
+        ],
+      });
+
+    it('asks for a loop from the start, one direction per alternative', async () => {
+      const urls: string[] = [];
+      const provider = new BRouterProvider(
+        'http://brouter:17777',
+        async (url) => {
+          urls.push(url);
+          return new Response(loopOf(30_000));
+        },
+      );
+      const routes = await provider.roundTrip(A, 'gravel', [], 3, 30_000);
+      expect(routes).toHaveLength(3);
+      expect(urls.map((u) => /direction=(\d+)/.exec(u)?.[1])).toEqual([
+        '0',
+        '120',
+        '240',
+      ]);
+      expect(urls[0]).toContain('lonlats=3.087,45.777&profile=gravel');
+      expect(urls[0]).toContain('engineMode=4&roundTripDistance=5455');
+    });
+
+    it('corrects the radius until the loop is close to the asked length', async () => {
+      const radii: number[] = [];
+      const lengths = [50_000, 31_000];
+      const provider = new BRouterProvider(
+        'http://brouter:17777',
+        async (url) => {
+          radii.push(Number(/roundTripDistance=(\d+)/.exec(url)?.[1]));
+          return new Response(loopOf(lengths[radii.length - 1]));
+        },
+      );
+      const [route] = await provider.roundTrip(A, 'road', [], 1, 30_000);
+      expect(radii).toHaveLength(2);
+      expect(radii[1]).toBeLessThan(radii[0]);
+      expect(route.distanceMeters).toBe(31_000);
+    });
+
+    it('keeps the closest loop after the last try', async () => {
+      const lengths = [60_000, 45_000, 50_000];
+      let call = 0;
+      const provider = new BRouterProvider(
+        'http://brouter:17777',
+        async () => new Response(loopOf(lengths[call++])),
+      );
+      const [route] = await provider.roundTrip(A, 'road', [], 1, 30_000);
+      expect(call).toBe(3);
+      expect(route.distanceMeters).toBe(45_000);
+    });
+
+    it('rejects an unknown number of alternatives', async () => {
+      const provider = new BRouterProvider(
+        'http://brouter:17777',
+        respond('x'),
+      );
+      await expect(
+        provider.roundTrip(A, 'road', [], 9, 30_000),
+      ).rejects.toMatchObject({
+        code: 'invalid_request',
+      });
+    });
+  });
 });

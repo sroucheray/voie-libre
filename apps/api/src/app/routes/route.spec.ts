@@ -51,6 +51,67 @@ describe('POST /route', () => {
     await server.close();
   });
 
+  describe('loop', () => {
+    it('goes through the loop logic and keeps the same response shape', async () => {
+      await start();
+      const response = await post({
+        points: [A, B, A],
+        profile: 'road',
+        loop: { mode: 'avoid_outbound' },
+      });
+      expect(response.statusCode).toBe(200);
+      // Way out, then way back: two calls to the provider, one route joined.
+      expect(route).toHaveBeenCalledTimes(2);
+      expect(response.json().routes).toHaveLength(1);
+    });
+
+    it('asks the provider for a round trip by distance', async () => {
+      await start();
+      const roundTrip = jest.fn().mockResolvedValue([result]);
+      const routing: RoutingProvider = { name: 'fake', route, roundTrip };
+      await server.close();
+      server = await buildApp({
+        config: loadConfig({}),
+        db: {
+          ping: async () => true,
+          close: async () => undefined,
+          sharedRoutes: createMemorySharedRoutes(),
+        },
+        routing,
+      });
+      await server.ready();
+      const response = await post({
+        points: [A, A],
+        profile: 'gravel',
+        alternatives: 2,
+        loop: { mode: 'distance', distanceMeters: 30000 },
+      });
+      expect(response.statusCode).toBe(200);
+      expect(roundTrip).toHaveBeenCalledWith(A, 'gravel', [], 2, 30000);
+    });
+
+    it.each([
+      ['an unknown mode', { mode: 'spiral' }],
+      ['a loop that is too short', { mode: 'distance', distanceMeters: 500 }],
+      ['a loop that is too long', { mode: 'distance', distanceMeters: 900000 }],
+    ])('rejects %s with a stable code', async (_name, loop) => {
+      await start();
+      const response = await post({ points: [A, A], profile: 'road', loop });
+      expect(response.statusCode).toBe(400);
+      expect(response.json().code).toBe('invalid_request');
+    });
+
+    it('refuses a loop by distance with extra points', async () => {
+      await start();
+      const response = await post({
+        points: [A, B],
+        profile: 'road',
+        loop: { mode: 'distance', distanceMeters: 30000 },
+      });
+      expect(response.statusCode).toBe(400);
+    });
+  });
+
   it('returns the computed routes, with default zones and one alternative', async () => {
     await start();
     const response = await post({ points: [A, B], profile: 'road' });

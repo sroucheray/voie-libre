@@ -19,6 +19,12 @@ export const BROUTER_PROFILES: Record<RoutingProfile, string> = {
   trail: 'hiking-mountain',
 };
 
+/** A BRouter loop is about this many times its radius long. */
+const ROUND_TRIP_RATIO = 5.5;
+const ROUND_TRIP_TRIES = 3;
+/** Close enough to the asked length: 10%. */
+const ROUND_TRIP_TOLERANCE = 0.1;
+
 type FetchLike = (url: string) => Promise<Response>;
 
 const coordinates = (points: Position[]) =>
@@ -91,6 +97,85 @@ export class BRouterProvider implements RoutingProvider {
       this.url(points, brouterProfile, avoidZones, index),
     );
     return Promise.all(urls.map((url) => this.fetchRoute(url)));
+  }
+
+  /**
+   * BRouter's round trip takes a radius, not a length: the loop comes out at about 5 times the
+   * radius, and by how much depends on the roads and on the direction. So the radius is
+   * corrected from what comes back, up to {@link ROUND_TRIP_TRIES} calls, and the loop closest
+   * to the target wins. Alternatives head in evenly spaced directions.
+   */
+  async roundTrip(
+    start: Position,
+    profile: RoutingProfile,
+    avoidZones: AvoidZone[],
+    alternatives: number,
+    distanceMeters: number,
+  ): Promise<RouteResult[]> {
+    const brouterProfile = BROUTER_PROFILES[profile];
+    if (!brouterProfile) {
+      throw new RoutingError('invalid_request', `Unknown profile "${profile}"`);
+    }
+    if (
+      !Number.isInteger(alternatives) ||
+      alternatives < 1 ||
+      alternatives > MAX_ALTERNATIVES
+    ) {
+      throw new RoutingError(
+        'invalid_request',
+        `alternatives must be an integer between 1 and ${MAX_ALTERNATIVES}`,
+      );
+    }
+    return Promise.all(
+      Array.from({ length: alternatives }, (_, index) =>
+        this.roundTripToward(
+          start,
+          brouterProfile,
+          avoidZones,
+          Math.round((index * 360) / alternatives),
+          distanceMeters,
+        ),
+      ),
+    );
+  }
+
+  private async roundTripToward(
+    start: Position,
+    profile: string,
+    zones: AvoidZone[],
+    direction: number,
+    target: number,
+  ): Promise<RouteResult> {
+    let radius = target / ROUND_TRIP_RATIO;
+    let best: RouteResult | null = null;
+    for (let attempt = 0; attempt < ROUND_TRIP_TRIES; attempt++) {
+      const query = [
+        `lonlats=${start.lon},${start.lat}`,
+        `profile=${profile}`,
+        'alternativeidx=0',
+        'format=geojson',
+        'engineMode=4',
+        `roundTripDistance=${Math.round(radius)}`,
+        `direction=${direction}`,
+        avoidZoneParams(zones),
+      ].filter(Boolean);
+      const route = await this.fetchRoute(
+        `${this.baseUrl}/brouter?${query.join('&')}`,
+      );
+      if (
+        !best ||
+        Math.abs(route.distanceMeters - target) <
+          Math.abs(best.distanceMeters - target)
+      ) {
+        best = route;
+      }
+      const error = Math.abs(route.distanceMeters - target) / target;
+      if (error <= ROUND_TRIP_TOLERANCE || route.distanceMeters <= 0) break;
+      // Length grows about linearly with the radius: scale it, within sane bounds.
+      const scale = Math.min(3, Math.max(0.33, target / route.distanceMeters));
+      radius *= scale;
+    }
+    return best as RouteResult;
   }
 
   /** Built by hand: BRouter expects `,` and `|` unescaped. */

@@ -2,6 +2,7 @@ import { buildApp } from '../app/app';
 import { createMemorySharedRoutes } from '../db/shared-routes';
 import { loadConfig } from '../app/config';
 import { BRouterProvider } from './brouter-provider';
+import { routeLoop } from './loops';
 
 /**
  * Runs against a real BRouter with the E0_N45 segment (Clermont-Ferrand). Opt-in:
@@ -68,4 +69,34 @@ run('BRouter integration', () => {
       code: expect.stringMatching(/no_route|provider_error/),
     });
   });
+
+  it('draws loops of about the asked length, heading different ways', async () => {
+    const routes = await provider.roundTrip(clermont, 'road', [], 2, 30_000);
+    expect(routes).toHaveLength(2);
+    for (const route of routes) {
+      expect(route.distanceMeters).toBeGreaterThan(24_000);
+      expect(route.distanceMeters).toBeLessThan(36_000);
+      const first = route.geometry[0];
+      const last = route.geometry[route.geometry.length - 1];
+      expect(Math.abs(first[0] - last[0])).toBeLessThan(0.001);
+      expect(Math.abs(first[1] - last[1])).toBeLessThan(0.001);
+    }
+  }, 60_000);
+
+  it('comes back by other roads when asked to avoid the way out', async () => {
+    const [loop] = await routeLoop(
+      provider,
+      [clermont, issoire, clermont],
+      'road',
+      [],
+      1,
+      { mode: 'avoid_outbound' },
+    );
+    const [plain] = await provider.route([clermont, issoire], 'road', [], 1);
+    const key = (c: number[]) => `${c[0].toFixed(4)},${c[1].toFixed(4)}`;
+    const out = new Set(plain.geometry.map(key));
+    const way = loop.geometry.slice(plain.geometry.length);
+    const shared = way.filter((c) => out.has(key(c))).length / way.length;
+    expect(shared).toBeLessThan(0.3);
+  }, 60_000);
 });
