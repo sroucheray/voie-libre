@@ -140,9 +140,9 @@ describe('Planner', () => {
     TestBed.inject(PlannerStore).closeLoop();
     view.fixture.detectChanges();
     expect(bar()).toContain('Loop closed');
-    expect(view.root.querySelector('.help-bar')?.getAttribute('role')).toBe(
-      'status',
-    );
+    expect(
+      view.root.querySelector('.help-bar')?.getAttribute('aria-live'),
+    ).toBe('polite');
   });
 
   describe('loop', () => {

@@ -1,7 +1,7 @@
 <div class="map-area">
   <vl-map-view class="map" (mapReady)="onMapReady($event)" />
 
-  <p class="help-bar" role="status">{{ helpKey() | transloco }}</p>
+  <p class="help-bar" aria-live="polite">{{ helpKey() | transloco }}</p>
 
   @if (menu(); as m) {
   <div class="map-menu-backdrop" (click)="menu.set(null)"></div>
