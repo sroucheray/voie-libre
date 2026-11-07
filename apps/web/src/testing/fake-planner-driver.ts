@@ -1,4 +1,5 @@
 import {
+  GhostSpec,
   LngLat3,
   MarkerSpec,
   PLANNER_MAP_DRIVER,
@@ -14,6 +15,7 @@ export class FakePlannerDriver implements PlannerMapDriver {
   selected = 0;
   fitted: LngLat3[][] = [];
   cursor: [number, number] | null = null;
+  ghost: GhostSpec | null = null;
   destroyed = false;
 
   constructor(readonly handlers: PlannerMapHandlers) {}
@@ -27,6 +29,9 @@ export class FakePlannerDriver implements PlannerMapDriver {
   }
   fitRoute(geometry: LngLat3[]) {
     this.fitted.push(geometry);
+  }
+  setGhost(ghost: GhostSpec | null) {
+    this.ghost = ghost;
   }
   setCursor(point: [number, number] | null) {
     this.cursor = point;

@@ -1,6 +1,7 @@
 import type { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import type { LngLat, MapLike } from '../core/map/map-factory';
 import type {
+  GhostSpec,
   LngLat3,
   MarkerSpec,
   PlannerMapDriver,
@@ -34,6 +35,12 @@ export async function createMapLibreDriver(
   let selected = 0;
   let markers: Marker[] = [];
   let cursorMarker: Marker | null = null;
+  let ghostSpec: GhostSpec | null = null;
+  let ghostMarker: Marker | null = null;
+  let ghostElement: HTMLElement | null = null;
+  // The ghost follows a mouse; a finger has no position to show before it touches.
+  const finePointer =
+    typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches;
   let destroyed = false;
 
   /** Adds the source and layers. Idempotent: a new style (language change) removes them. */
@@ -86,6 +93,43 @@ export async function createMapLibreDriver(
       handlers.onClick([event.lngLat.lng, event.lngLat.lat]);
     }
   };
+
+  const hideGhost = () => {
+    if (ghostElement) ghostElement.style.display = 'none';
+  };
+
+  /** Moves the ghost under the pointer, unless it is over a marker or an alternative route. */
+  const moveGhost = (event: {
+    point: { x: number; y: number };
+    lngLat: { lng: number; lat: number };
+    originalEvent?: MouseEvent;
+  }) => {
+    if (!ghostSpec || !finePointer || !ghostMarker || !ghostElement) return;
+    const target = event.originalEvent?.target as Element | null | undefined;
+    if (target?.closest?.('.planner-marker')) {
+      hideGhost();
+      return;
+    }
+    const { x, y } = event.point;
+    const overAlternative =
+      !!map.getLayer(ALTERNATIVE_LAYER) &&
+      map.queryRenderedFeatures(
+        [
+          [x - HIT_TOLERANCE, y - HIT_TOLERANCE],
+          [x + HIT_TOLERANCE, y + HIT_TOLERANCE],
+        ],
+        { layers: [ALTERNATIVE_LAYER] },
+      ).length > 0;
+    if (overAlternative) {
+      hideGhost();
+      return;
+    }
+    ghostElement.style.display = '';
+    ghostMarker.setLngLat([event.lngLat.lng, event.lngLat.lat]);
+  };
+  const container = map.getCanvasContainer();
+  container.addEventListener('mouseleave', hideGhost);
+  map.on('mousemove', moveGhost);
 
   /** Hovering the selected route tells the planner where, to show the point on the profile. */
   let hovering = false;
@@ -168,6 +212,36 @@ export async function createMapLibreDriver(
         maxZoom: 16,
       });
     },
+    setGhost(spec: GhostSpec | null) {
+      ghostSpec = spec;
+      if (!spec || !finePointer) {
+        ghostMarker?.remove();
+        ghostMarker = null;
+        ghostElement = null;
+        return;
+      }
+      if (!ghostMarker) {
+        ghostElement = document.createElement('div');
+        ghostElement.className = 'planner-ghost';
+        ghostElement.setAttribute('aria-hidden', 'true');
+        ghostElement.style.display = 'none';
+        ghostMarker = new maplibre.Marker({
+          element: ghostElement,
+          anchor: 'left',
+          offset: [-14, 0],
+        })
+          .setLngLat([0, 0])
+          .addTo(map);
+      }
+      ghostElement!.innerHTML = '';
+      const dot = document.createElement('span');
+      dot.className = `planner-marker planner-marker--${spec.role} planner-ghost__dot`;
+      dot.textContent = spec.label;
+      const text = document.createElement('span');
+      text.className = 'planner-ghost__text';
+      text.textContent = spec.text;
+      ghostElement!.append(dot, text);
+    },
     setCursor(point: LngLat | null) {
       if (!point) {
         cursorMarker?.remove();
@@ -189,6 +263,10 @@ export async function createMapLibreDriver(
       clearMarkers();
       cursorMarker?.remove();
       cursorMarker = null;
+      ghostMarker?.remove();
+      ghostMarker = null;
+      container.removeEventListener('mouseleave', hideGhost);
+      map.off('mousemove', moveGhost);
       map.off('mousemove', onMouseMove);
       map.off('styledata', onStyleData);
       map.off('click', onClick);

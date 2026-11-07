@@ -102,6 +102,24 @@ export class Planner {
       );
     });
 
+    // The ghost under the mouse says what the next click creates.
+    effect(() => {
+      const driver = this.driver();
+      const role = this.store.nextRole();
+      const count = this.store.points().length;
+      const language = this.loadedLanguage();
+      if (!driver) return;
+      if (!language) {
+        driver.setGhost(null);
+        return;
+      }
+      driver.setGhost({
+        role,
+        label: role === 'start' ? 'A' : role === 'end' ? 'B' : `${count - 1}`,
+        text: this.transloco.translate(`planner.ghost.${role}`, {}, language),
+      });
+    });
+
     // Shows a route opened from the saved list. The driver may come later than the request.
     effect(() => {
       const driver = this.driver();

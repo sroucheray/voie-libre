@@ -127,6 +127,27 @@ describe('Planner', () => {
     expect(view.driver.markers[1].lngLat).toEqual([3.15, 45.65]);
   });
 
+  it('shows a ghost that says what the next click creates', async () => {
+    const view = await render();
+    TestBed.tick();
+    expect(view.driver.ghost).toEqual({
+      role: 'start',
+      label: 'A',
+      text: 'Click to set the start',
+    });
+    view.click(3.087, 45.777);
+    TestBed.tick();
+    expect(view.driver.ghost?.role).toBe('end');
+    view.click(3.249, 45.544);
+    view.click(3.2, 45.6);
+    TestBed.tick();
+    expect(view.driver.ghost).toEqual({
+      role: 'waypoint',
+      label: '2',
+      text: 'Click to add a stop',
+    });
+  });
+
   it('draws a closed loop as one combined marker', async () => {
     const view = await render();
     view.click(3.087, 45.777);

@@ -64,6 +64,11 @@
       "provider_error": "The routing service answered with an error. Try again.",
       "rate_limited": "Too many requests. Wait a moment before changing the route again.",
       "unknown": "The route could not be computed."
+    },
+    "ghost": {
+      "start": "Click to set the start",
+      "end": "Click to set the end",
+      "waypoint": "Click to add a stop"
     }
   },
   "saved": {

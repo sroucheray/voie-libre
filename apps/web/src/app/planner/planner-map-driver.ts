@@ -15,6 +15,15 @@ export interface MarkerSpec {
   loop?: boolean;
 }
 
+/** The translucent marker that follows the pointer and shows what the next click creates. */
+export interface GhostSpec {
+  role: PointRole;
+  /** Same short text as the marker it will become. */
+  label: string;
+  /** What the click does, translated: "Click to set the end". */
+  text: string;
+}
+
 /** What the user does on the map, reported to the planner. */
 export interface PlannerMapHandlers {
   /** A click on the map, away from any route. */
@@ -34,6 +43,8 @@ export interface PlannerMapDriver {
   setRoutes(routes: LngLat3[][], selected: number): void;
   /** Moves the view so that the whole route is visible. */
   fitRoute(geometry: LngLat3[]): void;
+  /** Shows the ghost under the pointer (desktop only), or hides it with `null`. */
+  setGhost(ghost: GhostSpec | null): void;
   /** Shows a dot at this position (the point hovered on the profile), or hides it. */
   setCursor(point: LngLat | null): void;
   destroy(): void;
