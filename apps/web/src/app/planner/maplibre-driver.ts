@@ -229,6 +229,76 @@ export async function createMapLibreDriver(
   map.on('mousedown', startRouteDrag);
   map.on('touchstart', startRouteDrag);
 
+  /**
+   * Right click, or long press on a touch screen: the menu to place a point. Android reports a
+   * long press as a context menu; iOS does not, so the long press is timed here as well, and
+   * whichever comes first wins.
+   */
+  const LONG_PRESS_MS = 600;
+  const LONG_PRESS_SLOP = 10;
+  let pressTimer: ReturnType<typeof setTimeout> | undefined;
+  let menuAt = 0;
+  const openMenu = (
+    point: { x: number; y: number },
+    lngLat: { lng: number; lat: number },
+  ) => {
+    if (Date.now() - menuAt < 800) return;
+    menuAt = Date.now();
+    handlers.onContextMenu([lngLat.lng, lngLat.lat], point);
+  };
+  const cancelPress = () => {
+    clearTimeout(pressTimer);
+    pressTimer = undefined;
+  };
+  const onContextMenu = (event: {
+    point: { x: number; y: number };
+    lngLat: { lng: number; lat: number };
+    originalEvent?: MouseEvent;
+  }) => {
+    const target = event.originalEvent?.target as Element | null | undefined;
+    if (target?.closest?.('.planner-marker')) return;
+    event.originalEvent?.preventDefault();
+    cancelPress();
+    openMenu(event.point, event.lngLat);
+  };
+  const onTouchStart = (event: {
+    point: { x: number; y: number };
+    lngLat: { lng: number; lat: number };
+    originalEvent?: TouchEvent;
+  }) => {
+    cancelPress();
+    const target = event.originalEvent?.target as Element | null | undefined;
+    if (target?.closest?.('.planner-marker')) return;
+    if ((event.originalEvent?.touches?.length ?? 1) > 1) return;
+    const { point, lngLat } = event;
+    pressTimer = setTimeout(() => {
+      pressTimer = undefined;
+      // A long press that began on the route is not a drag.
+      endRouteDrag();
+      suppressClick = true;
+      setTimeout(() => (suppressClick = false), 400);
+      openMenu(point, lngLat);
+    }, LONG_PRESS_MS);
+    pressOrigin = point;
+  };
+  let pressOrigin = { x: 0, y: 0 };
+  const onTouchMove = (event: { point: { x: number; y: number } }) => {
+    if (
+      pressTimer &&
+      Math.hypot(event.point.x - pressOrigin.x, event.point.y - pressOrigin.y) >
+        LONG_PRESS_SLOP
+    ) {
+      cancelPress();
+    }
+  };
+  map.on('contextmenu', onContextMenu);
+  map.on('touchstart', onTouchStart);
+  map.on('touchmove', onTouchMove);
+  map.on('touchend', cancelPress);
+  map.on('touchcancel', cancelPress);
+  map.on('dragstart', cancelPress);
+  map.on('zoomstart', cancelPress);
+
   /** Hovering the selected route tells the planner where, to show the point on the profile. */
   let hovering = false;
   const onMouseMove = (event: {
@@ -258,6 +328,14 @@ export async function createMapLibreDriver(
   map.on('click', onClick);
   map.on('mousemove', onMouseMove);
   ensureLayers();
+
+  /** Right click and long press may both report the same gesture: remove only once. */
+  let removedAt = 0;
+  const requestRemove = (index: number) => {
+    if (Date.now() - removedAt < 800) return;
+    removedAt = Date.now();
+    handlers.onRemovePoint(index);
+  };
 
   const clearMarkers = () => {
     markers.forEach((marker) => marker.remove());
@@ -291,8 +369,28 @@ export async function createMapLibreDriver(
         // Right click removes the point (the panel offers a button too).
         element.addEventListener('contextmenu', (event) => {
           event.preventDefault();
-          handlers.onRemovePoint(index);
+          requestRemove(index);
         });
+        // Long press removes it on a touch screen (see the map's own long press above).
+        let markerPress: ReturnType<typeof setTimeout> | undefined;
+        const stopPress = () => {
+          clearTimeout(markerPress);
+          markerPress = undefined;
+        };
+        element.addEventListener(
+          'touchstart',
+          () => {
+            stopPress();
+            markerPress = setTimeout(() => {
+              markerPress = undefined;
+              if (!dragging) requestRemove(index);
+            }, LONG_PRESS_MS);
+          },
+          { passive: true },
+        );
+        element.addEventListener('touchmove', stopPress, { passive: true });
+        element.addEventListener('touchend', stopPress);
+        element.addEventListener('touchcancel', stopPress);
         const marker = new maplibre.Marker({ element, draggable: true })
           .setLngLat(spec.lngLat)
           .addTo(map);
@@ -387,6 +485,14 @@ export async function createMapLibreDriver(
       ghostMarker = null;
       container.removeEventListener('mouseleave', hideGhost);
       map.off('mousemove', moveGhost);
+      cancelPress();
+      map.off('contextmenu', onContextMenu);
+      map.off('touchstart', onTouchStart);
+      map.off('touchmove', onTouchMove);
+      map.off('touchend', cancelPress);
+      map.off('touchcancel', cancelPress);
+      map.off('dragstart', cancelPress);
+      map.off('zoomstart', cancelPress);
       map.off('mousedown', startRouteDrag);
       map.off('touchstart', startRouteDrag);
       endRouteDrag();

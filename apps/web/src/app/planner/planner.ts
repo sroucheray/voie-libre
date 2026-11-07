@@ -37,6 +37,9 @@ import { SavedRoutes } from '../saved-routes/saved-routes';
  * The map with its planning panel. Clicks place the start, the end and waypoints; markers can be
  * dragged; the route and its alternatives are computed through the API and drawn on the map.
  */
+/** How long a removed point can be put back. */
+const UNDO_MS = 6000;
+
 @Component({
   selector: 'vl-planner',
   imports: [MapView, TranslocoPipe, SavedRoutes, ElevationPanel],
@@ -60,6 +63,13 @@ export class Planner {
     if (count === 1) return 'planner.hint.end';
     return this.store.isLoop() ? 'planner.hint.loop' : 'planner.hint.route';
   });
+
+  /** The menu opened by a right click or a long press: where, and at which pixel. */
+  protected readonly menu = signal<{
+    point: LngLat;
+    x: number;
+    y: number;
+  } | null>(null);
 
   /** The dialog that asks how to close the loop. */
   protected readonly loopDialogOpen = signal(false);
@@ -130,6 +140,23 @@ export class Planner {
       );
     });
 
+    // A removed point can be put back for a few seconds.
+    effect((onCleanup) => {
+      if (!this.store.removed()) return;
+      const timer = setTimeout(() => this.store.forgetRemoved(), UNDO_MS);
+      onCleanup(() => clearTimeout(timer));
+    });
+
+    // The menu takes the focus when it opens, like the dialog below.
+    effect(() => {
+      if (!this.menu()) return;
+      queueMicrotask(() =>
+        this.host.nativeElement
+          .querySelector<HTMLElement>('.map-menu button')
+          ?.focus(),
+      );
+    });
+
     // The dialog takes the focus when it opens, so the keyboard works at once.
     effect(() => {
       if (!this.loopDialogOpen()) return;
@@ -192,6 +219,8 @@ export class Planner {
         onSelectRoute: (index) => this.store.selectRoute(index),
         onCloseLoop: () => this.loopDialogOpen.set(true),
         onInsertPoint: (hit, to) => this.insertOnRoute(hit, to),
+        onContextMenu: (point, screen) =>
+          this.menu.set({ point, x: screen.x, y: screen.y }),
         onMovePoint: (index, point) => this.store.movePoint(index, point),
         onRemovePoint: (index) => this.store.removePoint(index),
         onHoverRoute: (point) => this.hoverRoute(point),
@@ -239,6 +268,16 @@ export class Planner {
       { n: index },
       language,
     );
+  }
+
+  /** Applies a choice of the map menu at the place where it was opened. */
+  protected place(choice: 'start' | 'stop' | 'end'): void {
+    const menu = this.menu();
+    this.menu.set(null);
+    if (!menu) return;
+    if (choice === 'start') this.store.setStart(menu.point);
+    else if (choice === 'end') this.store.setEnd(menu.point);
+    else this.store.addPoint(menu.point);
   }
 
   protected closeLoop(): void {

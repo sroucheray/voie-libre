@@ -36,6 +36,8 @@ export interface PlannerMapHandlers {
   onCloseLoop(): void;
   /** The selected route was dragged from `hit` (on the route) and dropped at `to`. */
   onInsertPoint(hit: LngLat, to: LngLat): void;
+  /** A right click or a long press on the map, at `point` (`screen`: pixels in the map). */
+  onContextMenu(point: LngLat, screen: { x: number; y: number }): void;
   onMovePoint(index: number, point: LngLat): void;
   onRemovePoint(index: number): void;
   /** The pointer is over the selected route (`point`), or left it (`null`). */

@@ -84,6 +84,16 @@
       "distanceDescription": "Laisser le planificateur tracer une boucle d'une longueur donnée.",
       "soon": "Bientôt",
       "cancel": "Annuler"
+    },
+    "menu": {
+      "label": "Placer sur la carte",
+      "setStart": "Définir comme départ",
+      "addStop": "Ajouter une étape ici",
+      "setEnd": "Définir comme arrivée"
+    },
+    "removed": {
+      "message": "Point supprimé.",
+      "undo": "Annuler"
     }
   },
   "saved": {

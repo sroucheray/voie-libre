@@ -3,7 +3,37 @@
 
   <p class="help-bar" role="status">{{ helpKey() | transloco }}</p>
 
-  @if (loopDialogOpen()) {
+  @if (menu(); as m) {
+  <div class="map-menu-backdrop" (click)="menu.set(null)"></div>
+  <div
+    class="map-menu"
+    role="menu"
+    [attr.aria-label]="'planner.menu.label' | transloco"
+    [style.left.px]="m.x"
+    [style.top.px]="m.y"
+    (keydown.escape)="menu.set(null)"
+  >
+    <button type="button" role="menuitem" (click)="place('start')">
+      {{ 'planner.menu.setStart' | transloco }}
+    </button>
+    @if (store.points().length >= 2) {
+    <button type="button" role="menuitem" (click)="place('stop')">
+      {{ 'planner.menu.addStop' | transloco }}
+    </button>
+    } @if (store.points().length >= 1) {
+    <button type="button" role="menuitem" (click)="place('end')">
+      {{ 'planner.menu.setEnd' | transloco }}
+    </button>
+    }
+  </div>
+  } @if (store.removed()) {
+  <p class="undo-toast" role="status">
+    {{ 'planner.removed.message' | transloco }}
+    <button type="button" (click)="store.undoRemove()">
+      {{ 'planner.removed.undo' | transloco }}
+    </button>
+  </p>
+  } @if (loopDialogOpen()) {
   <div class="loop-dialog" (click)="loopDialogOpen.set(false)">
     <div
       class="loop-dialog__box"

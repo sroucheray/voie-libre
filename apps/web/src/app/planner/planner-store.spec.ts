@@ -119,6 +119,65 @@ describe('PlannerStore', () => {
       expect(store.points().length).toBe(MAX_POINTS);
     });
 
+    it('sets the start and the end from anywhere', () => {
+      store.setStart([1, 1]);
+      expect(store.points()).toEqual([[1, 1]]);
+      store.setEnd([2, 2]);
+      expect(store.points()).toEqual([
+        [1, 1],
+        [2, 2],
+      ]);
+      store.setStart([3, 3]);
+      store.setEnd([4, 4]);
+      expect(store.points()).toEqual([
+        [3, 3],
+        [4, 4],
+      ]);
+    });
+
+    it('opens a loop when its end is set elsewhere', () => {
+      store.addPoint([1, 1]);
+      store.addPoint([2, 2]);
+      store.closeLoop();
+      store.setEnd([5, 5]);
+      expect(store.points()).toEqual([
+        [1, 1],
+        [2, 2],
+        [5, 5],
+      ]);
+      expect(store.isLoop()).toBe(false);
+    });
+
+    it('puts back a removed point where it was', () => {
+      store.addPoint([1, 1]);
+      store.addPoint([9, 9]);
+      store.addPoint([2, 2]);
+      store.removePoint(1);
+      expect(store.points()).toEqual([
+        [1, 1],
+        [9, 9],
+      ]);
+      expect(store.removed()).toEqual({ index: 1, point: [2, 2] });
+      store.undoRemove();
+      expect(store.points()).toEqual([
+        [1, 1],
+        [2, 2],
+        [9, 9],
+      ]);
+      expect(store.removed()).toBeNull();
+    });
+
+    it('forgets the removed point when asked, and when everything is cleared', () => {
+      store.addPoint([1, 1]);
+      store.removePoint(0);
+      store.forgetRemoved();
+      expect(store.removed()).toBeNull();
+      store.addPoint([1, 1]);
+      store.removePoint(0);
+      store.clear();
+      expect(store.removed()).toBeNull();
+    });
+
     it('inserts further points as waypoints just before the end', () => {
       store.addPoint([1, 1]);
       store.addPoint([9, 9]);

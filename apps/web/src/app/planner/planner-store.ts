@@ -97,6 +97,13 @@ export class PlannerStore {
   private readonly statusState = signal<PlannerStatus>('idle');
   private readonly errorState = signal<PlannerErrorCode | null>(null);
 
+  private readonly removedState = signal<{
+    index: number;
+    point: LngLat;
+  } | null>(null);
+  /** The point removed last, until it is undone or forgotten. */
+  readonly removed = this.removedState.asReadonly();
+
   readonly points = this.pointsState.asReadonly();
   readonly profile = this.profileState.asReadonly();
   readonly alternatives = this.alternativesState.asReadonly();
@@ -201,11 +208,50 @@ export class PlannerStore {
     });
   }
 
+  /** Sets the start (the first point): the first one if there is none yet. */
+  setStart(point: LngLat): void {
+    if (this.pointsState().length === 0) this.pointsState.set([point]);
+    else this.movePoint(0, point);
+  }
+
+  /**
+   * Sets the end (the last point): it becomes the second point if there is only a start. In a
+   * loop only the end moves, which opens the loop.
+   */
+  setEnd(point: LngLat): void {
+    this.pointsState.update((points) => {
+      if (points.length === 0) return points;
+      if (points.length === 1) return [...points, point];
+      return [...points.slice(0, -1), point];
+    });
+  }
+
   removePoint(index: number): void {
+    const point = this.pointsState()[index];
+    if (!point) return;
+    this.removedState.set({ index, point });
     this.pointsState.update((points) => points.filter((_, i) => i !== index));
   }
 
+  /** Puts back the point removed last, at its place (or the end if the list got shorter). */
+  undoRemove(): void {
+    const removed = this.removedState();
+    if (!removed) return;
+    this.removedState.set(null);
+    this.pointsState.update((points) => {
+      if (points.length >= MAX_POINTS) return points;
+      const at = Math.min(removed.index, points.length);
+      return [...points.slice(0, at), removed.point, ...points.slice(at)];
+    });
+  }
+
+  /** Forgets the removed point: the time to undo has passed. */
+  forgetRemoved(): void {
+    this.removedState.set(null);
+  }
+
   clear(): void {
+    this.removedState.set(null);
     this.pointsState.set([]);
   }
 

@@ -84,6 +84,16 @@
       "distanceDescription": "Let the planner draw a loop of a given length.",
       "soon": "Soon",
       "cancel": "Cancel"
+    },
+    "menu": {
+      "label": "Place on the map",
+      "setStart": "Set as start",
+      "addStop": "Add a stop here",
+      "setEnd": "Set as end"
+    },
+    "removed": {
+      "message": "Point removed.",
+      "undo": "Undo"
     }
   },
   "saved": {

@@ -208,6 +208,69 @@ describe('Planner', () => {
     expect(store.points()[2]).toEqual([3.3, 45.5]);
   });
 
+  describe('touch menu and undo', () => {
+    it('places a start, a stop and an end from the map menu', async () => {
+      const view = await render();
+      const store = TestBed.inject(PlannerStore);
+      const open = (x: number, y: number) => {
+        view.driver.handlers.onContextMenu([x, y], { x: 40, y: 60 });
+        view.fixture.detectChanges();
+      };
+      const choose = (label: string) => {
+        const items = Array.from(
+          view.root.querySelectorAll<HTMLButtonElement>('.map-menu button'),
+        );
+        items.find((b) => b.textContent?.includes(label))?.click();
+        view.fixture.detectChanges();
+      };
+      open(3, 45);
+      expect(view.root.querySelectorAll('.map-menu button').length).toBe(1);
+      choose('Set as start');
+      open(4, 46);
+      choose('Set as end');
+      expect(store.points()).toEqual([
+        [3, 45],
+        [4, 46],
+      ]);
+      open(3.5, 45.5);
+      expect(view.root.querySelectorAll('.map-menu button').length).toBe(3);
+      choose('Add a stop here');
+      expect(store.points()).toEqual([
+        [3, 45],
+        [3.5, 45.5],
+        [4, 46],
+      ]);
+      expect(view.root.querySelector('.map-menu')).toBeNull();
+    });
+
+    it('offers to undo a removed point for a few seconds', async () => {
+      const view = await render();
+      const store = TestBed.inject(PlannerStore);
+      view.click(3.087, 45.777);
+      view.click(3.249, 45.544);
+      view.driver.handlers.onRemovePoint(1);
+      view.fixture.detectChanges();
+      TestBed.tick();
+      expect(view.text()).toContain('Point removed.');
+      (
+        view.root.querySelector('.undo-toast button') as HTMLButtonElement
+      ).click();
+      view.fixture.detectChanges();
+      expect(store.points().length).toBe(2);
+      expect(view.root.querySelector('.undo-toast')).toBeNull();
+    });
+
+    it('forgets the removed point after the delay', async () => {
+      const view = await render();
+      const store = TestBed.inject(PlannerStore);
+      view.click(3.087, 45.777);
+      view.driver.handlers.onRemovePoint(0);
+      TestBed.tick();
+      vi.advanceTimersByTime(6100);
+      expect(store.removed()).toBeNull();
+    });
+  });
+
   it('shows a ghost that says what the next click creates', async () => {
     const view = await render();
     TestBed.tick();
