@@ -10,6 +10,8 @@ import {
 } from '@angular/core';
 import { TranslocoPipe, translateSignal } from '@jsverse/transloco';
 import { FormattingService } from '../core/format/formatting.service';
+import { FILE_DOWNLOADER } from '../export/file-download';
+import { buildGpx, gpxFileName } from '../export/gpx';
 import { PlannerStore } from '../planner/planner-store';
 import {
   ROUTE_STORE,
@@ -17,6 +19,9 @@ import {
   type RouteStoreErrorCode,
 } from '../storage/route-store';
 import type { SavedRoute } from '../storage/saved-route';
+
+/** The browser refused the download. */
+class ExportError extends Error {}
 
 /**
  * Saving the planned route on the device and managing the saved ones: open, rename, delete
@@ -34,11 +39,14 @@ export class SavedRoutes {
   protected readonly format = inject(FormattingService);
   private readonly planner = inject(PlannerStore);
   private readonly routeStore = inject(ROUTE_STORE);
+  private readonly download = inject(FILE_DOWNLOADER);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly routes = signal<SavedRoute[]>([]);
-  protected readonly error = signal<RouteStoreErrorCode | null>(null);
+  protected readonly error = signal<
+    RouteStoreErrorCode | 'export_failed' | null
+  >(null);
   protected readonly renamingId = signal<string | null>(null);
   protected readonly confirmingId = signal<string | null>(null);
   protected readonly savable = this.planner.savable;
@@ -91,6 +99,26 @@ export class SavedRoutes {
         throw new RouteStoreError('not_found');
       }
       this.planner.loadSaved(saved);
+    });
+  }
+
+  /** Builds the GPX on the device from the stored geometry and downloads it. */
+  protected async exportGpx(id: string): Promise<void> {
+    await this.attempt(async () => {
+      const saved = await this.routeStore.get(id);
+      if (!saved) {
+        this.routes.update((routes) => routes.filter((r) => r.id !== id));
+        throw new RouteStoreError('not_found');
+      }
+      try {
+        this.download(
+          buildGpx(saved),
+          gpxFileName(saved.name),
+          'application/gpx+xml',
+        );
+      } catch {
+        throw new ExportError();
+      }
     });
   }
 
@@ -151,7 +179,13 @@ export class SavedRoutes {
       await operation();
       this.error.set(null);
     } catch (error) {
-      this.error.set(error instanceof RouteStoreError ? error.code : 'unknown');
+      this.error.set(
+        error instanceof ExportError
+          ? 'export_failed'
+          : error instanceof RouteStoreError
+            ? error.code
+            : 'unknown',
+      );
     }
   }
 }

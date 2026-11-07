@@ -14,6 +14,7 @@ import { API_CLIENT } from '../core/api/api-client';
 import { LanguageService } from '../core/i18n/language.service';
 import { Planner } from '../planner/planner';
 import { ROUTE_DEBOUNCE_MS } from '../planner/route-planner';
+import { FILE_DOWNLOADER } from '../export/file-download';
 import { RouteStoreError } from '../storage/route-store';
 
 const geometry: [number, number, number][] = [
@@ -35,6 +36,8 @@ describe('Saved routes', () => {
   let calls: number;
   let respond: () => Response;
   let routeStore: InMemoryRouteStore;
+  let downloads: { content: string; fileName: string; mimeType: string }[];
+  let downloadFails: boolean;
 
   beforeEach(async () => {
     vi.useFakeTimers();
@@ -53,6 +56,8 @@ describe('Saved routes', () => {
         ],
       });
     routeStore = new InMemoryRouteStore();
+    downloads = [];
+    downloadFails = false;
     await TestBed.configureTestingModule({
       imports: [Planner],
       providers: [
@@ -60,6 +65,13 @@ describe('Saved routes', () => {
         provideFakeMap([] as FakeMap[]),
         provideFakePlannerDriver(drivers),
         provideInMemoryRouteStore(routeStore),
+        {
+          provide: FILE_DOWNLOADER,
+          useValue: (content: string, fileName: string, mimeType: string) => {
+            if (downloadFails) throw new Error('blocked');
+            downloads.push({ content, fileName, mimeType });
+          },
+        },
         {
           provide: API_CLIENT,
           useValue: createApiClient({
@@ -306,6 +318,63 @@ describe('Saved routes', () => {
       await view.settle();
       expect(view.alert()).toContain('no longer exists');
       expect(view.items()).toHaveLength(0);
+    });
+  });
+
+  describe('exporting', () => {
+    it('downloads a GPX built from the stored geometry, with no network call', async () => {
+      const view = await renderWithSavedRoute();
+      calls = 0;
+      view.button('Export Road, 41 km as GPX').click();
+      await view.settle();
+      expect(calls).toBe(0);
+      expect(downloads).toHaveLength(1);
+      expect(downloads[0].fileName).toBe('road-41-km.gpx');
+      expect(downloads[0].mimeType).toBe('application/gpx+xml');
+      const doc = new DOMParser().parseFromString(
+        downloads[0].content,
+        'application/xml',
+      );
+      expect(doc.querySelector('parsererror')).toBeNull();
+      expect(doc.querySelector('trk > name')?.textContent).toBe('Road, 41 km');
+      expect(
+        Array.from(doc.querySelectorAll('trkpt')).map((p) => [
+          Number(p.getAttribute('lon')),
+          Number(p.getAttribute('lat')),
+          Number(p.querySelector('ele')?.textContent),
+        ]),
+      ).toEqual(geometry);
+      expect(view.alert()).toBeNull();
+    });
+
+    it('exports under the new name after a rename', async () => {
+      const view = await renderWithSavedRoute();
+      const [saved] = [...routeStore.records.values()];
+      await routeStore.rename(saved.id, 'Été');
+      view.button('Export Road, 41 km as GPX').click();
+      await view.settle();
+      expect(downloads[0].fileName).toBe('ete.gpx');
+    });
+
+    it('translates a refused download', async () => {
+      const view = await renderWithSavedRoute();
+      downloadFails = true;
+      view.button('Export Road, 41 km as GPX').click();
+      await view.settle();
+      expect(view.alert()).toContain('GPX file could not be created');
+      TestBed.inject(LanguageService).use('fr');
+      await view.settle();
+      await view.settle();
+      expect(view.alert()).toContain("fichier GPX n'a pas pu être créé");
+    });
+
+    it('says so when the route was deleted elsewhere', async () => {
+      const view = await renderWithSavedRoute();
+      routeStore.records.clear();
+      view.button('Export Road, 41 km as GPX').click();
+      await view.settle();
+      expect(downloads).toHaveLength(0);
+      expect(view.alert()).toContain('no longer exists');
     });
   });
 

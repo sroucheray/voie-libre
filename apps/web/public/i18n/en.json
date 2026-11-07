@@ -90,7 +90,10 @@
       "unavailable": "Saving is not available in this browser (private window or blocked storage). You can still plan routes.",
       "quota": "The device storage is full. Delete a saved route and try again.",
       "not_found": "This saved route no longer exists.",
-      "unknown": "The saved routes could not be read or written."
-    }
+      "unknown": "The saved routes could not be read or written.",
+      "export_failed": "The GPX file could not be created."
+    },
+    "export": "Export",
+    "exportNamed": "Export {{name}} as GPX"
   }
 }

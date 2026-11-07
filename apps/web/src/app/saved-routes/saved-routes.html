@@ -78,6 +78,14 @@
         </button>
         <button
           type="button"
+          class="export"
+          [attr.aria-label]="'saved.exportNamed' | transloco : { name: route.name }"
+          (click)="exportGpx(route.id)"
+        >
+          {{ 'saved.export' | transloco }}
+        </button>
+        <button
+          type="button"
           class="rename-button"
           [attr.aria-label]="'saved.renameNamed' | transloco : { name: route.name }"
           (click)="startRename(route.id)"
