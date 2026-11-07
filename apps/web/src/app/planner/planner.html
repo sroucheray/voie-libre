@@ -4,10 +4,17 @@
   <p class="help-bar" aria-live="polite">{{ helpKey() | transloco }}</p>
 
   @if (menu(); as m) {
-  <div class="map-menu-backdrop" (click)="menu.set(null)"></div>
+  <button
+    type="button"
+    class="map-menu-backdrop"
+    tabindex="-1"
+    aria-hidden="true"
+    (click)="menu.set(null)"
+  ></button>
   <div
     class="map-menu"
     role="menu"
+    tabindex="-1"
     [attr.aria-label]="'planner.menu.label' | transloco"
     [style.left.px]="m.x"
     [style.top.px]="m.y"
@@ -34,13 +41,20 @@
     </button>
   </p>
   } @if (loopDialogOpen()) {
-  <div class="loop-dialog" (click)="loopDialogOpen.set(false)">
+  <div class="loop-dialog">
+    <button
+      type="button"
+      class="loop-dialog__backdrop"
+      tabindex="-1"
+      aria-hidden="true"
+      (click)="loopDialogOpen.set(false)"
+    ></button>
     <div
       class="loop-dialog__box"
       role="dialog"
       aria-modal="true"
       aria-labelledby="loop-dialog-title"
-      (click)="$event.stopPropagation()"
+      tabindex="-1"
       (keydown.escape)="loopDialogOpen.set(false)"
     >
       <h2 id="loop-dialog-title">{{ 'planner.loop.title' | transloco }}</h2>

@@ -256,3 +256,17 @@ fieldset.profiles {
     cursor: pointer;
   }
 }
+
+.map-menu-backdrop,
+.loop-dialog__backdrop {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: default;
+}
+
+.loop-dialog__box {
+  position: relative;
+}
