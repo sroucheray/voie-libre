@@ -12,7 +12,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { map, switchMap } from 'rxjs';
 import { FormattingService } from '../core/format/formatting.service';
-import type { MapLike } from '../core/map/map-factory';
+import type { LngLat, MapLike } from '../core/map/map-factory';
 import { MapView } from '../core/map/map-view';
 import {
   PLANNER_MAP_DRIVER,
@@ -28,6 +28,7 @@ import {
   pointRole,
 } from './planner-store';
 import { buildProfile, sampleNearest } from './elevation-profile';
+import { insertionIndex } from './insert-point';
 import { RoutePlanner } from './route-planner';
 import { ElevationPanel } from './elevation-panel';
 import { SavedRoutes } from '../saved-routes/saved-routes';
@@ -190,6 +191,7 @@ export class Planner {
         onClick: (point) => this.store.addPoint(point),
         onSelectRoute: (index) => this.store.selectRoute(index),
         onCloseLoop: () => this.loopDialogOpen.set(true),
+        onInsertPoint: (hit, to) => this.insertOnRoute(hit, to),
         onMovePoint: (index, point) => this.store.movePoint(index, point),
         onRemovePoint: (index) => this.store.removePoint(index),
         onHoverRoute: (point) => this.hoverRoute(point),
@@ -202,6 +204,16 @@ export class Planner {
     } catch (error) {
       console.error('Planner could not attach to the map', error);
     }
+  }
+
+  /** A waypoint dropped from the route goes in the segment it was dragged from. */
+  private insertOnRoute(hit: LngLat, to: LngLat): void {
+    const index = insertionIndex(
+      this.store.selectedGeometry(),
+      this.store.points(),
+      hit,
+    );
+    if (index !== null) this.store.insertPoint(index, to);
   }
 
   /** Hovering the route on the map moves the profile's cursor to the nearest point. */

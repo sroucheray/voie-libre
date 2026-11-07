@@ -78,6 +78,7 @@ export async function createMapLibreDriver(
     point: { x: number; y: number };
     lngLat: { lng: number; lat: number };
   }) => {
+    if (suppressClick) return;
     // A marker lies over the map: its own handlers deal with the click.
     const target = (event as { originalEvent?: MouseEvent }).originalEvent
       ?.target as Element | null | undefined;
@@ -135,6 +136,98 @@ export async function createMapLibreDriver(
   const container = map.getCanvasContainer();
   container.addEventListener('mouseleave', hideGhost);
   map.on('mousemove', moveGhost);
+
+  /**
+   * Dragging the selected route drops a waypoint where the user lets go. The press is claimed
+   * from the map only when it starts on the route; a press that does not move stays a click.
+   */
+  const DRAG_THRESHOLD = 6;
+  const TOUCH_TOLERANCE = 14;
+  let routeDrag: {
+    from: LngLat;
+    x: number;
+    y: number;
+    last: LngLat;
+    marker: Marker | null;
+  } | null = null;
+  let suppressClick = false;
+
+  const endRouteDrag = () => {
+    const drag = routeDrag;
+    routeDrag = null;
+    if (!drag) return;
+    map.off('mousemove', moveRouteDrag);
+    map.off('touchmove', moveRouteDrag);
+    map.off('mouseup', endRouteDrag);
+    map.off('touchend', endRouteDrag);
+    map.off('touchcancel', endRouteDrag);
+    drag.marker?.remove();
+    if (drag.marker) {
+      // The click that follows the drop must not add a point on top of the inserted one.
+      suppressClick = true;
+      setTimeout(() => (suppressClick = false), 50);
+      handlers.onInsertPoint(drag.from, drag.last);
+    }
+  };
+
+  const moveRouteDrag = (event: {
+    point: { x: number; y: number };
+    lngLat: { lng: number; lat: number };
+  }) => {
+    const drag = routeDrag;
+    if (!drag) return;
+    drag.last = [event.lngLat.lng, event.lngLat.lat];
+    const moved = Math.hypot(event.point.x - drag.x, event.point.y - drag.y);
+    if (!drag.marker && moved < DRAG_THRESHOLD) return;
+    if (!drag.marker) {
+      const element = document.createElement('div');
+      element.className =
+        'planner-marker planner-marker--waypoint planner-marker--dragging';
+      element.setAttribute('aria-hidden', 'true');
+      drag.marker = new maplibre.Marker({ element })
+        .setLngLat(drag.last)
+        .addTo(map);
+      hideGhost();
+    }
+    drag.marker.setLngLat(drag.last);
+  };
+
+  const startRouteDrag = (event: {
+    type: string;
+    point: { x: number; y: number };
+    lngLat: { lng: number; lat: number };
+    originalEvent?: MouseEvent | TouchEvent;
+    preventDefault(): void;
+  }) => {
+    if (routeDrag || !map.getLayer(SELECTED_LAYER)) return;
+    const touch = event.type === 'touchstart';
+    if (touch && (event.originalEvent as TouchEvent).touches?.length > 1)
+      return;
+    const target = event.originalEvent?.target as Element | null | undefined;
+    if (target?.closest?.('.planner-marker')) return;
+    const { x, y } = event.point;
+    const tolerance = touch ? TOUCH_TOLERANCE : HIT_TOLERANCE;
+    const onRoute =
+      map.queryRenderedFeatures(
+        [
+          [x - tolerance, y - tolerance],
+          [x + tolerance, y + tolerance],
+        ],
+        { layers: [SELECTED_LAYER] },
+      ).length > 0;
+    if (!onRoute) return;
+    // Keeps the map from panning while the route is being dragged.
+    event.preventDefault();
+    const from: LngLat = [event.lngLat.lng, event.lngLat.lat];
+    routeDrag = { from, x, y, last: from, marker: null };
+    map.on('mousemove', moveRouteDrag);
+    map.on('touchmove', moveRouteDrag);
+    map.on('mouseup', endRouteDrag);
+    map.on('touchend', endRouteDrag);
+    map.on('touchcancel', endRouteDrag);
+  };
+  map.on('mousedown', startRouteDrag);
+  map.on('touchstart', startRouteDrag);
 
   /** Hovering the selected route tells the planner where, to show the point on the profile. */
   let hovering = false;
@@ -258,14 +351,16 @@ export async function createMapLibreDriver(
           .setLngLat([0, 0])
           .addTo(map);
       }
-      ghostElement!.innerHTML = '';
+      const element = ghostElement;
+      if (!element) return;
+      element.innerHTML = '';
       const dot = document.createElement('span');
       dot.className = `planner-marker planner-marker--${spec.role} planner-ghost__dot`;
       dot.textContent = spec.label;
       const text = document.createElement('span');
       text.className = 'planner-ghost__text';
       text.textContent = spec.text;
-      ghostElement!.append(dot, text);
+      element.append(dot, text);
     },
     setCursor(point: LngLat | null) {
       if (!point) {
@@ -292,6 +387,9 @@ export async function createMapLibreDriver(
       ghostMarker = null;
       container.removeEventListener('mouseleave', hideGhost);
       map.off('mousemove', moveGhost);
+      map.off('mousedown', startRouteDrag);
+      map.off('touchstart', startRouteDrag);
+      endRouteDrag();
       map.off('mousemove', onMouseMove);
       map.off('styledata', onStyleData);
       map.off('click', onClick);

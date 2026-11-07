@@ -34,6 +34,8 @@ export interface PlannerMapHandlers {
   onSelectRoute(index: number): void;
   /** The start marker was clicked while it offers to close the loop. */
   onCloseLoop(): void;
+  /** The selected route was dragged from `hit` (on the route) and dropped at `to`. */
+  onInsertPoint(hit: LngLat, to: LngLat): void;
   onMovePoint(index: number, point: LngLat): void;
   onRemovePoint(index: number): void;
   /** The pointer is over the selected route (`point`), or left it (`null`). */

@@ -191,6 +191,23 @@ describe('Planner', () => {
     });
   });
 
+  it('inserts a dragged route as a waypoint in the segment it came from', async () => {
+    const view = await render();
+    view.click(3.087, 45.777);
+    view.click(3.249, 45.544);
+    view.click(3.15, 45.65);
+    await view.settle();
+    // The mocked route goes start, waypoint, end: drop one between the waypoint and the end.
+    const store = TestBed.inject(PlannerStore);
+    const geometry = store.selectedGeometry();
+    expect(geometry.length).toBeGreaterThan(1);
+    const last = geometry[geometry.length - 1];
+    view.driver.handlers.onInsertPoint([last[0], last[1]], [3.3, 45.5]);
+    expect(store.points().length).toBe(4);
+    expect(store.points()[3]).toEqual([3.249, 45.544]);
+    expect(store.points()[2]).toEqual([3.3, 45.5]);
+  });
+
   it('shows a ghost that says what the next click creates', async () => {
     const view = await render();
     TestBed.tick();

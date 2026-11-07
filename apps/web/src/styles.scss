@@ -126,3 +126,10 @@ body {
   place-items: center;
   background: rgb(16 24 40 / 35%);
 }
+
+/* The waypoint being dropped from a dragged route. */
+.planner-marker--dragging {
+  opacity: 0.8;
+  pointer-events: none;
+  cursor: grabbing;
+}
