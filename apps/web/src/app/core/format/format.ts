@@ -39,6 +39,14 @@ export function formatDuration(seconds: number, locale: string): string {
     : `${unit(hours, 'hour', locale)} ${minutesText}`;
 }
 
+/** File size in megabytes (`41.2 MB`), or gigabytes from 1 GB. Decimal units, like file managers. */
+export function formatBytes(bytes: number, locale: string): string {
+  if (bytes >= 1e9) {
+    return unit(bytes / 1e9, 'gigabyte', locale, { maximumFractionDigits: 1 });
+  }
+  return unit(bytes / 1e6, 'megabyte', locale, { maximumFractionDigits: 1 });
+}
+
 export function formatDate(
   value: Date | number | string,
   locale: string,
@@ -57,7 +65,7 @@ export function languageName(language: string): string {
 
 function unit(
   value: number,
-  unitName: 'meter' | 'kilometer' | 'minute' | 'hour',
+  unitName: 'meter' | 'kilometer' | 'minute' | 'hour' | 'megabyte' | 'gigabyte',
   locale: string,
   options: Intl.NumberFormatOptions = {},
 ): string {

@@ -1,6 +1,7 @@
 import { Injectable, computed, inject } from '@angular/core';
 import { LanguageService } from '../i18n/language.service';
 import {
+  formatBytes,
   formatDate,
   formatDistance,
   formatDuration,
@@ -31,6 +32,10 @@ export class FormattingService {
 
   duration(seconds: number): string {
     return formatDuration(seconds, this.locale());
+  }
+
+  bytes(size: number): string {
+    return formatBytes(size, this.locale());
   }
 
   date(

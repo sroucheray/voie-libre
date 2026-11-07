@@ -1,5 +1,9 @@
 import { InjectionToken } from '@angular/core';
 import type { Map as MapLibreMap, StyleSpecification } from 'maplibre-gl';
+import {
+  OfflineFirstSource,
+  type OfflineTilesReader,
+} from '../offline/tiles-source';
 
 /** `[longitude, latitude]`. */
 export type LngLat = [number, number];
@@ -20,11 +24,19 @@ export type MapLike = Pick<
   | 'remove'
 >;
 
+/** The offline copy of the PMTiles archive, which the map reads before the network. */
+export interface OfflineTiles {
+  /** Where the archive is served; also its key in the PMTiles protocol. */
+  url: string;
+  reader: OfflineTilesReader;
+}
+
 export interface MapCreateOptions {
   container: HTMLElement;
   style: StyleSpecification;
   center: LngLat;
   zoom: number;
+  offlineTiles?: OfflineTiles;
 }
 
 export type MapFactory = (options: MapCreateOptions) => Promise<MapLike>;
@@ -46,13 +58,28 @@ export const createMapLibreMap: MapFactory = async ({
   style,
   center,
   zoom,
+  offlineTiles,
 }) => {
-  const [maplibre, { Protocol }] = await Promise.all([
+  const [maplibre, { Protocol, PMTiles, FetchSource }] = await Promise.all([
     import('maplibre-gl'),
     import('pmtiles'),
   ]);
   if (!pmtilesRegistered) {
-    maplibre.addProtocol('pmtiles', new Protocol().tile);
+    const protocol = new Protocol();
+    if (offlineTiles) {
+      // Registered under the URL the style uses: the map reads the downloaded copy when there is
+      // one, and falls back to HTTP range requests.
+      protocol.add(
+        new PMTiles(
+          new OfflineFirstSource(
+            offlineTiles.url,
+            offlineTiles.reader,
+            new FetchSource(offlineTiles.url),
+          ),
+        ),
+      );
+    }
+    maplibre.addProtocol('pmtiles', protocol.tile);
     // The worker is an asset of the app (see project.json): the bundler cannot locate it beside the
     // library, which breaks the dev server and hashed production builds alike.
     maplibre.setWorkerUrl(

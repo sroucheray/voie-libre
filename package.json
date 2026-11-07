@@ -9,7 +9,8 @@
     "lint": "nx run-many -t lint",
     "generate-client": "tsx scripts/generate-client.ts",
     "db:migrate": "tsx scripts/migrate.ts up",
-    "db:migrate:down": "tsx scripts/migrate.ts down"
+    "db:migrate:down": "tsx scripts/migrate.ts down",
+    "serve:prod": "nx build web && python3 -m http.server 4300 -d dist/apps/web/browser"
   },
   "private": true,
   "devDependencies": {
@@ -67,6 +68,7 @@
     "@angular/forms": "~22.2.0",
     "@angular/platform-browser": "~22.2.0",
     "@angular/router": "~22.2.0",
+    "@angular/service-worker": "~22.2.0",
     "@fastify/cors": "^11.4.1",
     "@fastify/rate-limit": "^11.2.2",
     "@fastify/swagger": "^9.9.3",

@@ -14,7 +14,8 @@ import {
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { LanguageService } from '../i18n/language.service';
-import { buildBasemapStyle } from './basemap-style';
+import { OfflineBasemap } from '../offline/offline-basemap';
+import { basemapTilesUrl, buildBasemapStyle } from './basemap-style';
 import { BASEMAP_URL, LngLat, MAP_FACTORY, MapLike } from './map-factory';
 
 /** Clermont-Ferrand, the test region. */
@@ -54,6 +55,7 @@ export class MapView {
   private readonly createMap = inject(MAP_FACTORY);
   private readonly basemapUrl = inject(BASEMAP_URL);
   private readonly language = inject(LanguageService);
+  private readonly offline = inject(OfflineBasemap);
   private readonly map = signal<MapLike | null>(null);
 
   constructor() {
@@ -72,6 +74,10 @@ export class MapView {
           style: buildBasemapStyle(this.basemapUrl, this.language.current()),
           center: this.center(),
           zoom: this.zoom(),
+          offlineTiles: {
+            url: basemapTilesUrl(this.basemapUrl),
+            reader: this.offline,
+          },
         });
       } catch (error) {
         console.error('Map could not be created', error);

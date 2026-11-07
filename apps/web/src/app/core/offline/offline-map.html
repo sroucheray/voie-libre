@@ -1,0 +1,37 @@
+<section class="offline" [attr.aria-label]="'offline.title' | transloco">
+  @switch (offline.state()) { @case ('downloading') {
+  <label class="progress">
+    {{ 'offline.downloading' | transloco }}
+    <progress max="100" [value]="percent()">{{ percent() }} %</progress>
+    <span class="detail">
+      @if (offline.totalBytes() > 0) { {{ 'offline.progress' | transloco : {
+      done: format.bytes(offline.downloadedBytes()), total:
+      format.bytes(offline.totalBytes()) } }} }
+    </span>
+  </label>
+  <button type="button" (click)="offline.cancel()">
+    {{ 'offline.cancel' | transloco }}
+  </button>
+  } @case ('ready') {
+  <span class="ready">
+    {{ 'offline.ready' | transloco : { size: format.bytes(offline.sizeBytes()) }
+    }}
+  </span>
+  <button type="button" (click)="offline.remove()">
+    {{ 'offline.remove' | transloco }}
+  </button>
+  } @default {
+  <button
+    type="button"
+    class="download"
+    [disabled]="offline.state() === 'checking'"
+    (click)="offline.download()"
+  >
+    {{ 'offline.download' | transloco }}
+  </button>
+  } } @if (offline.errorCode(); as code) {
+  <span class="error" role="alert"
+    >{{ 'offline.errors.' + code | transloco }}</span
+  >
+  }
+</section>

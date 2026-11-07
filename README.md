@@ -85,6 +85,7 @@ Tests against a real BRouter are opt-in: `docker compose up -d brouter`, then `B
 - **Open:** AGPL code, open data first (OpenStreetMap, Copernicus, IGN).
 - **Local first:** routes are stored on the device.
 - **Saved routes:** the _Save_ button keeps the planned route in the browser's IndexedDB (name, profile, points, chosen itinerary, distance, climb, duration). Saved routes are listed in the planner panel and reopen without network or recomputation. Clearing site data deletes them; private windows may refuse storage, in which case the app says so and keeps working. Each saved route can be exported as a GPX file, generated in the browser from the stored geometry.
+- **Offline:** the production build is a PWA (service worker and manifest). _Download the map for offline use_ stores the region's PMTiles archive, glyphs and sprites on the device; with it, a saved route opens with no network and no server at all. Try it with `npm run serve:prod`, then switch the servers off (the service worker does not run under `npm run dev`).
 - **Bilingual, English first:** no hard-coded UI string; everything goes through translation keys (`en.json` first, then `fr.json`). Numbers, dates and units go through `Intl` and a formatting layer (metric by default).
 - **Replaceable components:** routing, geocoding, tiles and relief sit behind interfaces.
 - **No secret in the repository:** configuration comes from environment variables (see `.env.example`).

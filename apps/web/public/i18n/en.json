@@ -95,5 +95,20 @@
     },
     "export": "Export",
     "exportNamed": "Export {{name}} as GPX"
+  },
+  "offline": {
+    "title": "Offline map",
+    "download": "Download the map for offline use",
+    "downloading": "Downloading the map",
+    "progress": "{{done}} of {{total}}",
+    "cancel": "Cancel",
+    "ready": "Map available offline ({{size}})",
+    "remove": "Remove the downloaded map",
+    "errors": {
+      "unsupported": "This browser cannot keep the map offline.",
+      "network": "The map could not be downloaded. Check the connection and try again.",
+      "quota": "Not enough storage space on this device for the map.",
+      "unknown": "The map could not be saved for offline use."
+    }
   }
 }

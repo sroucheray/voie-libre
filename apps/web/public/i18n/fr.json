@@ -95,5 +95,20 @@
     },
     "export": "Exporter",
     "exportNamed": "Exporter {{name}} en GPX"
+  },
+  "offline": {
+    "title": "Carte hors-ligne",
+    "download": "Télécharger la carte pour l'utiliser hors-ligne",
+    "downloading": "Téléchargement de la carte",
+    "progress": "{{done}} sur {{total}}",
+    "cancel": "Annuler",
+    "ready": "Carte disponible hors-ligne ({{size}})",
+    "remove": "Supprimer la carte téléchargée",
+    "errors": {
+      "unsupported": "Ce navigateur ne peut pas conserver la carte hors-ligne.",
+      "network": "La carte n'a pas pu être téléchargée. Vérifiez la connexion et réessayez.",
+      "quota": "Espace de stockage insuffisant sur cet appareil pour la carte.",
+      "unknown": "La carte n'a pas pu être enregistrée pour une utilisation hors-ligne."
+    }
   }
 }

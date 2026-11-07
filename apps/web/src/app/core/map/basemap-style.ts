@@ -4,6 +4,14 @@ import type { StyleSpecification } from 'maplibre-gl';
 /** Name of the vector source in the style; the Protomaps layers refer to it. */
 export const BASEMAP_SOURCE = 'protomaps';
 
+/** The PMTiles archive of the region, relative to the basemap URL. */
+export const BASEMAP_TILES_FILE = 'clermont.pmtiles';
+
+/** Full URL of the PMTiles archive; it is also the key the offline copy is stored under. */
+export function basemapTilesUrl(baseUrl: string): string {
+  return `${baseUrl.replace(/\/+$/, '')}/${BASEMAP_TILES_FILE}`;
+}
+
 /**
  * Map style over the local basemap. Tiles, glyphs and sprites all come from `baseUrl`
  * (see scripts/download-basemap.sh), so the map never calls an external domain.
@@ -23,7 +31,7 @@ export function buildBasemapStyle(
     sources: {
       [BASEMAP_SOURCE]: {
         type: 'vector',
-        url: `pmtiles://${base}/clermont.pmtiles`,
+        url: `pmtiles://${basemapTilesUrl(base)}`,
         // Attribution is shown by the MapView template, translated.
       },
     },

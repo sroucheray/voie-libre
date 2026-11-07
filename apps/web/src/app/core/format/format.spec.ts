@@ -1,4 +1,5 @@
 import {
+  formatBytes,
   formatDate,
   formatDistance,
   formatDuration,
@@ -92,5 +93,16 @@ describe('languageName', () => {
   it('writes each language in itself', () => {
     expect(languageName('en')).toBe('English');
     expect(languageName('fr')).toBe('français');
+  });
+});
+
+describe('formatBytes', () => {
+  it('uses megabytes with one decimal', () => {
+    expect(plain(formatBytes(42_680_958, 'en'))).toBe('42.7 MB');
+    expect(plain(formatBytes(42_680_958, 'fr'))).toBe('42,7 Mo');
+  });
+
+  it('switches to gigabytes from 1 GB', () => {
+    expect(plain(formatBytes(1_500_000_000, 'en'))).toBe('1.5 GB');
   });
 });

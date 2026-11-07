@@ -1,0 +1,25 @@
+:host {
+  display: block;
+}
+
+.offline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.detail {
+  color: #475467;
+}
+
+.error {
+  color: #b42318;
+}

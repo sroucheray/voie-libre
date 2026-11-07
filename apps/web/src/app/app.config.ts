@@ -7,6 +7,7 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { provideServiceWorker } from '@angular/service-worker';
 import { provideTransloco } from '@jsverse/transloco';
 import { appRoutes } from './app.routes';
 import { LanguageService } from './core/i18n/language.service';
@@ -21,6 +22,11 @@ export const appConfig: ApplicationConfig = {
     provideTransloco({
       config: createTranslocoConfig(!isDevMode()),
       loader: TranslocoHttpLoader,
+    }),
+    // Offline shell. Disabled in development: a service worker caches files and hides changes.
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000',
     }),
     provideAppInitializer(() => inject(LanguageService).init()),
   ],
