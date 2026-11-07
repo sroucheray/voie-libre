@@ -14,7 +14,7 @@ Each step ends with the project starting and its tests passing. Targeted tests d
 10. **Sharing without account.** `PUT /p/{id}`, `GET /p/{id}`, `GET /p/{id}.gpx`; link and QR code on the web app. Check: API tests; open a shared link in a second browser profile.
     10a. **Elevation profile** (added). Chart of distance against elevation under the map, from the selected route's stored geometry; hovering it (or arrow keys) moves a dot on the map, hovering the route on the map moves the cursor on the chart; collapsible; grade in the tooltip, no colouring yet. Check: unit tests; manual check on a saved route.
     10b. **GPX import** (added, done). `<trk>` first, `<rte>` as a fallback; saved as a local route without calling `POST /route`; no elevation → imported with an unknown climb (profile hidden, sharing disabled); the "compute the climb?" question comes with 10c, once the relief service exists.
-    10c. **Relief service** (added, after the import). `ElevationProvider` interface in the API and an endpoint that returns elevations for points; used by the import's "compute climb" choice.
+    10c. **Relief service** (added, done). `ElevationProvider` interface in the API and an endpoint that returns elevations for points; used by the import's "compute climb" choice.
 11. **Wrap-up.** Full test run once, README quick start, update `docs/architecture.md` if anything diverged.
 
 ## Open points

@@ -159,5 +159,18 @@
       "no_track": "Ce fichier GPX ne contient ni trace ni itinéraire.",
       "too_short": "Cette trace est trop courte pour être importée."
     }
+  },
+  "relief": {
+    "prompt": "Calculer le dénivelé à partir des données de relief ? Cela envoie les positions de la trace au serveur.",
+    "compute": "Calculer le dénivelé",
+    "computeNamed": "Calculer le dénivelé de {{name}}",
+    "keepUnknown": "Le laisser inconnu",
+    "errors": {
+      "network": "Le serveur est injoignable. Le calcul du dénivelé a besoin du réseau.",
+      "rate_limited": "Trop de requêtes. Réessayez dans un instant.",
+      "unavailable": "Les données de relief n'ont pas pu être lues. Réessayez plus tard.",
+      "no_data": "Les données de relief ne couvrent pas ce parcours.",
+      "unknown": "Le dénivelé n'a pas pu être calculé."
+    }
   }
 }

@@ -38,6 +38,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/elevation': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Ground elevation of points, from local terrain data */
+    post: operations['getElevations'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/p/{id}': {
     parameters: {
       query?: never;
@@ -249,6 +266,62 @@ export interface operations {
           'application/json': {
             code:
               'invalid_request' | 'no_route' | 'unavailable' | 'provider_error';
+            message: string;
+          };
+        };
+      };
+    };
+  };
+  getElevations: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          points: {
+            lon: number;
+            lat: number;
+          }[];
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @description Ground elevation in meters per point, in order; null where there is no data. */
+            elevations: (number | null)[];
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            code: 'invalid_request' | 'unavailable';
+            message: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            code: 'invalid_request' | 'unavailable';
             message: string;
           };
         };

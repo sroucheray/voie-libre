@@ -30,6 +30,25 @@
   </div>
   @if (notice(); as key) {
   <p class="notice" role="status">{{ key | transloco }}</p>
+  } @if (climbPromptId(); as promptId) {
+  <div
+    class="notice"
+    role="group"
+    [attr.aria-label]="'relief.prompt' | transloco"
+  >
+    <span>{{ 'relief.prompt' | transloco }}</span>
+    <button
+      type="button"
+      class="compute-climb"
+      [disabled]="busyId() === promptId"
+      (click)="computeClimb(promptId, true)"
+    >
+      {{ 'relief.compute' | transloco }}
+    </button>
+    <button type="button" (click)="keepClimbUnknown()">
+      {{ 'relief.keepUnknown' | transloco }}
+    </button>
+  </div>
   } @if (error(); as code) {
   <p class="error" role="alert">{{ errorKey(code) | transloco }}</p>
   } @if (routes().length === 0) {
@@ -124,7 +143,17 @@
         >
           {{ 'saved.open' | transloco }}
         </button>
-        @if (!route.share) {
+        @if (route.ascentMeters === null) {
+        <button
+          type="button"
+          class="compute-climb"
+          [disabled]="busyId() === route.id"
+          [attr.aria-label]="'relief.computeNamed' | transloco : { name: route.name }"
+          (click)="computeClimb(route.id)"
+        >
+          {{ 'relief.compute' | transloco }}
+        </button>
+        } @if (!route.share) {
         <button
           type="button"
           class="share"

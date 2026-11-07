@@ -10,12 +10,16 @@ export interface Config {
   rateLimitWindowMs: number;
   /** Stricter limit for POST /route, which calls the routing engine. */
   routeRateLimitMax: number;
+  /** Limit for POST /elevation (up to 5000 points per request). */
+  elevationRateLimitMax: number;
   /** Stricter limit for PUT /p/{id}: anyone can write without an account. */
   shareRateLimitMax: number;
   shareRateLimitWindowMs: number;
   /** Largest accepted body for PUT /p/{id}, in bytes. */
   shareBodyLimitBytes: number;
   brouterUrl: string;
+  /** Directory of the Copernicus GLO-30 tiles (see scripts/download-relief.sh). */
+  reliefDir: string;
   logLevel: string;
 }
 
@@ -56,6 +60,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       env['ROUTE_RATE_LIMIT_MAX'],
       20,
     ),
+    elevationRateLimitMax: integer(
+      'ELEVATION_RATE_LIMIT_MAX',
+      env['ELEVATION_RATE_LIMIT_MAX'],
+      30,
+    ),
     shareRateLimitMax: integer(
       'SHARE_RATE_LIMIT_MAX',
       env['SHARE_RATE_LIMIT_MAX'],
@@ -72,6 +81,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       1_000_000,
     ),
     brouterUrl: env['BROUTER_URL'] || 'http://localhost:17777',
+    reliefDir: env['RELIEF_DIR'] || 'data/relief',
     logLevel: env['LOG_LEVEL'] || 'info',
   };
 }

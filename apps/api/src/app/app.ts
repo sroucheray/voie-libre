@@ -5,16 +5,20 @@ import swaggerUi from '@fastify/swagger-ui';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { Database } from '../db/database';
+import type { ElevationProvider } from '../relief/elevation-provider';
 import type { RoutingProvider } from '../routing/routing-provider';
 import type { Config } from './config';
 import { healthRoutes } from './routes/health';
 import { routeRoutes } from './routes/route';
+import { elevationRoutes } from './routes/elevation';
 import { sharedRoutes } from './routes/shared';
 
 export interface AppOptions {
   config: Config;
   db: Database;
   routing: RoutingProvider;
+  /** Without one, every elevation is unknown (`null`): useful in tests. */
+  elevation?: ElevationProvider;
   logger?: boolean | { level: string };
 }
 
@@ -26,6 +30,7 @@ export async function buildApp({
   config,
   db,
   routing,
+  elevation = { elevations: async (points) => points.map(() => null) },
   logger = false,
 }: AppOptions): Promise<FastifyInstance> {
   const fastify = Fastify({ logger }).withTypeProvider<TypeBoxTypeProvider>();
@@ -70,6 +75,11 @@ export async function buildApp({
   await fastify.register(routeRoutes, {
     routing,
     rateLimitMax: config.routeRateLimitMax,
+    rateLimitWindowMs: config.rateLimitWindowMs,
+  });
+  await fastify.register(elevationRoutes, {
+    elevation,
+    rateLimitMax: config.elevationRateLimitMax,
     rateLimitWindowMs: config.rateLimitWindowMs,
   });
   await fastify.register(sharedRoutes, {

@@ -113,6 +113,24 @@ describe('IndexedDbRouteStore', () => {
     expect('share' in ((await store.get(saved.id)) ?? {})).toBe(false);
   });
 
+  it('replaces the geometry and the climb, keeping everything else', async () => {
+    const saved = await store.save({ ...route('A'), ascentMeters: null });
+    const geometry: [number, number, number][] = [
+      [3, 45, 100],
+      [3, 45.01, 160],
+    ];
+    const updated = await store.setElevation(saved.id, geometry, 60);
+    expect(updated.geometry).toEqual(geometry);
+    expect(updated.ascentMeters).toBe(60);
+    expect(updated.name).toBe('A');
+    expect(await store.get(saved.id)).toEqual(updated);
+    await expect(
+      store.setElevation('missing0', geometry, 1),
+    ).rejects.toMatchObject({
+      code: 'not_found',
+    });
+  });
+
   it('keeps the share when a shared route is renamed', async () => {
     const saved = await store.save(route('old'));
     await store.setShare(saved.id, { deleteToken: 'secret', sharedAt: 5 });

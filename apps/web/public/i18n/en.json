@@ -159,5 +159,18 @@
       "no_track": "This GPX file has no track or route.",
       "too_short": "This track is too short to import."
     }
+  },
+  "relief": {
+    "prompt": "Compute the climb from the terrain data? This sends the track's positions to the server.",
+    "compute": "Compute the climb",
+    "computeNamed": "Compute the climb of {{name}}",
+    "keepUnknown": "Keep it unknown",
+    "errors": {
+      "network": "The server cannot be reached. Computing the climb needs a network connection.",
+      "rate_limited": "Too many requests. Try again in a moment.",
+      "unavailable": "The terrain data could not be read. Try again later.",
+      "no_data": "The terrain data does not cover this route.",
+      "unknown": "The climb could not be computed."
+    }
   }
 }

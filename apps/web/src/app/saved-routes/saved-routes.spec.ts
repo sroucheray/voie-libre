@@ -45,6 +45,8 @@ describe('Saved routes', () => {
     body: unknown;
   }[];
   let shareRespond: () => Response;
+  let elevationRequests: number;
+  let elevationRespond: (count: number) => Response;
 
   beforeEach(async () => {
     vi.useFakeTimers();
@@ -67,6 +69,11 @@ describe('Saved routes', () => {
     downloadFails = false;
     sharingCalls = [];
     shareRespond = () => json({ id: 'x', deleteToken: 'secret-token' }, 201);
+    elevationRequests = 0;
+    elevationRespond = (count) =>
+      json({
+        elevations: Array.from({ length: count }, (_, i) => 100 + i * 20),
+      });
     await TestBed.configureTestingModule({
       imports: [Planner],
       providers: [
@@ -96,6 +103,11 @@ describe('Saved routes', () => {
                   body: text ? JSON.parse(text) : undefined,
                 });
                 return shareRespond();
+              }
+              if (path === '/elevation') {
+                elevationRequests++;
+                const body = await request.clone().json();
+                return elevationRespond(body.points.length);
               }
               calls++;
               return respond();
@@ -776,6 +788,77 @@ describe('Saved routes', () => {
       view.button('Export Imported ride as GPX').click();
       await view.settle();
       expect(downloads[0].content).not.toContain('<ele>');
+    });
+
+    it('asks before computing the climb, and does not call the server unless the user agrees', async () => {
+      const view = await render();
+      await importFile(view, gpx(noEle));
+      expect(elevationRequests).toBe(0);
+      expect(view.root.querySelector('[role="group"].notice')).not.toBeNull();
+      view.root
+        .querySelectorAll<HTMLButtonElement>('[role="group"].notice button')[1]
+        .click();
+      await view.settle();
+      expect(view.root.querySelector('[role="group"].notice')).toBeNull();
+      expect(elevationRequests).toBe(0);
+      expect((await routeStore.list())[0].ascentMeters).toBeNull();
+    });
+
+    it('computes the climb on request: stores it, shows the profile, enables sharing', async () => {
+      const view = await render();
+      await importFile(view, gpx(noEle));
+      view.root
+        .querySelector<HTMLButtonElement>('.notice .compute-climb')!
+        .click();
+      await view.settle();
+      expect(elevationRequests).toBe(1);
+      const [saved] = await routeStore.list();
+      expect(saved.ascentMeters).toBe(20);
+      expect(saved.geometry.map((p) => p[2])).toEqual([100, 120]);
+      expect(view.root.querySelector('.notice')).toBeNull();
+      expect(
+        view.root.querySelector('vl-elevation-panel .profile'),
+      ).not.toBeNull();
+      expect(
+        view.root.querySelector<HTMLButtonElement>('button.share')!.disabled,
+      ).toBe(false);
+      expect(view.alert()).toBeNull();
+    });
+
+    it('offers to compute the climb later from the list', async () => {
+      const view = await render();
+      await importFile(view, gpx(noEle));
+      view.root
+        .querySelectorAll<HTMLButtonElement>('[role="group"].notice button')[1]
+        .click();
+      await view.settle();
+      view.root
+        .querySelector<HTMLButtonElement>('.list .compute-climb')!
+        .click();
+      await view.settle();
+      expect(elevationRequests).toBe(1);
+      expect((await routeStore.list())[0].ascentMeters).toBe(20);
+      expect(view.root.querySelector('.list .compute-climb')).toBeNull();
+    });
+
+    it('keeps the route unchanged and says why when the terrain data cannot be used', async () => {
+      const view = await render();
+      await importFile(view, gpx(noEle));
+      elevationRespond = () => json({ elevations: [null, null] });
+      view.root
+        .querySelector<HTMLButtonElement>('.notice .compute-climb')!
+        .click();
+      await view.settle();
+      expect(view.alert()).toBe('The terrain data does not cover this route.');
+      expect((await routeStore.list())[0].ascentMeters).toBeNull();
+      elevationRespond = () => json({ code: 'unavailable', message: 'x' }, 503);
+      view.root
+        .querySelector<HTMLButtonElement>('.notice .compute-climb')!
+        .click();
+      await view.settle();
+      expect(view.alert()).toBe(
+        'The terrain data could not be read. Try again later.',
+      );
     });
 
     it('translates the errors and saves nothing', async () => {

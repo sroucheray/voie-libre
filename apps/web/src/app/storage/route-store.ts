@@ -36,6 +36,12 @@ export interface RouteStore {
   rename(id: string, name: string): Promise<SavedRoute>;
   /** Remembers that the route is shared (or no longer, with `null`). Throws `not_found`. */
   setShare(id: string, share: ShareInfo | null): Promise<SavedRoute>;
+  /** Replaces the geometry and the climb (elevations added later). Throws `not_found`. */
+  setElevation(
+    id: string,
+    geometry: [number, number, number][],
+    ascentMeters: number,
+  ): Promise<SavedRoute>;
   /** Deleting an id that does not exist is not an error. */
   delete(id: string): Promise<void>;
 }

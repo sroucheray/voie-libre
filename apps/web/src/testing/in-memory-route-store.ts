@@ -58,6 +58,23 @@ export class InMemoryRouteStore implements RouteStore {
     this.records.set(id, updated);
     return updated;
   }
+  async setElevation(
+    id: string,
+    geometry: [number, number, number][],
+    ascentMeters: number,
+  ): Promise<SavedRoute> {
+    this.check();
+    const existing = this.records.get(id);
+    if (!existing) throw new RouteStoreError('not_found');
+    const updated = {
+      ...existing,
+      geometry,
+      ascentMeters,
+      updatedAt: Date.now(),
+    };
+    this.records.set(id, updated);
+    return updated;
+  }
   async delete(id: string): Promise<void> {
     this.check();
     this.records.delete(id);

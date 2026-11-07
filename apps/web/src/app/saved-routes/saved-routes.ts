@@ -17,6 +17,11 @@ import { FormattingService } from '../core/format/formatting.service';
 import { FILE_DOWNLOADER } from '../export/file-download';
 import { buildGpx, gpxFileName } from '@voie-libre/shared';
 import {
+  ElevationError,
+  type ElevationErrorCode,
+  ElevationService,
+} from '../relief/elevation.service';
+import {
   GpxImportError,
   type GpxImportErrorCode,
   parseGpx,
@@ -63,6 +68,7 @@ export class SavedRoutes {
   private readonly download = inject(FILE_DOWNLOADER);
   private readonly transloco = inject(TranslocoService);
   private readonly sharing = inject(ShareService);
+  private readonly relief = inject(ElevationService);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -71,6 +77,7 @@ export class SavedRoutes {
     | RouteStoreErrorCode
     | ShareErrorCode
     | GpxImportErrorCode
+    | ElevationErrorCode
     | 'export_failed'
     | null
   >(null);
@@ -83,6 +90,8 @@ export class SavedRoutes {
   protected readonly savable = this.planner.savable;
   /** Translation key of what the last import tells the user, or null. */
   protected readonly notice = signal<string | null>(null);
+  /** The imported route (without elevation) the user is asked about: compute its climb? */
+  protected readonly climbPromptId = signal<string | null>(null);
 
   /** What the user typed in the name field; `null` while the proposed name applies. */
   private readonly draft = signal<string | null>(null);
@@ -130,6 +139,7 @@ export class SavedRoutes {
     input.value = '';
     if (!file) return;
     this.notice.set(null);
+    this.climbPromptId.set(null);
     await this.attempt(async () => {
       let text: string;
       try {
@@ -151,6 +161,7 @@ export class SavedRoutes {
       });
       this.routes.update((routes) => [saved, ...routes]);
       this.planner.loadSaved(saved);
+      this.climbPromptId.set(imported.ascentMeters === null ? saved.id : null);
       this.notice.set(
         imported.ascentMeters === null
           ? 'gpxImport.noElevation'
@@ -159,6 +170,31 @@ export class SavedRoutes {
             : null,
       );
     });
+  }
+
+  /**
+   * Asks the API for the terrain elevations of an imported route and stores them with the climb.
+   * `show` reloads the route in the planner (it is the one just imported).
+   */
+  protected async computeClimb(id: string, show = false): Promise<void> {
+    await this.withRoute(id, async (route) => {
+      const { geometry, ascentMeters } = await this.relief.forGeometry(
+        route.geometry,
+      );
+      const updated = await this.routeStore.setElevation(
+        id,
+        geometry,
+        ascentMeters,
+      );
+      this.replace(updated);
+      if (show) this.planner.loadSaved(updated);
+      this.climbPromptId.set(null);
+      this.notice.set(null);
+    });
+  }
+
+  protected keepClimbUnknown(): void {
+    this.climbPromptId.set(null);
   }
 
   protected async open(id: string): Promise<void> {
@@ -198,6 +234,9 @@ export class SavedRoutes {
 
   /** Translation key of an error: sharing failures have their own messages. */
   protected errorKey(code: string): string {
+    if (code.startsWith('elevation_')) {
+      return `relief.errors.${code.slice('elevation_'.length)}`;
+    }
     if (GPX_IMPORT_CODES.includes(code)) return `gpxImport.errors.${code}`;
     const sharing: readonly string[] = [
       'network',
@@ -354,7 +393,7 @@ export class SavedRoutes {
           ? 'export_failed'
           : error instanceof RouteStoreError || error instanceof ShareError
             ? error.code
-            : error instanceof GpxImportError
+            : error instanceof GpxImportError || error instanceof ElevationError
               ? error.code
               : 'unknown',
       );

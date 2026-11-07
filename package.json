@@ -78,6 +78,7 @@
     "@protomaps/basemaps": "^5.7.2",
     "@sinclair/typebox": "^0.34.52",
     "fastify": "~5.12.5",
+    "geotiff": "^3.0.5",
     "maplibre-gl": "^6.16.0",
     "openapi-fetch": "^0.17.0",
     "pg": "^8.23.1",

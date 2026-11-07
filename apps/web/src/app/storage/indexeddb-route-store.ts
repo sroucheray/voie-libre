@@ -111,6 +111,19 @@ export class IndexedDbRouteStore implements RouteStore {
     });
   }
 
+  async setElevation(
+    id: string,
+    geometry: [number, number, number][],
+    ascentMeters: number,
+  ): Promise<SavedRoute> {
+    return this.update(id, (route) => ({
+      ...route,
+      geometry,
+      ascentMeters,
+      updatedAt: Date.now(),
+    }));
+  }
+
   /** Reads, changes and writes a record in one transaction. `not_found` when it does not exist. */
   private async update(
     id: string,
