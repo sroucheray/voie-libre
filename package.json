@@ -2,7 +2,15 @@
   "name": "voie-libre",
   "version": "0.0.0",
   "license": "AGPL-3.0-only",
-  "scripts": {},
+  "scripts": {
+    "dev": "nx run-many -t serve -p api web",
+    "build": "nx run-many -t build",
+    "test": "nx run-many -t test",
+    "lint": "nx run-many -t lint",
+    "generate-client": "tsx scripts/generate-client.ts",
+    "db:migrate": "tsx scripts/migrate.ts up",
+    "db:migrate:down": "tsx scripts/migrate.ts down"
+  },
   "private": true,
   "devDependencies": {
     "@angular-devkit/core": "~22.2.0",
@@ -26,6 +34,7 @@
     "@swc/helpers": "0.5.18",
     "@types/jest": "~30.0.0",
     "@types/node": "^24.0.0",
+    "@types/pg": "^8.23.1",
     "@typescript-eslint/utils": "^8.58.0",
     "angular-eslint": "^22.5.0",
     "esbuild": "^0.27.0",
@@ -35,7 +44,9 @@
     "jest-environment-node": "~30.3.0",
     "jest-util": "~30.3.0",
     "jsdom": "^27.1.0",
+    "node-pg-migrate": "^9.0.0",
     "nx": "24.0.0",
+    "openapi-typescript": "^7.13.0",
     "prettier": "^3.8.1",
     "ts-jest": "^29.4.7",
     "ts-node": "10.9.1",
@@ -53,12 +64,22 @@
     "@angular/forms": "~22.2.0",
     "@angular/platform-browser": "~22.2.0",
     "@angular/router": "~22.2.0",
-    "@fastify/autoload": "~6.5.0",
-    "@fastify/sensible": "~6.0.6",
+    "@fastify/cors": "^11.4.1",
+    "@fastify/rate-limit": "^11.2.2",
+    "@fastify/swagger": "^9.9.3",
+    "@fastify/swagger-ui": "^6.1.3",
+    "@fastify/type-provider-typebox": "^5.2.0",
     "@jsverse/transloco": "^8.4.0",
+    "@sinclair/typebox": "^0.34.52",
     "fastify": "~5.12.5",
-    "fastify-plugin": "~6.0.0",
+    "openapi-fetch": "^0.17.0",
+    "pg": "^8.23.1",
     "rxjs": "~7.8.0"
   },
-  "description": "Open-source route planner for road/gravel cycling and trail running"
+  "description": "Open-source route planner for road/gravel cycling and trail running",
+  "overrides": {
+    "openapi-typescript": {
+      "typescript": "$typescript"
+    }
+  }
 }

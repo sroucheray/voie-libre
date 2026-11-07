@@ -5,8 +5,9 @@ module.exports = {
   transform: {
     '^.+\\.[tj]s$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.spec.json' }],
   },
+  // ESM-only dependencies must go through ts-jest to run under CommonJS.
   transformIgnorePatterns: [
-    '/node_modules/(?!(\\.pnpm/[^/]+/node_modules/)?cookie/)',
+    '/node_modules/(?!(\\.pnpm/[^/]+/node_modules/)?(cookie|content-disposition)/)',
   ],
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: '../../coverage/apps/api',

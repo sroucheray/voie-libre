@@ -1,27 +1,59 @@
-import * as path from 'path';
-import type { FastifyInstance } from 'fastify';
-import AutoLoad from '@fastify/autoload';
+import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
+import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
+import Fastify, { type FastifyInstance } from 'fastify';
+import type { Database } from '../db/database';
+import type { Config } from './config';
+import { healthRoutes } from './routes/health';
 
-/* eslint-disable-next-line */
-export interface AppOptions {}
+export interface AppOptions {
+  config: Config;
+  db: Database;
+  logger?: boolean | { level: string };
+}
 
-export async function app(fastify: FastifyInstance, opts: AppOptions) {
-  // Place here your custom code!
+/**
+ * Builds the Fastify app. Plugin order matters: @fastify/swagger must be registered
+ * before the routes it documents.
+ */
+export async function buildApp({
+  config,
+  db,
+  logger = false,
+}: AppOptions): Promise<FastifyInstance> {
+  const fastify = Fastify({ logger }).withTypeProvider<TypeBoxTypeProvider>();
 
-  // Do not touch the following lines
-
-  // This loads all plugins defined in plugins
-  // those should be support plugins that are reused
-  // through your application
-  fastify.register(AutoLoad, {
-    dir: path.join(__dirname, 'plugins'),
-    options: { ...opts },
+  await fastify.register(cors, {
+    origin: config.corsOrigins,
+    methods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
   });
-
-  // This loads all plugins defined in routes
-  // define your routes in one of these
-  fastify.register(AutoLoad, {
-    dir: path.join(__dirname, 'routes'),
-    options: { ...opts },
+  await fastify.register(rateLimit, {
+    global: true,
+    max: config.rateLimitMax,
+    timeWindow: config.rateLimitWindowMs,
   });
+  await fastify.register(swagger, {
+    openapi: {
+      openapi: '3.1.0',
+      info: {
+        title: 'Voie Libre API',
+        description: 'Route planning API for road, gravel and trail.',
+        version: '0.0.0',
+        license: { name: 'AGPL-3.0-only', identifier: 'AGPL-3.0-only' },
+      },
+      tags: [{ name: 'system', description: 'Health and diagnostics' }],
+    },
+  });
+  await fastify.register(swaggerUi, { routePrefix: '/docs' });
+
+  fastify.get(
+    '/openapi.json',
+    { config: { rateLimit: false }, schema: { hide: true } },
+    async () => fastify.swagger(),
+  );
+
+  await fastify.register(healthRoutes, { db });
+  return fastify;
 }

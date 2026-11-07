@@ -1,0 +1,11 @@
+.git
+.nx
+.angular
+node_modules
+dist
+tmp
+data
+spike
+.env
+.env.*
+!.env.example

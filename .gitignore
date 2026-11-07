@@ -57,3 +57,6 @@ __screenshots__/
 .env.*
 !.env.example
 
+
+# local data (BRouter segments)
+/data

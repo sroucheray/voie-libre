@@ -1,0 +1,29 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "creator": "BRouter-1.7.11-beta",
+        "name": "brouter_trekking_0",
+        "track-length": "41007",
+        "filtered ascend": "399",
+        "plain-ascend": "-12",
+        "total-time": "8674",
+        "total-energy": "845026",
+        "cost": "58008"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [3.087076, 45.777019, 402.25],
+          [3.087125, 45.776925, 402.0],
+          [3.087169, 45.776867, 401.5],
+          [3.087219, 45.776675, 401.0],
+          [3.087592, 45.776693, 400.5],
+          [3.087946, 45.776712, 399.5]
+        ]
+      }
+    }
+  ]
+}
