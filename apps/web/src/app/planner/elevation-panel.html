@@ -1,0 +1,59 @@
+@if (profile(); as p) {
+<section class="profile" [attr.aria-label]="'profile.title' | transloco">
+  <header>
+    <h2>{{ 'profile.title' | transloco }}</h2>
+    <button
+      type="button"
+      [attr.aria-expanded]="open()"
+      [attr.aria-label]="(open() ? 'profile.hide' : 'profile.show') | transloco"
+      (click)="open.set(!open())"
+    >
+      <span aria-hidden="true">{{ open() ? '▾' : '▴' }}</span>
+    </button>
+  </header>
+
+  @if (open()) {
+  <div class="body">
+    <div class="axis">
+      <span>{{ format.elevation(p.maxElevation) }}</span>
+      <span>{{ format.elevation(p.minElevation) }}</span>
+    </div>
+    <div
+      class="plot"
+      role="img"
+      tabindex="0"
+      [attr.aria-label]="'profile.chart' | transloco : { min: format.elevation(p.minElevation), max: format.elevation(p.maxElevation) }"
+      (pointermove)="onPointerMove($event)"
+      (pointerleave)="onPointerLeave()"
+      (keydown)="onKeydown($event)"
+    >
+      <svg
+        [attr.viewBox]="viewBox"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <path class="area" [attr.d]="paths()!.area" />
+        <path class="line" [attr.d]="paths()!.line" />
+      </svg>
+      @if (cursor(); as c) {
+      <div class="cursor" [style.left.%]="cursorLeft()"></div>
+      <div
+        class="tooltip"
+        [class.tooltip--end]="cursorLeft() > 60"
+        [style.left.%]="cursorLeft()"
+        role="status"
+      >
+        {{ 'profile.tooltip' | transloco : { distance:
+        format.distance(c.distance), elevation: format.elevation(c.elevation),
+        grade: grade(c) } }}
+      </div>
+      }
+    </div>
+    <div class="distances">
+      <span>{{ format.distance(0) }}</span>
+      <span>{{ format.distance(p.totalDistance) }}</span>
+    </div>
+  </div>
+  }
+</section>
+}

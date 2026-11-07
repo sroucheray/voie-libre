@@ -21,6 +21,8 @@ export interface PlannerMapHandlers {
   onSelectRoute(index: number): void;
   onMovePoint(index: number, point: LngLat): void;
   onRemovePoint(index: number): void;
+  /** The pointer is over the selected route (`point`), or left it (`null`). */
+  onHoverRoute(point: LngLat | null): void;
 }
 
 /** The planner's view of the map: draws markers and routes, reports clicks and drags. */
@@ -30,6 +32,8 @@ export interface PlannerMapDriver {
   setRoutes(routes: LngLat3[][], selected: number): void;
   /** Moves the view so that the whole route is visible. */
   fitRoute(geometry: LngLat3[]): void;
+  /** Shows a dot at this position (the point hovered on the profile), or hides it. */
+  setCursor(point: LngLat | null): void;
   destroy(): void;
 }
 

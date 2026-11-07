@@ -147,6 +147,31 @@ describe('Planner', () => {
     expect(view.text()).toMatch(/41(\.0)? km/);
   });
 
+  it('links the elevation profile and the map: hovering one moves the dot on the other', async () => {
+    const view = await render();
+    view.click(3.087, 45.777);
+    view.click(3.249, 45.544);
+    await view.settle();
+    expect(
+      view.root.querySelector('vl-elevation-panel .profile'),
+    ).not.toBeNull();
+    expect(view.driver.cursor).toBeNull();
+
+    // Hovering the route on the map puts the cursor on the profile.
+    view.driver.handlers.onHoverRoute([3.249, 45.544]);
+    view.fixture.detectChanges();
+    TestBed.tick();
+    expect(view.driver.cursor).toEqual([3.249, 45.544]);
+    expect(view.root.querySelector('.tooltip')).not.toBeNull();
+
+    // Leaving the route hides both.
+    view.driver.handlers.onHoverRoute(null);
+    view.fixture.detectChanges();
+    TestBed.tick();
+    expect(view.driver.cursor).toBeNull();
+    expect(view.root.querySelector('.tooltip')).toBeNull();
+  });
+
   it('recomputes with the chosen profile', async () => {
     const view = await render();
     view.click(3.087, 45.777);

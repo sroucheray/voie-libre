@@ -90,6 +90,17 @@ export class PlannerStore {
   readonly status = this.statusState.asReadonly();
   readonly errorCode = this.errorState.asReadonly();
 
+  /**
+   * Index in the selected route's geometry of the point being inspected, from the profile or from
+   * hovering the route on the map. Followed by the dot on the map and the cursor on the profile.
+   */
+  readonly cursor = signal<number | null>(null);
+
+  /** Geometry of the selected route, which the profile is drawn from. */
+  readonly selectedGeometry = computed(
+    () => this.routesState()[this.selectedState()]?.geometry ?? [],
+  );
+
   private readonly viewState = signal<ViewRequest | null>(null);
   readonly viewRequest = this.viewState.asReadonly();
 
@@ -149,6 +160,7 @@ export class PlannerStore {
   selectRoute(index: number): void {
     if (index >= 0 && index < this.routesState().length) {
       this.selectedState.set(index);
+      this.cursor.set(null);
     }
   }
 
@@ -171,6 +183,7 @@ export class PlannerStore {
       },
     ]);
     this.selectedState.set(0);
+    this.cursor.set(null);
     this.errorState.set(null);
     this.statusState.set('ready');
     this.viewState.update((view) => ({
@@ -198,6 +211,7 @@ export class PlannerStore {
   setRoutes(routes: PlannedRoute[]): void {
     this.routesState.set(routes);
     this.selectedState.set(0);
+    this.cursor.set(null);
     this.errorState.set(null);
     this.statusState.set('ready');
   }
@@ -205,6 +219,7 @@ export class PlannerStore {
   setError(code: PlannerErrorCode): void {
     this.routesState.set([]);
     this.selectedState.set(0);
+    this.cursor.set(null);
     this.errorState.set(code);
     this.statusState.set('error');
   }
@@ -213,6 +228,7 @@ export class PlannerStore {
   resetResult(): void {
     this.routesState.set([]);
     this.selectedState.set(0);
+    this.cursor.set(null);
     this.errorState.set(null);
     this.statusState.set('idle');
   }

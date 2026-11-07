@@ -23,7 +23,9 @@ import {
   type Profile,
   pointRole,
 } from './planner-store';
+import { buildProfile, sampleNearest } from './elevation-profile';
 import { RoutePlanner } from './route-planner';
+import { ElevationPanel } from './elevation-panel';
 import { SavedRoutes } from '../saved-routes/saved-routes';
 
 /**
@@ -32,7 +34,7 @@ import { SavedRoutes } from '../saved-routes/saved-routes';
  */
 @Component({
   selector: 'vl-planner',
-  imports: [MapView, TranslocoPipe, SavedRoutes],
+  imports: [MapView, TranslocoPipe, SavedRoutes, ElevationPanel],
   templateUrl: './planner.html',
   styleUrl: './planner.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -93,6 +95,15 @@ export class Planner {
       if (driver && view) driver.fitRoute(view.geometry);
     });
 
+    // The dot on the map follows the cursor of the profile.
+    effect(() => {
+      const driver = this.driver();
+      const geometry = this.store.selectedGeometry();
+      const index = this.store.cursor();
+      const point = index === null ? undefined : geometry[index];
+      driver?.setCursor(point ? [point[0], point[1]] : null);
+    });
+
     effect(() => {
       const driver = this.driver();
       const routes = this.store.routes();
@@ -111,6 +122,7 @@ export class Planner {
         onSelectRoute: (index) => this.store.selectRoute(index),
         onMovePoint: (index, point) => this.store.movePoint(index, point),
         onRemovePoint: (index) => this.store.removePoint(index),
+        onHoverRoute: (point) => this.hoverRoute(point),
       });
       if (this.destroyed) {
         driver.destroy();
@@ -120,6 +132,16 @@ export class Planner {
     } catch (error) {
       console.error('Planner could not attach to the map', error);
     }
+  }
+
+  /** Hovering the route on the map moves the profile's cursor to the nearest point. */
+  private hoverRoute(point: [number, number] | null): void {
+    if (!point) {
+      this.store.cursor.set(null);
+      return;
+    }
+    const profile = buildProfile(this.store.selectedGeometry());
+    this.store.cursor.set(profile ? sampleNearest(profile, point).index : null);
   }
 
   /** "Start", "Waypoint 2" or "End", in the UI language. */

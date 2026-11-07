@@ -12,6 +12,9 @@ Each step ends with the project starting and its tests passing. Targeted tests d
 8. **GPX export.** Generate GPX from stored geometry on the device and download it. Check: unit tests on output; validate in a GPX viewer.
 9. **Offline.** Service worker and PWA manifest, offline PMTiles extract for the test region, open a saved route with no network. Check: manual offline test (devtools network off).
 10. **Sharing without account.** `PUT /p/{id}`, `GET /p/{id}`, `GET /p/{id}.gpx`; link and QR code on the web app. Check: API tests; open a shared link in a second browser profile.
+    10a. **Elevation profile** (added). Chart of distance against elevation under the map, from the selected route's stored geometry; hovering it (or arrow keys) moves a dot on the map, hovering the route on the map moves the cursor on the chart; collapsible; grade in the tooltip, no colouring yet. Check: unit tests; manual check on a saved route.
+    10b. **GPX import** (added, next). `<trk>` first, `<rte>` as a fallback; saved as a local route without calling `POST /route`; no elevation → imported with an unknown climb and the user is asked whether to compute it.
+    10c. **Relief service** (added, after the import). `ElevationProvider` interface in the API and an endpoint that returns elevations for points; used by the import's "compute climb" choice.
 11. **Wrap-up.** Full test run once, README quick start, update `docs/architecture.md` if anything diverged.
 
 ## Open points

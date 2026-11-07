@@ -138,5 +138,12 @@
       "not_found": "This shared route does not exist, or is no longer shared.",
       "unknown": "Sharing failed."
     }
+  },
+  "profile": {
+    "title": "Elevation profile",
+    "show": "Show the elevation profile",
+    "hide": "Hide the elevation profile",
+    "chart": "Elevation along the route, from {{min}} to {{max}}. Use the left and right arrow keys to move along it.",
+    "tooltip": "{{distance}} · {{elevation}} · {{grade}}"
   }
 }

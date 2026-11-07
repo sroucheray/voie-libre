@@ -1,85 +1,90 @@
-<vl-map-view class="map" (mapReady)="onMapReady($event)" />
+<div class="map-area">
+  <vl-map-view class="map" (mapReady)="onMapReady($event)" />
 
-<section class="panel" [attr.aria-label]="'planner.title' | transloco">
-  <h2>{{ 'planner.title' | transloco }}</h2>
+  <section class="panel" [attr.aria-label]="'planner.title' | transloco">
+    <h2>{{ 'planner.title' | transloco }}</h2>
 
-  <fieldset class="profiles">
-    <legend>{{ 'planner.profile.label' | transloco }}</legend>
-    @for (profile of profiles; track profile) {
-    <label>
-      <input
-        type="radio"
-        name="profile"
-        [value]="profile"
-        [checked]="store.profile() === profile"
-        (change)="selectProfile(profile)"
-      />
-      {{ 'planner.profile.' + profile | transloco }}
-    </label>
-    }
-  </fieldset>
-
-  <label class="alternatives">
-    {{ 'planner.alternatives.label' | transloco }}
-    <select (change)="selectAlternatives($event)">
-      @for (count of alternativeChoices; track count) {
-      <option [value]="count" [selected]="count === store.alternatives()">
-        {{ format.number(count) }}
-      </option>
+    <fieldset class="profiles">
+      <legend>{{ 'planner.profile.label' | transloco }}</legend>
+      @for (profile of profiles; track profile) {
+      <label>
+        <input
+          type="radio"
+          name="profile"
+          [value]="profile"
+          [checked]="store.profile() === profile"
+          (change)="selectProfile(profile)"
+        />
+        {{ 'planner.profile.' + profile | transloco }}
+      </label>
       }
-    </select>
-  </label>
+    </fieldset>
 
-  @if (store.points().length === 0) {
-  <p class="hint">{{ 'planner.hint.start' | transloco }}</p>
-  } @else if (store.points().length === 1) {
-  <p class="hint">{{ 'planner.hint.end' | transloco }}</p>
-  } @if (store.points().length > 0) {
-  <ol class="points" [attr.aria-label]="'planner.points.label' | transloco">
-    @for (point of store.points(); track $index; let i = $index) {
-    <li>
-      <span class="point-name">{{ pointName(i) }}</span>
-      <span class="point-coordinates"
-        >{{ coordinates(point[0], point[1]) }}</span
-      >
-      <button
-        type="button"
-        (click)="store.removePoint(i)"
-        [attr.aria-label]="'planner.points.remove' | transloco : { name: pointName(i) }"
-      >
-        <span aria-hidden="true">&times;</span>
-      </button>
-    </li>
-    }
-  </ol>
-  <button type="button" class="clear" (click)="store.clear()">
-    {{ 'planner.clear' | transloco }}
-  </button>
-  } @if (store.status() === 'loading') {
-  <p role="status">{{ 'planner.status.loading' | transloco }}</p>
-  } @if (store.errorCode(); as code) {
-  <p class="error" role="alert">{{ 'planner.errors.' + code | transloco }}</p>
-  } @if (store.routes().length > 0) {
-  <ul class="routes" [attr.aria-label]="'planner.routes.label' | transloco">
-    @for (route of store.routes(); track $index; let i = $index) {
-    <li>
-      <button
-        type="button"
-        [attr.aria-pressed]="i === store.selectedIndex()"
-        (click)="store.selectRoute(i)"
-      >
-        <strong>{{ 'planner.routes.route' | transloco : { n: i + 1 } }}</strong>
-        <span>
-          {{ 'planner.routes.summary' | transloco : { distance:
-          format.distance(route.distanceMeters), ascent:
-          format.elevation(route.ascentMeters), duration:
-          format.duration(route.durationSeconds) } }}
-        </span>
-      </button>
-    </li>
-    }
-  </ul>
-  }
+    <label class="alternatives">
+      {{ 'planner.alternatives.label' | transloco }}
+      <select (change)="selectAlternatives($event)">
+        @for (count of alternativeChoices; track count) {
+        <option [value]="count" [selected]="count === store.alternatives()">
+          {{ format.number(count) }}
+        </option>
+        }
+      </select>
+    </label>
 
-  <vl-saved-routes />
-</section>
+    @if (store.points().length === 0) {
+    <p class="hint">{{ 'planner.hint.start' | transloco }}</p>
+    } @else if (store.points().length === 1) {
+    <p class="hint">{{ 'planner.hint.end' | transloco }}</p>
+    } @if (store.points().length > 0) {
+    <ol class="points" [attr.aria-label]="'planner.points.label' | transloco">
+      @for (point of store.points(); track $index; let i = $index) {
+      <li>
+        <span class="point-name">{{ pointName(i) }}</span>
+        <span class="point-coordinates"
+          >{{ coordinates(point[0], point[1]) }}</span
+        >
+        <button
+          type="button"
+          (click)="store.removePoint(i)"
+          [attr.aria-label]="'planner.points.remove' | transloco : { name: pointName(i) }"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </li>
+      }
+    </ol>
+    <button type="button" class="clear" (click)="store.clear()">
+      {{ 'planner.clear' | transloco }}
+    </button>
+    } @if (store.status() === 'loading') {
+    <p role="status">{{ 'planner.status.loading' | transloco }}</p>
+    } @if (store.errorCode(); as code) {
+    <p class="error" role="alert">{{ 'planner.errors.' + code | transloco }}</p>
+    } @if (store.routes().length > 0) {
+    <ul class="routes" [attr.aria-label]="'planner.routes.label' | transloco">
+      @for (route of store.routes(); track $index; let i = $index) {
+      <li>
+        <button
+          type="button"
+          [attr.aria-pressed]="i === store.selectedIndex()"
+          (click)="store.selectRoute(i)"
+        >
+          <strong
+            >{{ 'planner.routes.route' | transloco : { n: i + 1 } }}</strong
+          >
+          <span>
+            {{ 'planner.routes.summary' | transloco : { distance:
+            format.distance(route.distanceMeters), ascent:
+            format.elevation(route.ascentMeters), duration:
+            format.duration(route.durationSeconds) } }}
+          </span>
+        </button>
+      </li>
+      }
+    </ul>
+    }
+
+    <vl-saved-routes />
+  </section>
+</div>
+<vl-elevation-panel />

@@ -1,6 +1,13 @@
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
   position: relative;
+}
+
+.map-area {
+  position: relative;
+  flex: 1;
+  min-height: 0;
 }
 
 .map {

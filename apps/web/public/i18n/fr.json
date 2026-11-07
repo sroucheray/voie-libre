@@ -138,5 +138,12 @@
       "not_found": "Ce parcours partagé n'existe pas, ou n'est plus partagé.",
       "unknown": "Le partage a échoué."
     }
+  },
+  "profile": {
+    "title": "Profil d'altitude",
+    "show": "Afficher le profil d'altitude",
+    "hide": "Masquer le profil d'altitude",
+    "chart": "Altitude le long du parcours, de {{min}} à {{max}}. Utilisez les flèches gauche et droite pour vous déplacer.",
+    "tooltip": "{{distance}} · {{elevation}} · {{grade}}"
   }
 }

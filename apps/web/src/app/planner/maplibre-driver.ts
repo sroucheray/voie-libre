@@ -33,6 +33,7 @@ export async function createMapLibreDriver(
   let routes: LngLat3[][] = [];
   let selected = 0;
   let markers: Marker[] = [];
+  let cursorMarker: Marker | null = null;
   let destroyed = false;
 
   /** Adds the source and layers. Idempotent: a new style (language change) removes them. */
@@ -86,8 +87,34 @@ export async function createMapLibreDriver(
     }
   };
 
+  /** Hovering the selected route tells the planner where, to show the point on the profile. */
+  let hovering = false;
+  const onMouseMove = (event: {
+    point: { x: number; y: number };
+    lngLat: { lng: number; lat: number };
+  }) => {
+    const { x, y } = event.point;
+    const hit =
+      !!map.getLayer(SELECTED_LAYER) &&
+      map.queryRenderedFeatures(
+        [
+          [x - HIT_TOLERANCE, y - HIT_TOLERANCE],
+          [x + HIT_TOLERANCE, y + HIT_TOLERANCE],
+        ],
+        { layers: [SELECTED_LAYER] },
+      ).length > 0;
+    if (hit) {
+      hovering = true;
+      handlers.onHoverRoute([event.lngLat.lng, event.lngLat.lat]);
+    } else if (hovering) {
+      hovering = false;
+      handlers.onHoverRoute(null);
+    }
+  };
+
   map.on('styledata', onStyleData);
   map.on('click', onClick);
+  map.on('mousemove', onMouseMove);
   ensureLayers();
 
   const clearMarkers = () => {
@@ -141,9 +168,28 @@ export async function createMapLibreDriver(
         maxZoom: 16,
       });
     },
+    setCursor(point: LngLat | null) {
+      if (!point) {
+        cursorMarker?.remove();
+        cursorMarker = null;
+        return;
+      }
+      if (!cursorMarker) {
+        const element = document.createElement('div');
+        element.className = 'planner-cursor';
+        element.setAttribute('aria-hidden', 'true');
+        cursorMarker = new maplibre.Marker({ element }).setLngLat(point);
+        cursorMarker.addTo(map);
+      } else {
+        cursorMarker.setLngLat(point);
+      }
+    },
     destroy() {
       destroyed = true;
       clearMarkers();
+      cursorMarker?.remove();
+      cursorMarker = null;
+      map.off('mousemove', onMouseMove);
       map.off('styledata', onStyleData);
       map.off('click', onClick);
       for (const id of [SELECTED_LAYER, ALTERNATIVE_LAYER]) {

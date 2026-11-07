@@ -43,3 +43,14 @@ body {
     background: #1570ef;
   }
 }
+
+/* The dot that follows the pointer on the elevation profile. */
+.planner-cursor {
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #1570ef;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 50%);
+  pointer-events: none;
+}
