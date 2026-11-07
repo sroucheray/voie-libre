@@ -67,7 +67,7 @@ describe('BRouterProvider', () => {
       [{ kind: 'circle', center: A, radiusMeters: 200 }],
       1,
     );
-    expect(requested).toContain('profile=trekking');
+    expect(requested).toContain('profile=hiking-mountain');
     expect(requested).toContain('&nogos=3.087,45.777,200');
   });
 

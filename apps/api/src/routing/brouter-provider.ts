@@ -9,13 +9,14 @@ import {
 } from './routing-provider';
 
 /**
- * Voie Libre profile to BRouter profile. See spike/brouter/RAPPORT.md: `trail` still has to be
- * compared with `hiking-mountain` and `mtb` once the app can draw routes.
+ * Voie Libre profile to BRouter profile. `trail` uses `hiking-mountain`: on the Clermont test region
+ * it stays 59-66% on paths and tracks with almost no main road, where `trekking` (a touring-bike
+ * profile) takes 14-35% main roads. `mtb` is the candidate for a future mountain-bike profile.
  */
 export const BROUTER_PROFILES: Record<RoutingProfile, string> = {
   road: 'fastbike',
   gravel: 'gravel',
-  trail: 'trekking',
+  trail: 'hiking-mountain',
 };
 
 type FetchLike = (url: string) => Promise<Response>;
