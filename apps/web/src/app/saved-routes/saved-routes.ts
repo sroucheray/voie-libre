@@ -8,11 +8,15 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { TranslocoPipe, translateSignal } from '@jsverse/transloco';
+import {
+  TranslocoPipe,
+  TranslocoService,
+  translateSignal,
+} from '@jsverse/transloco';
 import { FormattingService } from '../core/format/formatting.service';
 import { FILE_DOWNLOADER } from '../export/file-download';
 import { buildGpx, gpxFileName } from '../export/gpx';
-import { PlannerStore } from '../planner/planner-store';
+import { PlannerStore, pointRole } from '../planner/planner-store';
 import {
   ROUTE_STORE,
   RouteStoreError,
@@ -40,6 +44,7 @@ export class SavedRoutes {
   private readonly planner = inject(PlannerStore);
   private readonly routeStore = inject(ROUTE_STORE);
   private readonly download = inject(FILE_DOWNLOADER);
+  private readonly transloco = inject(TranslocoService);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -112,7 +117,7 @@ export class SavedRoutes {
       }
       try {
         this.download(
-          buildGpx(saved),
+          buildGpx(saved, this.pointNames(saved)),
           gpxFileName(saved.name),
           'application/gpx+xml',
         );
@@ -120,6 +125,16 @@ export class SavedRoutes {
         throw new ExportError();
       }
     });
+  }
+
+  /** "Start", "Waypoint 1", "End" in the active language: the names of the GPX waypoints. */
+  private pointNames(saved: SavedRoute): string[] {
+    return saved.points.map((_, index) =>
+      this.transloco.translate(
+        `planner.points.${pointRole(index, saved.points.length)}`,
+        { n: index },
+      ),
+    );
   }
 
   protected startRename(id: string): void {

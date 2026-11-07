@@ -3,6 +3,11 @@ import { buildGpx, escapeXml, gpxFileName } from './gpx';
 const route = {
   name: 'Col de la Ventouse',
   createdAt: Date.parse('2026-11-01T10:00:00Z'),
+  points: [
+    [3.087, 45.777],
+    [3.15, 45.65],
+    [3.249, 45.544],
+  ] as [number, number][],
   geometry: [
     [3.087, 45.777, 402],
     [3.15, 45.65, 390.26],
@@ -11,7 +16,8 @@ const route = {
 };
 
 describe('buildGpx', () => {
-  const xml = buildGpx(route);
+  const names = ['Start', 'Waypoint 1', 'End'];
+  const xml = buildGpx(route, names);
   const doc = new DOMParser().parseFromString(xml, 'application/xml');
   const gpx = (selector: string) => Array.from(doc.querySelectorAll(selector));
 
@@ -47,6 +53,34 @@ describe('buildGpx', () => {
     expect(Number(first.getAttribute('lon'))).toBeCloseTo(3.087);
   });
 
+  it('writes a named waypoint for the start, each waypoint and the end, before the track', () => {
+    expect(
+      gpx('wpt').map((w) => [
+        w.getAttribute('lat'),
+        w.getAttribute('lon'),
+        w.querySelector('name')?.textContent,
+      ]),
+    ).toEqual([
+      ['45.777000', '3.087000', 'Start'],
+      ['45.650000', '3.150000', 'Waypoint 1'],
+      ['45.544000', '3.249000', 'End'],
+    ]);
+    // The GPX 1.1 schema requires wpt elements before trk.
+    const order = Array.from(doc.documentElement.children).map(
+      (c) => c.localName,
+    );
+    expect(order).toEqual(['metadata', 'wpt', 'wpt', 'wpt', 'trk']);
+  });
+
+  it('escapes waypoint names too', () => {
+    const parsed = new DOMParser().parseFromString(
+      buildGpx(route, ['A & <B>', '', 'End']),
+      'application/xml',
+    );
+    expect(parsed.querySelector('parsererror')).toBeNull();
+    expect(parsed.querySelector('wpt > name')?.textContent).toBe('A & <B>');
+  });
+
   it('names the track and the file, and dates it from the creation time', () => {
     expect(gpx('metadata > name')[0].textContent).toBe('Col de la Ventouse');
     expect(gpx('trk > name')[0].textContent).toBe('Col de la Ventouse');
@@ -56,10 +90,13 @@ describe('buildGpx', () => {
   });
 
   it('escapes markup and controls in the name', () => {
-    const tricky = buildGpx({
-      ...route,
-      name: `Tom & Jerry's <loop> "1"\u0001`,
-    });
+    const tricky = buildGpx(
+      {
+        ...route,
+        name: `Tom & Jerry's <loop> "1"\u0001`,
+      },
+      names,
+    );
     const parsed = new DOMParser().parseFromString(tricky, 'application/xml');
     expect(parsed.querySelector('parsererror')).toBeNull();
     expect(parsed.querySelector('trk > name')?.textContent).toBe(
@@ -68,14 +105,14 @@ describe('buildGpx', () => {
   });
 
   it('keeps accents and other non-ASCII text as UTF-8', () => {
-    expect(buildGpx({ ...route, name: 'Été à Clermont ✓' })).toContain(
+    expect(buildGpx({ ...route, name: 'Été à Clermont ✓' }, names)).toContain(
       '<name>Été à Clermont ✓</name>',
     );
   });
 
   it('handles an empty geometry', () => {
     const empty = new DOMParser().parseFromString(
-      buildGpx({ ...route, geometry: [] }),
+      buildGpx({ ...route, geometry: [], points: [] }, []),
       'application/xml',
     );
     expect(empty.querySelector('parsererror')).toBeNull();

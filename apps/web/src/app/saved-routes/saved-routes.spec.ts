@@ -347,6 +347,27 @@ describe('Saved routes', () => {
       expect(view.alert()).toBeNull();
     });
 
+    it('writes the start and the end as waypoints, named in the active language', async () => {
+      const view = await renderWithSavedRoute();
+      const names = (content: string) =>
+        Array.from(
+          new DOMParser()
+            .parseFromString(content, 'application/xml')
+            .querySelectorAll('wpt > name'),
+        ).map((n) => n.textContent);
+
+      view.button('Export Road, 41 km as GPX').click();
+      await view.settle();
+      expect(names(downloads[0].content)).toEqual(['Start', 'End']);
+
+      TestBed.inject(LanguageService).use('fr');
+      await view.settle();
+      await view.settle();
+      view.button('Exporter Road, 41 km en GPX').click();
+      await view.settle();
+      expect(names(downloads[1].content)).toEqual(['Départ', 'Arrivée']);
+    });
+
     it('exports under the new name after a rename', async () => {
       const view = await renderWithSavedRoute();
       const [saved] = [...routeStore.records.values()];

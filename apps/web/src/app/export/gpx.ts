@@ -1,7 +1,10 @@
 import type { SavedRoute } from '../storage/saved-route';
 
 /** The parts of a saved route a GPX file is built from. */
-export type GpxSource = Pick<SavedRoute, 'name' | 'geometry' | 'createdAt'>;
+export type GpxSource = Pick<
+  SavedRoute,
+  'name' | 'geometry' | 'createdAt' | 'points'
+>;
 
 const XML_ESCAPES: Record<string, string> = {
   '&': '&amp;',
@@ -22,10 +25,23 @@ export function escapeXml(text: string): string {
 }
 
 /**
- * A GPX 1.1 document with one track of one segment: `lat`/`lon` to 6 decimals (about 10 cm),
- * elevation to 1 decimal. Built on the device from the stored geometry, never from the network.
+ * A GPX 1.1 document: one `<wpt>` per route point (start, waypoints, end) and one track of one
+ * segment. `lat`/`lon` to 6 decimals (about 10 cm), elevation to 1 decimal. Built on the device
+ * from the stored route, never from the network.
+ *
+ * `pointNames` holds one already translated name per entry of `route.points`, in the language
+ * of the user at export time. The schema wants `<wpt>` before `<trk>`.
  */
-export function buildGpx(route: GpxSource): string {
+export function buildGpx(
+  route: GpxSource,
+  pointNames: readonly string[],
+): string {
+  const waypoints = route.points
+    .map(
+      ([lon, lat], index) =>
+        `  <wpt lat="${lat.toFixed(6)}" lon="${lon.toFixed(6)}"><name>${escapeXml(pointNames[index] ?? '')}</name></wpt>\n`,
+    )
+    .join('');
   const points = route.geometry
     .map(
       ([lon, lat, ele]) =>
@@ -39,7 +55,7 @@ export function buildGpx(route: GpxSource): string {
     <name>${name}</name>
     <time>${new Date(route.createdAt).toISOString()}</time>
   </metadata>
-  <trk>
+${waypoints}  <trk>
     <name>${name}</name>
     <trkseg>
 ${points}
