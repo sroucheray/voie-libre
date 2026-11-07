@@ -1,0 +1,63 @@
+<div
+  class="map"
+  #container
+  role="application"
+  [attr.aria-label]="'map.label' | transloco"
+></div>
+
+@if (failed()) {
+<p class="map-error" role="alert">{{ 'map.unavailable' | transloco }}</p>
+}
+
+<div class="map-controls">
+  <button
+    type="button"
+    (click)="zoomIn()"
+    [attr.aria-label]="'map.zoomIn' | transloco"
+  >
+    <span aria-hidden="true">+</span>
+  </button>
+  <button
+    type="button"
+    (click)="zoomOut()"
+    [attr.aria-label]="'map.zoomOut' | transloco"
+  >
+    <span aria-hidden="true">&minus;</span>
+  </button>
+  @if (bearing() !== 0) {
+  <button
+    type="button"
+    class="compass"
+    (click)="resetNorth()"
+    [attr.aria-label]="'map.resetBearing' | transloco"
+  >
+    <svg
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      aria-hidden="true"
+      [style.transform]="compassRotation()"
+    >
+      <path d="M12 2 17 14H7z" fill="#d92d20" />
+      <path d="M12 22 7 10h10z" fill="#667085" />
+    </svg>
+  </button>
+  }
+</div>
+
+<p
+  class="map-attribution"
+  role="note"
+  [attr.aria-label]="'map.attribution.label' | transloco"
+>
+  <a
+    href="https://www.openstreetmap.org/copyright"
+    target="_blank"
+    rel="noopener noreferrer"
+    >&copy; OpenStreetMap</a
+  >
+  {{ 'map.attribution.contributors' | transloco }} &middot;
+  <a href="https://protomaps.com" target="_blank" rel="noopener noreferrer"
+    >Protomaps</a
+  >
+</p>

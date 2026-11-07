@@ -2,6 +2,7 @@
 #   docker compose up -d                  PostgreSQL/PostGIS + BRouter (run the API and the web app with `npm run dev`)
 #   docker compose --profile full up -d   also run the API in a container (then do not run it with `npm run dev`)
 # BRouter needs routing segments first: ./scripts/download-segments.sh
+# The map needs the basemap first: ./scripts/download-basemap.sh
 services:
   db:
     image: postgis/postgis:17-3.5
@@ -31,6 +32,16 @@ services:
     volumes:
       - ${BROUTER_SEGMENTS_DIR:-./data/brouter/segments4}:/segments4:ro
     mem_limit: 512m
+    restart: unless-stopped
+
+  tiles:
+    # Serves data/basemap (PMTiles, fonts, sprites) with Range requests and CORS.
+    image: nginx:1.27-alpine
+    ports:
+      - '127.0.0.1:${TILES_PORT:-8081}:80'
+    volumes:
+      - ${BASEMAP_DIR:-./data/basemap}:/usr/share/nginx/html:ro
+      - ./docker/tiles/default.conf:/etc/nginx/conf.d/default.conf:ro
     restart: unless-stopped
 
   api:

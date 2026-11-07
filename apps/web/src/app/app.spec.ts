@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideFakeMap } from '../testing/fake-map';
 import { provideTestTransloco } from '../testing/transloco-testing';
 import { createApiClient } from '@voie-libre/api-client';
 import { App } from './app';
@@ -13,6 +14,7 @@ describe('App', () => {
       imports: [App],
       providers: [
         provideTestTransloco(),
+        provideFakeMap(),
         {
           provide: API_CLIENT,
           useValue: createApiClient({

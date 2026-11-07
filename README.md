@@ -30,7 +30,8 @@ git clone <repo-url> voie-libre && cd voie-libre
 npm install
 cp .env.example .env                  # optional: the defaults already match docker-compose.yml
 ./scripts/download-segments.sh        # BRouter data for the test region (about 120 MB, not committed)
-docker compose up -d                  # PostgreSQL/PostGIS and BRouter (the first start builds BRouter)
+./scripts/download-basemap.sh         # map tiles, fonts and sprites for the test region (about 55 MB, not committed)
+docker compose up -d                  # PostgreSQL/PostGIS, BRouter (first start builds it) and the tiles server
 npm run db:migrate                    # enables PostGIS
 npm run dev                           # API and web app together
 ```
@@ -43,6 +44,10 @@ npm run dev                           # API and web app together
 | http://localhost:3000/health       | API and database state (200, or 503 when the database is down) |
 
 BRouter listens on http://localhost:17777. The segment `E0_N45` covers Clermont-Ferrand (lon 0-5, lat 45-50); other regions need other tiles: `./scripts/download-segments.sh E5_N45`.
+
+### Basemap
+
+The map reads a PMTiles extract of OpenStreetMap data (Protomaps) plus fonts and sprites, all served locally by the `tiles` service on http://localhost:8081, so the map makes no request to an external domain. `./scripts/download-basemap.sh` writes them to `data/basemap` (not committed): it extracts the region `2.6,45.3,3.7,46.1` up to zoom 14 from the latest Protomaps planet build, downloading only the needed byte ranges (the `pmtiles` CLI is used if installed, otherwise its Docker image). Override with `BASEMAP_BBOX`, `BASEMAP_MAXZOOM` or `BASEMAP_BUILD`. The map needs a browser with WebGL2; without it the app shows a message instead of the map.
 
 To run the API in a container instead of `npm run dev`, use `docker compose --profile full up -d` and start only the web app (`npx nx serve web`).
 

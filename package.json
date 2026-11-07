@@ -70,10 +70,13 @@
     "@fastify/swagger-ui": "^6.1.3",
     "@fastify/type-provider-typebox": "^5.2.0",
     "@jsverse/transloco": "^8.4.0",
+    "@protomaps/basemaps": "^5.7.2",
     "@sinclair/typebox": "^0.34.52",
     "fastify": "~5.12.5",
+    "maplibre-gl": "^6.16.0",
     "openapi-fetch": "^0.17.0",
     "pg": "^8.23.1",
+    "pmtiles": "^4.5.0",
     "rxjs": "~7.8.0"
   },
   "description": "Open-source route planner for road/gravel cycling and trail running",

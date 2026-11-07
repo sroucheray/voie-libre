@@ -13,5 +13,16 @@
       "degraded": "API : base de données indisponible",
       "unreachable": "API : injoignable"
     }
+  },
+  "map": {
+    "label": "Carte",
+    "zoomIn": "Zoom avant",
+    "zoomOut": "Zoom arrière",
+    "resetBearing": "Remettre le nord en haut",
+    "attribution": {
+      "label": "Source des données cartographiques",
+      "contributors": "contributeurs"
+    },
+    "unavailable": "La carte n'a pas pu être affichée. Votre navigateur ne gère peut-être pas WebGL2."
   }
 }

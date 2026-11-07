@@ -13,5 +13,16 @@
       "degraded": "API: database unavailable",
       "unreachable": "API: unreachable"
     }
+  },
+  "map": {
+    "label": "Map",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "resetBearing": "Reset the map to north",
+    "attribution": {
+      "label": "Map data attribution",
+      "contributors": "contributors"
+    },
+    "unavailable": "The map could not be displayed. Your browser may not support WebGL2."
   }
 }

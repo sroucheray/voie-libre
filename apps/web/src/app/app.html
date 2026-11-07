@@ -3,7 +3,10 @@
   <vl-language-switch />
 </header>
 <main>
-  <p>{{ 'app.tagline' | transloco }}</p>
-  <vl-api-status />
+  <div class="status-bar">
+    <p>{{ 'app.tagline' | transloco }}</p>
+    <vl-api-status />
+  </div>
+  <vl-map-view class="map" />
   <router-outlet />
 </main>
