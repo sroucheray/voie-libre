@@ -54,6 +54,14 @@ export function pointRole(index: number, total: number): PointRole {
   return index === total - 1 ? 'end' : 'waypoint';
 }
 
+/** A route of two points or more whose end is exactly on its start. */
+export function isLoopOf(points: readonly LngLat[]): boolean {
+  if (points.length < 2) return false;
+  const first = points[0];
+  const last = points[points.length - 1];
+  return first[0] === last[0] && first[1] === last[1];
+}
+
 /** Identifies the inputs of a computation, to recognise the ones a restored route came from. */
 export function inputsSignature(
   points: readonly LngLat[],
@@ -103,6 +111,15 @@ export class PlannerStore {
    */
   readonly cursor = signal<number | null>(null);
 
+  /** True when the end is on the start. */
+  readonly isLoop = computed(() => isLoopOf(this.pointsState()));
+
+  /** What the next click on the map will create. */
+  readonly nextRole = computed<PointRole>(() => {
+    const count = this.pointsState().length;
+    return count === 0 ? 'start' : count === 1 ? 'end' : 'waypoint';
+  });
+
   /** False for an imported route without elevation: its geometry carries zeros, not altitudes. */
   readonly elevationKnown = computed(
     () => this.routesState()[this.selectedState()]?.ascentMeters !== null,
@@ -149,12 +166,39 @@ export class PlannerStore {
     });
   }
 
+  /**
+   * Inserts a waypoint so that it ends up at `index` (1 to length - 1: never before the start or
+   * after the end). Ignored beyond {@link MAX_POINTS}.
+   */
+  insertPoint(index: number, point: LngLat): void {
+    this.pointsState.update((points) => {
+      if (points.length < 2 || points.length >= MAX_POINTS) return points;
+      const at = Math.min(Math.max(index, 1), points.length - 1);
+      return [...points.slice(0, at), point, ...points.slice(at)];
+    });
+  }
+
+  /** Makes the route a loop: the end is put on the start. No-op if it already is one. */
+  closeLoop(): void {
+    this.pointsState.update((points) => {
+      if (points.length < 2 || points.length >= MAX_POINTS) return points;
+      if (isLoopOf(points)) return points;
+      return [...points, points[0]];
+    });
+  }
+
+  /** The start and the end of a loop move together, so that it stays closed. */
   movePoint(index: number, point: LngLat): void {
-    this.pointsState.update((points) =>
-      index >= 0 && index < points.length
-        ? points.map((p, i) => (i === index ? point : p))
-        : points,
-    );
+    this.pointsState.update((points) => {
+      if (index < 0 || index >= points.length) return points;
+      const together =
+        isLoopOf(points) && (index === 0 || index === points.length - 1);
+      return points.map((p, i) =>
+        i === index || (together && (i === 0 || i === points.length - 1))
+          ? point
+          : p,
+      );
+    });
   }
 
   removePoint(index: number): void {

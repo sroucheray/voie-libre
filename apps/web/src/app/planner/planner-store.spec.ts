@@ -35,6 +35,90 @@ describe('PlannerStore', () => {
       ]);
     });
 
+    it('tells what the next click creates', () => {
+      expect(store.nextRole()).toBe('start');
+      store.addPoint([1, 1]);
+      expect(store.nextRole()).toBe('end');
+      store.addPoint([9, 9]);
+      expect(store.nextRole()).toBe('waypoint');
+    });
+
+    it('inserts a waypoint at the given index, never before the start or after the end', () => {
+      store.addPoint([1, 1]);
+      store.addPoint([9, 9]);
+      store.addPoint([2, 2]);
+      store.insertPoint(2, [5, 5]);
+      expect(store.points()).toEqual([
+        [1, 1],
+        [2, 2],
+        [5, 5],
+        [9, 9],
+      ]);
+      store.insertPoint(0, [0, 0]);
+      expect(store.points()[1]).toEqual([0, 0]);
+      store.insertPoint(99, [8, 8]);
+      expect(store.points()[store.points().length - 2]).toEqual([8, 8]);
+      expect(store.points()[store.points().length - 1]).toEqual([9, 9]);
+    });
+
+    it('does not insert without a start and an end', () => {
+      store.addPoint([1, 1]);
+      store.insertPoint(1, [2, 2]);
+      expect(store.points()).toEqual([[1, 1]]);
+    });
+
+    it('closes a loop by putting the end on the start', () => {
+      store.addPoint([1, 1]);
+      store.addPoint([2, 2]);
+      expect(store.isLoop()).toBe(false);
+      store.closeLoop();
+      expect(store.points()).toEqual([
+        [1, 1],
+        [2, 2],
+        [1, 1],
+      ]);
+      expect(store.isLoop()).toBe(true);
+      store.closeLoop();
+      expect(store.points().length).toBe(3);
+    });
+
+    it('does not close a loop with fewer than two points', () => {
+      store.addPoint([1, 1]);
+      store.closeLoop();
+      expect(store.points()).toEqual([[1, 1]]);
+      expect(store.isLoop()).toBe(false);
+    });
+
+    it('moves the start and the end of a loop together', () => {
+      store.addPoint([1, 1]);
+      store.addPoint([2, 2]);
+      store.closeLoop();
+      store.movePoint(0, [5, 5]);
+      expect(store.points()).toEqual([
+        [5, 5],
+        [2, 2],
+        [5, 5],
+      ]);
+      store.movePoint(2, [6, 6]);
+      expect(store.points()).toEqual([
+        [6, 6],
+        [2, 2],
+        [6, 6],
+      ]);
+      store.movePoint(1, [3, 3]);
+      expect(store.points()).toEqual([
+        [6, 6],
+        [3, 3],
+        [6, 6],
+      ]);
+    });
+
+    it('does not close a loop beyond the maximum number of points', () => {
+      for (let i = 0; i < MAX_POINTS; i++) store.addPoint([i, i]);
+      store.closeLoop();
+      expect(store.points().length).toBe(MAX_POINTS);
+    });
+
     it('inserts further points as waypoints just before the end', () => {
       store.addPoint([1, 1]);
       store.addPoint([9, 9]);
