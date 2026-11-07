@@ -1,13 +1,12 @@
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { NxWelcome } from './nx-welcome';
+import { TranslocoPipe } from '@jsverse/transloco';
+import { LanguageSwitch } from './core/language-switch/language-switch';
 
 @Component({
-  imports: [NxWelcome, RouterModule],
+  imports: [RouterModule, TranslocoPipe, LanguageSwitch],
   selector: 'vl-root',
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
-export class App {
-  protected title = 'web';
-}
+export class App {}

@@ -1,2 +1,8 @@
-<vl-nx-welcome></vl-nx-welcome>
-<router-outlet></router-outlet>
+<header class="app-header">
+  <h1>{{ 'app.title' | transloco }}</h1>
+  <vl-language-switch />
+</header>
+<main>
+  <p>{{ 'app.tagline' | transloco }}</p>
+  <router-outlet />
+</main>

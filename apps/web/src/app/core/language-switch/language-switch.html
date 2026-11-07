@@ -1,0 +1,13 @@
+<label>
+  <span class="visually-hidden">{{ 'language.label' | transloco }}</span>
+  <select
+    [attr.aria-label]="'language.label' | transloco"
+    (change)="select($event)"
+  >
+    @for (language of languages.supported; track language) {
+    <option [value]="language" [selected]="language === languages.current()">
+      {{ name(language) }}
+    </option>
+    }
+  </select>
+</label>
