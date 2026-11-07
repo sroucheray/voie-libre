@@ -176,5 +176,10 @@
       "no_data": "The terrain data does not cover this route.",
       "unknown": "The climb could not be computed."
     }
+  },
+  "update": {
+    "available": "A new version of the app is available.",
+    "reload": "Reload",
+    "later": "Later"
   }
 }

@@ -1,0 +1,14 @@
+:host {
+  display: block;
+}
+
+.update {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  padding: 0.375rem 1rem;
+  background: #eff8ff;
+  border-bottom: 1px solid #b2ddff;
+  font-size: 0.875rem;
+}

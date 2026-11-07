@@ -176,5 +176,10 @@
       "no_data": "Les données de relief ne couvrent pas ce parcours.",
       "unknown": "Le dénivelé n'a pas pu être calculé."
     }
+  },
+  "update": {
+    "available": "Une nouvelle version de l'application est disponible.",
+    "reload": "Recharger",
+    "later": "Plus tard"
   }
 }

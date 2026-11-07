@@ -1,0 +1,11 @@
+@if (update.ready()) {
+<div class="update" role="status">
+  <span>{{ 'update.available' | transloco }}</span>
+  <button type="button" class="reload" (click)="update.apply()">
+    {{ 'update.reload' | transloco }}
+  </button>
+  <button type="button" class="later" (click)="update.dismiss()">
+    {{ 'update.later' | transloco }}
+  </button>
+</div>
+}
