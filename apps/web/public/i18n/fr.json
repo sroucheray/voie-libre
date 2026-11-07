@@ -54,7 +54,8 @@
     "routes": {
       "label": "Parcours calculés",
       "route": "Parcours {{n}}",
-      "summary": "{{distance}}, {{ascent}} de dénivelé positif, {{duration}}"
+      "summary": "{{distance}}, {{ascent}} de dénivelé positif, {{duration}}",
+      "summaryNoClimb": "{{distance}}, {{duration}}"
     },
     "errors": {
       "invalid_request": "Ces points ou ces options ne permettent pas de planifier un parcours.",
@@ -94,7 +95,8 @@
       "export_failed": "Le fichier GPX n'a pas pu être créé."
     },
     "export": "Exporter",
-    "exportNamed": "Exporter {{name}} en GPX"
+    "exportNamed": "Exporter {{name}} en GPX",
+    "summaryNoClimb": "{{distance}}, enregistré le {{date}}"
   },
   "offline": {
     "title": "Carte hors-ligne",
@@ -137,7 +139,8 @@
       "forbidden": "Le serveur a refusé d'arrêter le partage de ce parcours.",
       "not_found": "Ce parcours partagé n'existe pas, ou n'est plus partagé.",
       "unknown": "Le partage a échoué."
-    }
+    },
+    "needsClimb": "Le partage a besoin du dénivelé, inconnu pour ce fichier importé."
   },
   "profile": {
     "title": "Profil d'altitude",
@@ -145,5 +148,16 @@
     "hide": "Masquer le profil d'altitude",
     "chart": "Altitude le long du parcours, de {{min}} à {{max}}. Utilisez les flèches gauche et droite pour vous déplacer.",
     "tooltip": "{{distance}} · {{elevation}} · {{grade}}"
+  },
+  "gpxImport": {
+    "button": "Importer un fichier GPX",
+    "noElevation": "Importé. Ce fichier n'a pas d'altitude : le dénivelé est inconnu et le profil d'altitude est masqué.",
+    "thinned": "Importé. La trace était très longue : certains points ont été supprimés.",
+    "errors": {
+      "too_large": "Ce fichier est trop volumineux pour être importé.",
+      "invalid_file": "Ce n'est pas un fichier GPX valide.",
+      "no_track": "Ce fichier GPX ne contient ni trace ni itinéraire.",
+      "too_short": "Cette trace est trop courte pour être importée."
+    }
   }
 }

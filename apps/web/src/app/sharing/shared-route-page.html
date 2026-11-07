@@ -6,10 +6,12 @@
   } @if (route(); as shared) {
   <p class="name">{{ shared.name }}</p>
   <p class="meta">
-    {{ 'saved.summary' | transloco : { distance:
-    format.distance(shared.distanceMeters), ascent:
+    @if (shared.ascentMeters === null) { {{ 'saved.summaryNoClimb' | transloco :
+    { distance: format.distance(shared.distanceMeters), date:
+    format.date(shared.sharedAt) } }} } @else { {{ 'saved.summary' | transloco :
+    { distance: format.distance(shared.distanceMeters), ascent:
     format.elevation(shared.ascentMeters), date: format.date(shared.sharedAt) }
-    }}
+    }} }
   </p>
   @if (kept()) {
   <p role="status">{{ 'sharing.page.kept' | transloco }}</p>

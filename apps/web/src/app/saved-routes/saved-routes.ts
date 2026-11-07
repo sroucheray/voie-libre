@@ -16,6 +16,11 @@ import {
 import { FormattingService } from '../core/format/formatting.service';
 import { FILE_DOWNLOADER } from '../export/file-download';
 import { buildGpx, gpxFileName } from '@voie-libre/shared';
+import {
+  GpxImportError,
+  type GpxImportErrorCode,
+  parseGpx,
+} from '../import/gpx-import';
 import { PlannerStore, pointRole } from '../planner/planner-store';
 import {
   ShareError,
@@ -28,6 +33,13 @@ import {
   type RouteStoreErrorCode,
 } from '../storage/route-store';
 import type { SavedRoute } from '../storage/saved-route';
+
+const GPX_IMPORT_CODES: readonly string[] = [
+  'too_large',
+  'invalid_file',
+  'no_track',
+  'too_short',
+];
 
 /** The browser refused the download. */
 class ExportError extends Error {}
@@ -56,7 +68,11 @@ export class SavedRoutes {
 
   protected readonly routes = signal<SavedRoute[]>([]);
   protected readonly error = signal<
-    RouteStoreErrorCode | ShareErrorCode | 'export_failed' | null
+    | RouteStoreErrorCode
+    | ShareErrorCode
+    | GpxImportErrorCode
+    | 'export_failed'
+    | null
   >(null);
   /** The route whose share or unshare request is running. */
   protected readonly busyId = signal<string | null>(null);
@@ -65,6 +81,8 @@ export class SavedRoutes {
   protected readonly renamingId = signal<string | null>(null);
   protected readonly confirmingId = signal<string | null>(null);
   protected readonly savable = this.planner.savable;
+  /** Translation key of what the last import tells the user, or null. */
+  protected readonly notice = signal<string | null>(null);
 
   /** What the user typed in the name field; `null` while the proposed name applies. */
   private readonly draft = signal<string | null>(null);
@@ -105,6 +123,44 @@ export class SavedRoutes {
     });
   }
 
+  /** Reads a GPX file on the device, saves it as a route and shows it. Nothing is sent anywhere. */
+  protected async importGpx(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    this.notice.set(null);
+    await this.attempt(async () => {
+      let text: string;
+      try {
+        text = await file.text();
+      } catch {
+        throw new GpxImportError('invalid_file');
+      }
+      const imported = parseGpx(text, this.planner.profile());
+      const name =
+        imported.name || file.name.replace(/\.gpx$/i, '').trim() || 'GPX';
+      const saved = await this.routeStore.save({
+        name,
+        profile: this.planner.profile(),
+        points: imported.points,
+        geometry: imported.geometry,
+        distanceMeters: imported.distanceMeters,
+        ascentMeters: imported.ascentMeters,
+        durationSeconds: imported.durationSeconds,
+      });
+      this.routes.update((routes) => [saved, ...routes]);
+      this.planner.loadSaved(saved);
+      this.notice.set(
+        imported.ascentMeters === null
+          ? 'gpxImport.noElevation'
+          : imported.thinned
+            ? 'gpxImport.thinned'
+            : null,
+      );
+    });
+  }
+
   protected async open(id: string): Promise<void> {
     await this.attempt(async () => {
       const saved = await this.routeStore.get(id);
@@ -127,7 +183,10 @@ export class SavedRoutes {
       }
       try {
         this.download(
-          buildGpx(saved, this.pointNames(saved)),
+          buildGpx(
+            { ...saved, withElevation: saved.ascentMeters !== null },
+            this.pointNames(saved),
+          ),
           gpxFileName(saved.name),
           'application/gpx+xml',
         );
@@ -139,6 +198,7 @@ export class SavedRoutes {
 
   /** Translation key of an error: sharing failures have their own messages. */
   protected errorKey(code: string): string {
+    if (GPX_IMPORT_CODES.includes(code)) return `gpxImport.errors.${code}`;
     const sharing: readonly string[] = [
       'network',
       'rate_limited',
@@ -294,7 +354,9 @@ export class SavedRoutes {
           ? 'export_failed'
           : error instanceof RouteStoreError || error instanceof ShareError
             ? error.code
-            : 'unknown',
+            : error instanceof GpxImportError
+              ? error.code
+              : 'unknown',
       );
     }
   }

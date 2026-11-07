@@ -73,10 +73,14 @@
             >{{ 'planner.routes.route' | transloco : { n: i + 1 } }}</strong
           >
           <span>
-            {{ 'planner.routes.summary' | transloco : { distance:
+            @if (route.ascentMeters === null) { {{
+            'planner.routes.summaryNoClimb' | transloco : { distance:
+            format.distance(route.distanceMeters), duration:
+            format.duration(route.durationSeconds) } }} } @else { {{
+            'planner.routes.summary' | transloco : { distance:
             format.distance(route.distanceMeters), ascent:
             format.elevation(route.ascentMeters), duration:
-            format.duration(route.durationSeconds) } }}
+            format.duration(route.durationSeconds) } }} }
           </span>
         </button>
       </li>

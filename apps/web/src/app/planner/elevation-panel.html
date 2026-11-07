@@ -1,4 +1,4 @@
-@if (profile(); as p) {
+@if (store.elevationKnown() && profile(); as p) {
 <section class="profile" [attr.aria-label]="'profile.title' | transloco">
   <header>
     <h2>{{ 'profile.title' | transloco }}</h2>

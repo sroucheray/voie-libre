@@ -54,7 +54,8 @@
     "routes": {
       "label": "Computed routes",
       "route": "Route {{n}}",
-      "summary": "{{distance}}, {{ascent}} climb, {{duration}}"
+      "summary": "{{distance}}, {{ascent}} climb, {{duration}}",
+      "summaryNoClimb": "{{distance}}, {{duration}}"
     },
     "errors": {
       "invalid_request": "These points or options cannot be used to plan a route.",
@@ -94,7 +95,8 @@
       "export_failed": "The GPX file could not be created."
     },
     "export": "Export",
-    "exportNamed": "Export {{name}} as GPX"
+    "exportNamed": "Export {{name}} as GPX",
+    "summaryNoClimb": "{{distance}}, saved {{date}}"
   },
   "offline": {
     "title": "Offline map",
@@ -137,7 +139,8 @@
       "forbidden": "The server refused to stop sharing this route.",
       "not_found": "This shared route does not exist, or is no longer shared.",
       "unknown": "Sharing failed."
-    }
+    },
+    "needsClimb": "Sharing needs the climb, which is unknown for this imported file."
   },
   "profile": {
     "title": "Elevation profile",
@@ -145,5 +148,16 @@
     "hide": "Hide the elevation profile",
     "chart": "Elevation along the route, from {{min}} to {{max}}. Use the left and right arrow keys to move along it.",
     "tooltip": "{{distance}} · {{elevation}} · {{grade}}"
+  },
+  "gpxImport": {
+    "button": "Import a GPX file",
+    "noElevation": "Imported. This file has no elevation, so the climb is unknown and the elevation profile is hidden.",
+    "thinned": "Imported. The track was very long, so some points were dropped.",
+    "errors": {
+      "too_large": "This file is too large to import.",
+      "invalid_file": "This is not a valid GPX file.",
+      "no_track": "This GPX file has no track or route.",
+      "too_short": "This track is too short to import."
+    }
   }
 }

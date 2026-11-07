@@ -709,4 +709,85 @@ describe('Saved routes', () => {
       expect(view.items()).toHaveLength(1);
     });
   });
+
+  describe('importing a GPX file', () => {
+    const gpx = (points: string, name = 'Imported ride') =>
+      `<?xml version="1.0"?><gpx version="1.1" creator="t" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>${name}</name><trkseg>${points}</trkseg></trk></gpx>`;
+    const withEle =
+      '<trkpt lat="45" lon="3"><ele>100</ele></trkpt><trkpt lat="45.01" lon="3"><ele>160</ele></trkpt>';
+    const noEle =
+      '<trkpt lat="45" lon="3"></trkpt><trkpt lat="45.01" lon="3"></trkpt>';
+
+    async function importFile(
+      view: Awaited<ReturnType<typeof render>>,
+      content: string,
+      name = 'ride.gpx',
+    ) {
+      const input = view.root.querySelector<HTMLInputElement>(
+        '.import input[type="file"]',
+      )!;
+      // jsdom has no File.text(): a minimal stand-in is enough for the component.
+      Object.defineProperty(input, 'files', {
+        configurable: true,
+        value: [{ name, text: async () => content }],
+      });
+      input.dispatchEvent(new Event('change'));
+      await view.settle();
+    }
+
+    it('saves the file as a route, shows it, and never calls the API', async () => {
+      const view = await render();
+      calls = 0;
+      await importFile(view, gpx(withEle));
+      expect(calls).toBe(0);
+      expect(view.items()).toHaveLength(1);
+      expect(view.items()[0].textContent).toContain('Imported ride');
+      const [saved] = await routeStore.list();
+      expect(saved.points).toHaveLength(2);
+      expect(saved.ascentMeters).toBe(60);
+      expect(view.driver.routes).toHaveLength(1);
+      expect(view.driver.fitted).toHaveLength(1);
+      expect(view.alert()).toBeNull();
+      expect(view.root.querySelector('.notice')).toBeNull();
+    });
+
+    it('names the route after the file when the track has no name', async () => {
+      const view = await render();
+      await importFile(view, gpx(withEle, ''), 'Col de la Ventouse.gpx');
+      expect((await routeStore.list())[0].name).toBe('Col de la Ventouse');
+    });
+
+    it('imports without elevation: tells the user, hides the profile, blocks sharing', async () => {
+      const view = await render();
+      await importFile(view, gpx(noEle));
+      expect(view.root.querySelector('.notice')?.textContent).toContain(
+        'no elevation',
+      );
+      expect((await routeStore.list())[0].ascentMeters).toBeNull();
+      expect(view.root.querySelector('vl-elevation-panel .profile')).toBeNull();
+      expect(
+        view.root.querySelector<HTMLButtonElement>('button.share')!.disabled,
+      ).toBe(true);
+    });
+
+    it('exports an imported route without elevation with no <ele>', async () => {
+      const view = await render();
+      await importFile(view, gpx(noEle));
+      view.button('Export Imported ride as GPX').click();
+      await view.settle();
+      expect(downloads[0].content).not.toContain('<ele>');
+    });
+
+    it('translates the errors and saves nothing', async () => {
+      const view = await render();
+      await importFile(view, 'this is not xml');
+      expect(view.alert()).toBe('This is not a valid GPX file.');
+      await importFile(
+        view,
+        '<gpx xmlns="http://www.topografix.com/GPX/1/1"></gpx>',
+      );
+      expect(view.alert()).toBe('This GPX file has no track or route.');
+      expect(view.items()).toHaveLength(0);
+    });
+  });
 });

@@ -7,6 +7,8 @@ export interface GpxSource {
   geometry: readonly (readonly [number, number, number])[];
   /** Milliseconds since the epoch. */
   createdAt: number;
+  /** False when the elevations are unknown (zeros): no `<ele>` is written. Default true. */
+  withElevation?: boolean;
 }
 
 const XML_ESCAPES: Record<string, string> = {
@@ -45,10 +47,11 @@ export function buildGpx(
         `  <wpt lat="${lat.toFixed(6)}" lon="${lon.toFixed(6)}"><name>${escapeXml(pointNames[index] ?? '')}</name></wpt>\n`,
     )
     .join('');
+  const withElevation = route.withElevation !== false;
   const points = route.geometry
     .map(
       ([lon, lat, ele]) =>
-        `      <trkpt lat="${lat.toFixed(6)}" lon="${lon.toFixed(6)}"><ele>${ele.toFixed(1)}</ele></trkpt>`,
+        `      <trkpt lat="${lat.toFixed(6)}" lon="${lon.toFixed(6)}">${withElevation ? `<ele>${ele.toFixed(1)}</ele>` : ''}</trkpt>`,
     )
     .join('\n');
   const name = escapeXml(route.name);

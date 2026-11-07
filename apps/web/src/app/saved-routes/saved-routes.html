@@ -16,7 +16,21 @@
     </button>
   </form>
 
-  @if (error(); as code) {
+  <div class="import">
+    <input
+      #fileInput
+      type="file"
+      accept=".gpx,application/gpx+xml,text/xml,application/xml"
+      hidden
+      (change)="importGpx($event)"
+    />
+    <button type="button" (click)="fileInput.click()">
+      {{ 'gpxImport.button' | transloco }}
+    </button>
+  </div>
+  @if (notice(); as key) {
+  <p class="notice" role="status">{{ key | transloco }}</p>
+  } @if (error(); as code) {
   <p class="error" role="alert">{{ errorKey(code) | transloco }}</p>
   } @if (routes().length === 0) {
   <p class="empty">{{ 'saved.empty' | transloco }}</p>
@@ -45,10 +59,12 @@
       } @else {
       <strong class="name">{{ route.name }}</strong>
       <span class="meta">
-        {{ 'saved.summary' | transloco : { distance:
-        format.distance(route.distanceMeters), ascent:
+        @if (route.ascentMeters === null) { {{ 'saved.summaryNoClimb' |
+        transloco : { distance: format.distance(route.distanceMeters), date:
+        format.date(route.createdAt) } }} } @else { {{ 'saved.summary' |
+        transloco : { distance: format.distance(route.distanceMeters), ascent:
         format.elevation(route.ascentMeters), date: format.date(route.createdAt)
-        } }}
+        } }} }
       </span>
       @if (route.share) {
       <div class="share-link">
@@ -112,7 +128,8 @@
         <button
           type="button"
           class="share"
-          [disabled]="busyId() === route.id"
+          [disabled]="busyId() === route.id || route.ascentMeters === null"
+          [attr.title]="route.ascentMeters === null ? ('sharing.needsClimb' | transloco) : null"
           [attr.aria-label]="'sharing.shareNamed' | transloco : { name: route.name }"
           (click)="share(route.id)"
         >

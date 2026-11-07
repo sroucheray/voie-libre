@@ -24,7 +24,8 @@ export interface PlannedRoute {
   /** `[longitude, latitude, elevation in meters]` per point. */
   geometry: [number, number, number][];
   distanceMeters: number;
-  ascentMeters: number;
+  /** `null` when unknown: an imported file without elevation. */
+  ascentMeters: number | null;
   durationSeconds: number;
 }
 
@@ -95,6 +96,11 @@ export class PlannerStore {
    * hovering the route on the map. Followed by the dot on the map and the cursor on the profile.
    */
   readonly cursor = signal<number | null>(null);
+
+  /** False for an imported route without elevation: its geometry carries zeros, not altitudes. */
+  readonly elevationKnown = computed(
+    () => this.routesState()[this.selectedState()]?.ascentMeters !== null,
+  );
 
   /** Geometry of the selected route, which the profile is drawn from. */
   readonly selectedGeometry = computed(

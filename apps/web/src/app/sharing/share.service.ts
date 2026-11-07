@@ -75,7 +75,7 @@ export class ShareService {
           points: route.points,
           geometry: route.geometry,
           distanceMeters: route.distanceMeters,
-          ascentMeters: route.ascentMeters,
+          ascentMeters: route.ascentMeters ?? 0,
           durationSeconds: route.durationSeconds,
           createdAt: route.createdAt,
         },

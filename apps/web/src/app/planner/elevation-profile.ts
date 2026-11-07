@@ -22,7 +22,8 @@ export interface ElevationProfile {
   maxElevation: number;
 }
 
-function haversine(a: LngLat3, b: LngLat3): number {
+/** Distance in meters between two `[lon, lat, …]` positions. */
+export function haversine(a: LngLat3, b: LngLat3): number {
   const toRad = Math.PI / 180;
   const dLat = (b[1] - a[1]) * toRad;
   const dLon = (b[0] - a[0]) * toRad;
