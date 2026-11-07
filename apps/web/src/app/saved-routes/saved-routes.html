@@ -1,0 +1,101 @@
+<section class="saved" [attr.aria-label]="'saved.title' | transloco">
+  <h3>{{ 'saved.title' | transloco }}</h3>
+
+  <form class="save" (submit)="$event.preventDefault(); save()">
+    <label>
+      {{ 'saved.name' | transloco }}
+      <input
+        type="text"
+        [value]="name()"
+        [disabled]="!savable()"
+        (input)="onNameInput($event)"
+      />
+    </label>
+    <button type="submit" [disabled]="!savable()">
+      {{ 'saved.save' | transloco }}
+    </button>
+  </form>
+
+  @if (error(); as code) {
+  <p class="error" role="alert">{{ 'saved.errors.' + code | transloco }}</p>
+  } @if (routes().length === 0) {
+  <p class="empty">{{ 'saved.empty' | transloco }}</p>
+  } @else {
+  <ul class="list">
+    @for (route of routes(); track route.id) {
+    <li>
+      @if (renamingId() === route.id) {
+      <form
+        class="rename"
+        (submit)="$event.preventDefault(); rename(route.id, renameInput.value)"
+      >
+        <input
+          #renameInput
+          class="rename-input"
+          type="text"
+          [value]="route.name"
+          [attr.aria-label]="'saved.name' | transloco"
+          (keydown.escape)="cancelRename()"
+        />
+        <button type="submit">{{ 'saved.confirmRename' | transloco }}</button>
+        <button type="button" (click)="cancelRename()">
+          {{ 'saved.cancel' | transloco }}
+        </button>
+      </form>
+      } @else {
+      <strong class="name">{{ route.name }}</strong>
+      <span class="meta">
+        {{ 'saved.summary' | transloco : { distance:
+        format.distance(route.distanceMeters), ascent:
+        format.elevation(route.ascentMeters), date: format.date(route.createdAt)
+        } }}
+      </span>
+      @if (confirmingId() === route.id) {
+      <div
+        class="confirm"
+        role="group"
+        [attr.aria-label]="'saved.confirmDelete' | transloco : { name: route.name }"
+      >
+        <span
+          >{{ 'saved.confirmDelete' | transloco : { name: route.name } }}</span
+        >
+        <button type="button" class="danger" (click)="confirmDelete(route.id)">
+          {{ 'saved.confirmDeleteYes' | transloco }}
+        </button>
+        <button type="button" (click)="cancelDelete()">
+          {{ 'saved.cancel' | transloco }}
+        </button>
+      </div>
+      } @else {
+      <div class="actions">
+        <button
+          type="button"
+          class="open"
+          [attr.aria-label]="'saved.openNamed' | transloco : { name: route.name }"
+          (click)="open(route.id)"
+        >
+          {{ 'saved.open' | transloco }}
+        </button>
+        <button
+          type="button"
+          class="rename-button"
+          [attr.aria-label]="'saved.renameNamed' | transloco : { name: route.name }"
+          (click)="startRename(route.id)"
+        >
+          {{ 'saved.rename' | transloco }}
+        </button>
+        <button
+          type="button"
+          class="delete"
+          [attr.aria-label]="'saved.deleteNamed' | transloco : { name: route.name }"
+          (click)="askDelete(route.id)"
+        >
+          {{ 'saved.delete' | transloco }}
+        </button>
+      </div>
+      } }
+    </li>
+    }
+  </ul>
+  }
+</section>

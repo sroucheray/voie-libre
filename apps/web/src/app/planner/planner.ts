@@ -24,6 +24,7 @@ import {
   pointRole,
 } from './planner-store';
 import { RoutePlanner } from './route-planner';
+import { SavedRoutes } from '../saved-routes/saved-routes';
 
 /**
  * The map with its planning panel. Clicks place the start, the end and waypoints; markers can be
@@ -31,7 +32,7 @@ import { RoutePlanner } from './route-planner';
  */
 @Component({
   selector: 'vl-planner',
-  imports: [MapView, TranslocoPipe],
+  imports: [MapView, TranslocoPipe, SavedRoutes],
   templateUrl: './planner.html',
   styleUrl: './planner.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -83,6 +84,13 @@ export class Planner {
           };
         }),
       );
+    });
+
+    // Shows a route opened from the saved list. The driver may come later than the request.
+    effect(() => {
+      const driver = this.driver();
+      const view = this.store.viewRequest();
+      if (driver && view) driver.fitRoute(view.geometry);
     });
 
     effect(() => {

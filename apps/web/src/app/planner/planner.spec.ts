@@ -6,6 +6,7 @@ import {
 } from '../../testing/fake-planner-driver';
 import { FakeMap, provideFakeMap } from '../../testing/fake-map';
 import { provideTestTransloco } from '../../testing/transloco-testing';
+import { provideInMemoryRouteStore } from '../../testing/in-memory-route-store';
 import { API_CLIENT } from '../core/api/api-client';
 import { LanguageService } from '../core/i18n/language.service';
 import { Planner } from './planner';
@@ -63,6 +64,7 @@ describe('Planner', () => {
         provideTestTransloco(),
         provideFakeMap([] as FakeMap[]),
         provideFakePlannerDriver(drivers),
+        provideInMemoryRouteStore(),
         { provide: API_CLIENT, useValue: client },
       ],
     }).compileComponents();
@@ -281,6 +283,7 @@ describe('Planner', () => {
           provideTestTransloco(),
           provideFakeMap([] as FakeMap[]),
           provideFakePlannerDriver(drivers),
+          provideInMemoryRouteStore(),
           {
             provide: API_CLIENT,
             useValue: createApiClient({

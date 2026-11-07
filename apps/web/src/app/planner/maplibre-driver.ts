@@ -124,6 +124,23 @@ export async function createMapLibreDriver(
       selected = nextSelected;
       pushRoutes();
     },
+    fitRoute(geometry: LngLat3[]) {
+      if (geometry.length === 0) return;
+      const bounds = new maplibre.LngLatBounds();
+      for (const [lon, lat] of geometry) bounds.extend([lon, lat]);
+      // Keep the route clear of the panel, but never ask for more padding than the map has.
+      const width = map.getContainer().clientWidth;
+      map.fitBounds(bounds, {
+        padding: {
+          top: 50,
+          bottom: 50,
+          right: 50,
+          left: Math.min(340, Math.round(width / 3)),
+        },
+        duration: 0,
+        maxZoom: 16,
+      });
+    },
     destroy() {
       destroyed = true;
       clearMarkers();

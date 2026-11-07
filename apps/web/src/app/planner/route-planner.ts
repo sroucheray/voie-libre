@@ -4,6 +4,7 @@ import {
   PlannedRoute,
   PlannerErrorCode,
   PlannerStore,
+  inputsSignature,
   type Profile,
 } from './planner-store';
 import type { LngLat } from '../core/map/map-factory';
@@ -27,7 +28,8 @@ export function errorCodeFrom(status: number, body: unknown): PlannerErrorCode {
 
 /**
  * Recomputes the route whenever the points, the profile or the number of alternatives change.
- * A short debounce groups quick edits, and a newer change aborts the request still in flight.
+ * A route restored from the device is already in the store: it is skipped, until the inputs
+ * change. A short debounce groups quick edits, and a newer change aborts the request still in flight.
  */
 @Injectable({ providedIn: 'root' })
 export class RoutePlanner {
@@ -41,9 +43,15 @@ export class RoutePlanner {
       const alternatives = this.store.alternatives();
 
       if (points.length < 2) {
-        untracked(() => this.store.resetResult());
+        untracked(() => {
+          this.store.forgetRestored();
+          this.store.resetResult();
+        });
         return;
       }
+      const signature = inputsSignature(points, profile, alternatives);
+      if (untracked(() => this.store.isRestored(signature))) return;
+      untracked(() => this.store.forgetRestored());
       untracked(() => this.store.startLoading());
       const controller = new AbortController();
       const timer = setTimeout(

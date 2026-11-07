@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
 import type { LngLat } from '../core/map/map-factory';
+import type { SavedRoute } from '../storage/saved-route';
 
 export const PROFILES = ['road', 'gravel', 'trail'] as const;
 export type Profile = (typeof PROFILES)[number];
@@ -35,6 +36,27 @@ export function pointRole(index: number, total: number): PointRole {
   return index === total - 1 ? 'end' : 'waypoint';
 }
 
+/** Identifies the inputs of a computation, to recognise the ones a restored route came from. */
+export function inputsSignature(
+  points: readonly LngLat[],
+  profile: Profile,
+  alternatives: number,
+): string {
+  return JSON.stringify([points, profile, alternatives]);
+}
+
+/** The selected route with what it was computed from: what "Save" stores. */
+export interface SavableRoute extends PlannedRoute {
+  points: LngLat[];
+  profile: Profile;
+}
+
+/** Ask the map to show a route, e.g. after opening a saved one. `id` makes each request new. */
+export interface ViewRequest {
+  id: number;
+  geometry: [number, number, number][];
+}
+
 /**
  * State of the route being planned, and the pure rules that change it. Computing the route
  * (network, debounce) is the job of {@link RoutePlanner}.
@@ -56,6 +78,25 @@ export class PlannerStore {
   readonly selectedIndex = this.selectedState.asReadonly();
   readonly status = this.statusState.asReadonly();
   readonly errorCode = this.errorState.asReadonly();
+
+  private readonly viewState = signal<ViewRequest | null>(null);
+  readonly viewRequest = this.viewState.asReadonly();
+
+  /**
+   * Signature of the inputs a saved route was restored with. While the inputs still match it,
+   * {@link RoutePlanner} must not recompute: the routes are already in the state.
+   */
+  private restored: string | null = null;
+
+  /** The selected route, when it is computed and can be saved. */
+  readonly savable = computed<SavableRoute | null>(() => {
+    const route = this.routesState()[this.selectedState()];
+    const points = this.pointsState();
+    if (this.statusState() !== 'ready' || !route || points.length < 2) {
+      return null;
+    }
+    return { ...route, points, profile: this.profileState() };
+  });
 
   /**
    * The first click sets the start, the second the end, and the following ones add waypoints
@@ -98,6 +139,43 @@ export class PlannerStore {
     if (index >= 0 && index < this.routesState().length) {
       this.selectedState.set(index);
     }
+  }
+
+  /**
+   * Shows a saved route as it was, without computing anything: points, profile and itinerary
+   * come from the record. Only the selected route was saved, so alternatives go back to 1. The
+   * first edit made afterwards computes normally.
+   */
+  loadSaved(saved: SavedRoute): void {
+    this.restored = inputsSignature(saved.points, saved.profile, 1);
+    this.pointsState.set(saved.points.map((p) => [p[0], p[1]] as LngLat));
+    this.profileState.set(saved.profile);
+    this.alternativesState.set(1);
+    this.routesState.set([
+      {
+        geometry: saved.geometry,
+        distanceMeters: saved.distanceMeters,
+        ascentMeters: saved.ascentMeters,
+        durationSeconds: saved.durationSeconds,
+      },
+    ]);
+    this.selectedState.set(0);
+    this.errorState.set(null);
+    this.statusState.set('ready');
+    this.viewState.update((view) => ({
+      id: (view?.id ?? 0) + 1,
+      geometry: saved.geometry,
+    }));
+  }
+
+  /** True while the inputs are exactly those of the route restored by {@link loadSaved}. */
+  isRestored(signature: string): boolean {
+    return this.restored === signature;
+  }
+
+  /** The inputs changed: the restored route no longer matches, later changes compute. */
+  forgetRestored(): void {
+    this.restored = null;
   }
 
   /** A computation started: keep the previous routes on screen until it ends. */

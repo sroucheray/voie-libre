@@ -28,6 +28,8 @@ export interface PlannerMapDriver {
   setMarkers(markers: MarkerSpec[]): void;
   /** `routes[selected]` is drawn as the main route, the others as alternatives. */
   setRoutes(routes: LngLat3[][], selected: number): void;
+  /** Moves the view so that the whole route is visible. */
+  fitRoute(geometry: LngLat3[]): void;
   destroy(): void;
 }
 

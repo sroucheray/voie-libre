@@ -64,5 +64,33 @@
       "rate_limited": "Too many requests. Wait a moment before changing the route again.",
       "unknown": "The route could not be computed."
     }
+  },
+  "saved": {
+    "title": "Saved routes",
+    "name": "Name",
+    "save": "Save",
+    "defaultName": {
+      "road": "Road, {{distance}}",
+      "gravel": "Gravel, {{distance}}",
+      "trail": "Trail, {{distance}}"
+    },
+    "empty": "No saved routes yet. They are kept on this device.",
+    "summary": "{{distance}}, {{ascent}} climb, saved {{date}}",
+    "open": "Open",
+    "openNamed": "Open {{name}}",
+    "rename": "Rename",
+    "renameNamed": "Rename {{name}}",
+    "confirmRename": "Rename",
+    "delete": "Delete",
+    "deleteNamed": "Delete {{name}}",
+    "confirmDelete": "Delete \"{{name}}\" from this device? This cannot be undone.",
+    "confirmDeleteYes": "Delete",
+    "cancel": "Cancel",
+    "errors": {
+      "unavailable": "Saving is not available in this browser (private window or blocked storage). You can still plan routes.",
+      "quota": "The device storage is full. Delete a saved route and try again.",
+      "not_found": "This saved route no longer exists.",
+      "unknown": "The saved routes could not be read or written."
+    }
   }
 }

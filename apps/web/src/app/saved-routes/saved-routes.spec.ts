@@ -1,0 +1,450 @@
+import { TestBed } from '@angular/core/testing';
+import { createApiClient } from '@voie-libre/api-client';
+import {
+  InMemoryRouteStore,
+  provideInMemoryRouteStore,
+} from '../../testing/in-memory-route-store';
+import {
+  FakePlannerDriver,
+  provideFakePlannerDriver,
+} from '../../testing/fake-planner-driver';
+import { FakeMap, provideFakeMap } from '../../testing/fake-map';
+import { provideTestTransloco } from '../../testing/transloco-testing';
+import { API_CLIENT } from '../core/api/api-client';
+import { LanguageService } from '../core/i18n/language.service';
+import { Planner } from '../planner/planner';
+import { ROUTE_DEBOUNCE_MS } from '../planner/route-planner';
+import { RouteStoreError } from '../storage/route-store';
+
+const geometry: [number, number, number][] = [
+  [3.087, 45.777, 402],
+  [3.15, 45.65, 390],
+  [3.249, 45.544, 380],
+];
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+
+const flush = () => vi.advanceTimersByTimeAsync(0);
+
+describe('Saved routes', () => {
+  let drivers: FakePlannerDriver[];
+  let calls: number;
+  let respond: () => Response;
+  let routeStore: InMemoryRouteStore;
+
+  beforeEach(async () => {
+    vi.useFakeTimers();
+    localStorage.clear();
+    drivers = [];
+    calls = 0;
+    respond = () =>
+      json({
+        routes: [
+          {
+            geometry,
+            distanceMeters: 41007,
+            ascentMeters: 399,
+            durationSeconds: 8674,
+          },
+        ],
+      });
+    routeStore = new InMemoryRouteStore();
+    await TestBed.configureTestingModule({
+      imports: [Planner],
+      providers: [
+        provideTestTransloco(),
+        provideFakeMap([] as FakeMap[]),
+        provideFakePlannerDriver(drivers),
+        provideInMemoryRouteStore(routeStore),
+        {
+          provide: API_CLIENT,
+          useValue: createApiClient({
+            baseUrl: 'http://api.test',
+            fetch: async () => {
+              calls++;
+              return respond();
+            },
+          }),
+        },
+      ],
+    }).compileComponents();
+    TestBed.inject(LanguageService).init();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function render() {
+    const fixture = TestBed.createComponent(Planner);
+    fixture.detectChanges();
+    await flush();
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const driver = drivers[0];
+    const view = {
+      fixture,
+      root,
+      driver,
+      /** Lets pending promises, effects and the debounce finish, then redraws. */
+      async settle(ms = 0) {
+        TestBed.tick();
+        await vi.advanceTimersByTimeAsync(ms);
+        TestBed.tick();
+        fixture.detectChanges();
+      },
+      async plan() {
+        driver.handlers.onClick([3.087, 45.777]);
+        driver.handlers.onClick([3.249, 45.544]);
+        await view.settle(ROUTE_DEBOUNCE_MS + 10);
+      },
+      save: () => root.querySelector<HTMLButtonElement>('.save button')!,
+      nameInput: () => root.querySelector<HTMLInputElement>('.save input')!,
+      items: () => Array.from(root.querySelectorAll('.list li')),
+      button: (label: string) =>
+        root.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!,
+      confirmButton: (text: string) =>
+        Array.from(
+          root.querySelectorAll<HTMLButtonElement>('.confirm button'),
+        ).find((b) => b.textContent?.trim() === text)!,
+      alert: () => root.querySelector('[role="alert"]')?.textContent ?? null,
+      text: () => root.textContent!.replace(/\s+/g, ' '),
+    };
+    return view;
+  }
+
+  /** Saves the planned route through the UI and returns the view. */
+  async function renderWithSavedRoute() {
+    const view = await render();
+    await view.plan();
+    view.save().click();
+    await view.settle();
+    return view;
+  }
+
+  describe('saving', () => {
+    it('is disabled until a route is computed', async () => {
+      const view = await render();
+      expect(view.save().disabled).toBe(true);
+      expect(view.nameInput().disabled).toBe(true);
+      view.driver.handlers.onClick([3.087, 45.777]);
+      await view.settle();
+      expect(view.save().disabled).toBe(true);
+      view.driver.handlers.onClick([3.249, 45.544]);
+      await view.settle();
+      expect(view.save().disabled).toBe(true); // still computing
+      await view.settle(ROUTE_DEBOUNCE_MS + 10);
+      expect(view.save().disabled).toBe(false);
+    });
+
+    it('proposes a name and saves the selected route', async () => {
+      const view = await render();
+      await view.plan();
+      expect(view.nameInput().value).toBe('Road, 41 km');
+      view.save().click();
+      await view.settle();
+
+      const [saved] = [...routeStore.records.values()];
+      expect(saved).toMatchObject({
+        name: 'Road, 41 km',
+        profile: 'road',
+        points: [
+          [3.087, 45.777],
+          [3.249, 45.544],
+        ],
+        geometry,
+        distanceMeters: 41007,
+        ascentMeters: 399,
+        durationSeconds: 8674,
+      });
+      expect(view.items()).toHaveLength(1);
+      expect(view.items()[0].textContent).toContain('Road, 41 km');
+      expect(view.items()[0].textContent).toMatch(/41(\.0)? km/);
+      expect(view.items()[0].textContent).toContain('399 m');
+      expect(view.items()[0].textContent).toContain(
+        new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(
+          saved.createdAt,
+        ),
+      );
+    });
+
+    it('saves under the name the user typed, and falls back to the proposal when blank', async () => {
+      const view = await render();
+      await view.plan();
+      const input = view.nameInput();
+      input.value = '  Sunday ride ';
+      input.dispatchEvent(new Event('input'));
+      view.save().click();
+      await view.settle();
+      expect([...routeStore.records.values()][0].name).toBe('Sunday ride');
+
+      input.value = '   ';
+      input.dispatchEvent(new Event('input'));
+      view.save().click();
+      await view.settle();
+      expect(
+        view.items().map((li) => li.querySelector('.name')?.textContent),
+      ).toEqual(['Road, 41 km', 'Sunday ride']);
+    });
+
+    it('proposes a name in the active language', async () => {
+      const view = await render();
+      await view.plan();
+      TestBed.inject(LanguageService).use('fr');
+      await view.settle();
+      await view.settle();
+      expect(view.nameInput().value).toMatch(/^Route, 41\s?km$/);
+    });
+
+    it('lists the most recent route first', async () => {
+      const view = await render();
+      await view.plan();
+      for (const name of ['one', 'two']) {
+        view.nameInput().value = name;
+        view.nameInput().dispatchEvent(new Event('input'));
+        view.save().click();
+        await view.settle();
+      }
+      expect(
+        view.items().map((li) => li.querySelector('.name')?.textContent),
+      ).toEqual(['two', 'one']);
+    });
+
+    it('lists the routes already on the device when it starts', async () => {
+      await routeStore.save({
+        name: 'Earlier',
+        profile: 'trail',
+        points: [
+          [3, 45],
+          [3.1, 45.1],
+        ],
+        geometry,
+        distanceMeters: 1200,
+        ascentMeters: 10,
+        durationSeconds: 600,
+      });
+      const view = await render();
+      await view.settle();
+      expect(view.items()).toHaveLength(1);
+      expect(view.items()[0].textContent).toContain('Earlier');
+      expect(view.items()[0].textContent).toContain('1.2 km');
+    });
+
+    it('shows an empty state', async () => {
+      const view = await render();
+      expect(view.text()).toContain('No saved routes yet');
+    });
+  });
+
+  describe('opening', () => {
+    it('restores the route without calling the API, and shows it on the map', async () => {
+      const view = await renderWithSavedRoute();
+      expect(calls).toBe(1);
+      // A different plan on screen, then back to the saved one.
+      (view.root.querySelector('.clear') as HTMLButtonElement).click();
+      view.fixture.detectChanges();
+      await view.settle(ROUTE_DEBOUNCE_MS + 10);
+      view.driver.handlers.onClick([2, 44]);
+      view.driver.handlers.onClick([2.1, 44.1]);
+      await view.settle(ROUTE_DEBOUNCE_MS + 10);
+      expect(calls).toBe(2);
+
+      view.button('Open Road, 41 km').click();
+      await view.settle(5 * ROUTE_DEBOUNCE_MS);
+      expect(calls).toBe(2);
+      expect(view.driver.markers.map((m) => m.lngLat)).toEqual([
+        [3.087, 45.777],
+        [3.249, 45.544],
+      ]);
+      expect(view.driver.routes).toEqual([geometry]);
+      expect(view.driver.fitted.at(-1)).toEqual(geometry);
+      expect(view.root.querySelector('[role="status"]')).toBeNull();
+      expect(view.text()).toContain('Route 1');
+      expect(view.alert()).toBeNull();
+    });
+
+    it('works with no network at all: the API client is never called and nothing fails', async () => {
+      const view = await renderWithSavedRoute();
+      (view.root.querySelector('.clear') as HTMLButtonElement).click();
+      view.fixture.detectChanges();
+      await view.settle(ROUTE_DEBOUNCE_MS + 10);
+      calls = 0;
+      respond = () => {
+        throw new TypeError('Failed to fetch');
+      };
+
+      view.button('Open Road, 41 km').click();
+      await view.settle(5 * ROUTE_DEBOUNCE_MS);
+
+      expect(calls).toBe(0);
+      expect(view.alert()).toBeNull();
+      expect(view.driver.routes).toEqual([geometry]);
+      expect(view.root.querySelectorAll('.points li')).toHaveLength(2);
+      expect(view.text()).toMatch(/41(\.0)? km/);
+    });
+
+    it('recomputes normally on the first edit after opening', async () => {
+      const view = await renderWithSavedRoute();
+      (view.root.querySelector('.clear') as HTMLButtonElement).click();
+      await view.settle(ROUTE_DEBOUNCE_MS + 10);
+      view.button('Open Road, 41 km').click();
+      await view.settle(5 * ROUTE_DEBOUNCE_MS);
+      calls = 0;
+      view.driver.handlers.onMovePoint(1, [3.3, 45.5]);
+      await view.settle(ROUTE_DEBOUNCE_MS + 10);
+      expect(calls).toBe(1);
+    });
+
+    it('says so when the route was deleted elsewhere, and drops it from the list', async () => {
+      const view = await renderWithSavedRoute();
+      routeStore.records.clear();
+      view.button('Open Road, 41 km').click();
+      await view.settle();
+      expect(view.alert()).toContain('no longer exists');
+      expect(view.items()).toHaveLength(0);
+    });
+  });
+
+  describe('renaming', () => {
+    it('renames in place', async () => {
+      const view = await renderWithSavedRoute();
+      view.button('Rename Road, 41 km').click();
+      await view.settle();
+      const input = view.root.querySelector<HTMLInputElement>('.rename-input')!;
+      expect(input.value).toBe('Road, 41 km');
+      input.value = 'Col de la Ventouse';
+      (view.root.querySelector('.rename') as HTMLFormElement).dispatchEvent(
+        new Event('submit'),
+      );
+      await view.settle();
+      expect(view.items()[0].querySelector('.name')?.textContent).toBe(
+        'Col de la Ventouse',
+      );
+      expect([...routeStore.records.values()][0].name).toBe(
+        'Col de la Ventouse',
+      );
+      expect(view.root.querySelector('.rename-input')).toBeNull();
+    });
+
+    it('cancels with Escape or the button, without changing anything', async () => {
+      const view = await renderWithSavedRoute();
+      view.button('Rename Road, 41 km').click();
+      await view.settle();
+      const input = view.root.querySelector<HTMLInputElement>('.rename-input')!;
+      input.value = 'ignored';
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      await view.settle();
+      expect(view.root.querySelector('.rename-input')).toBeNull();
+      expect(view.items()[0].querySelector('.name')?.textContent).toBe(
+        'Road, 41 km',
+      );
+    });
+
+    it('refuses an empty name', async () => {
+      const view = await renderWithSavedRoute();
+      view.button('Rename Road, 41 km').click();
+      await view.settle();
+      const input = view.root.querySelector<HTMLInputElement>('.rename-input')!;
+      input.value = '  ';
+      (view.root.querySelector('.rename') as HTMLFormElement).dispatchEvent(
+        new Event('submit'),
+      );
+      await view.settle();
+      expect([...routeStore.records.values()][0].name).toBe('Road, 41 km');
+    });
+  });
+
+  describe('deleting', () => {
+    it('asks for a confirmation and deletes only after it', async () => {
+      const view = await renderWithSavedRoute();
+      view.button('Delete Road, 41 km').click();
+      await view.settle();
+      expect(view.root.querySelector('.confirm')?.textContent).toContain(
+        'Delete "Road, 41 km" from this device?',
+      );
+      expect(routeStore.records.size).toBe(1);
+
+      view.confirmButton('Cancel').click();
+      await view.settle();
+      expect(view.root.querySelector('.confirm')).toBeNull();
+      expect(routeStore.records.size).toBe(1);
+
+      view.button('Delete Road, 41 km').click();
+      await view.settle();
+      view.confirmButton('Delete').click();
+      await view.settle();
+      expect(routeStore.records.size).toBe(0);
+      expect(view.items()).toHaveLength(0);
+      expect(view.text()).toContain('No saved routes yet');
+    });
+
+    it('does not remove the route being shown on the map', async () => {
+      const view = await renderWithSavedRoute();
+      view.button('Delete Road, 41 km').click();
+      await view.settle();
+      view.confirmButton('Delete').click();
+      await view.settle();
+      expect(view.driver.routes).toHaveLength(1);
+    });
+  });
+
+  describe('storage errors', () => {
+    it.each([
+      [
+        'unavailable',
+        'Saving is not available in this browser',
+        "n'est pas disponible",
+      ],
+      ['quota', 'storage is full', 'est plein'],
+      ['unknown', 'could not be read or written', 'pas pu être lus'],
+    ] as const)(
+      'translates %s and keeps the planner usable',
+      async (code, english, french) => {
+        const view = await render();
+        await view.plan();
+        routeStore.failWith = new RouteStoreError(code);
+        view.save().click();
+        await view.settle();
+        expect(view.alert()).toContain(english);
+        // The route is still displayed and the planner still reacts.
+        expect(view.driver.routes).toHaveLength(1);
+        view.driver.handlers.onMovePoint(1, [3.3, 45.5]);
+        await view.settle(ROUTE_DEBOUNCE_MS + 10);
+        expect(calls).toBe(2);
+
+        TestBed.inject(LanguageService).use('fr');
+        await view.settle();
+        await view.settle();
+        expect(view.alert()).toContain(french);
+      },
+    );
+
+    it('reports an unavailable store when the list cannot be read at startup', async () => {
+      routeStore.failWith = new RouteStoreError('unavailable');
+      const view = await render();
+      await view.settle();
+      expect(view.alert()).toContain('Saving is not available');
+      // Planning still works.
+      await view.plan();
+      expect(view.driver.routes).toHaveLength(1);
+    });
+
+    it('clears the message once an operation succeeds', async () => {
+      routeStore.failWith = new RouteStoreError('quota');
+      const view = await render();
+      await view.plan();
+      view.save().click();
+      await view.settle();
+      expect(view.alert()).not.toBeNull();
+      routeStore.failWith = null;
+      view.save().click();
+      await view.settle();
+      expect(view.alert()).toBeNull();
+      expect(view.items()).toHaveLength(1);
+    });
+  });
+});

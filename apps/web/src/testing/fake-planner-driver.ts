@@ -12,6 +12,7 @@ export class FakePlannerDriver implements PlannerMapDriver {
   markers: MarkerSpec[] = [];
   routes: LngLat3[][] = [];
   selected = 0;
+  fitted: LngLat3[][] = [];
   destroyed = false;
 
   constructor(readonly handlers: PlannerMapHandlers) {}
@@ -22,6 +23,9 @@ export class FakePlannerDriver implements PlannerMapDriver {
   setRoutes(routes: LngLat3[][], selected: number) {
     this.routes = routes;
     this.selected = selected;
+  }
+  fitRoute(geometry: LngLat3[]) {
+    this.fitted.push(geometry);
   }
   destroy() {
     this.destroyed = true;

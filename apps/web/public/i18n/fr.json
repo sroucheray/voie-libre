@@ -64,5 +64,33 @@
       "rate_limited": "Trop de requêtes. Patientez un instant avant de modifier à nouveau le parcours.",
       "unknown": "Le parcours n'a pas pu être calculé."
     }
+  },
+  "saved": {
+    "title": "Parcours enregistrés",
+    "name": "Nom",
+    "save": "Enregistrer",
+    "defaultName": {
+      "road": "Route, {{distance}}",
+      "gravel": "Gravel, {{distance}}",
+      "trail": "Trail, {{distance}}"
+    },
+    "empty": "Aucun parcours enregistré. Ils sont conservés sur cet appareil.",
+    "summary": "{{distance}}, {{ascent}} de dénivelé positif, enregistré le {{date}}",
+    "open": "Ouvrir",
+    "openNamed": "Ouvrir {{name}}",
+    "rename": "Renommer",
+    "renameNamed": "Renommer {{name}}",
+    "confirmRename": "Renommer",
+    "delete": "Supprimer",
+    "deleteNamed": "Supprimer {{name}}",
+    "confirmDelete": "Supprimer « {{name}} » de cet appareil ? Cette action est définitive.",
+    "confirmDeleteYes": "Supprimer",
+    "cancel": "Annuler",
+    "errors": {
+      "unavailable": "L'enregistrement n'est pas disponible dans ce navigateur (navigation privée ou stockage bloqué). Vous pouvez toujours planifier des parcours.",
+      "quota": "Le stockage de l'appareil est plein. Supprimez un parcours enregistré et réessayez.",
+      "not_found": "Ce parcours enregistré n'existe plus.",
+      "unknown": "Les parcours enregistrés n'ont pas pu être lus ou écrits."
+    }
   }
 }
