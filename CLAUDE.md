@@ -13,6 +13,7 @@ Open-source (AGPL-3.0) route planner for road/gravel cycling and trail running, 
 - **Client** (`packages/api-client`): TypeScript types and `openapi-fetch` client generated from `/openapi.json`. Never edit `src/schema.d.ts` or `openapi.json` by hand: run `npm run generate-client`.
 - **Map**: `MapView` (`apps/web/src/app/core/map`) uses MapLibre directly, lazy-loaded. The basemap (PMTiles, fonts, sprites in `data/basemap`) is served locally by the `tiles` compose service; the map must never call an external domain. Map controls and attribution are Angular elements so they are translated.
 - **Planner** (`apps/web/src/app/planner`): `PlannerStore` holds the state and the pure rules (points, profile, alternatives, result); `RoutePlanner` recomputes through the generated client with a debounce and aborts stale requests; a `PlannerMapDriver` draws markers and routes (real one in `maplibre-driver.ts`, fake in tests). API error codes are translated under `planner.errors.*`; never show a raw API message. **Map interaction** (see `BRIEF-map-interaction.md`): `PlannerStore.nextRole` says what the next click creates (shown by the ghost marker under the mouse, `PlannerMapDriver.setGhost`, and by the help bar); markers differ by shape and colour, a loop is one combined marker (`isLoop`); `insertPoint`, `closeLoop`, `setStart`/`setEnd`; the start marker of an open route offers to close the loop (`closable`) and a dialog lets the user pick how: back to the start, avoid the way out (`loop: {mode: 'avoid_outbound'}`: the API routes the way out, then the way back with the way out as a simplified polyline no-go, `routing/loops.ts`; falls back to the plain way back), or a loop by distance (`loop: {mode: 'distance', distanceMeters}` with the start twice: `RoutingProvider.roundTrip`, BRouter round trip with its radius corrected over up to 3 calls, alternatives head in evenly spaced directions; length editable in the panel; `PlannerStore.loop` drops the mode once edits no longer fit it); dragging the selected route inserts a waypoint in the right segment (`insert-point.ts`); right click or long press on the map opens a menu (set start, add stop, set end), long press on a marker removes it, with an undo toast (`PlannerStore.removed`).
+- **Local edits** (`apps/web/src/app/planner/local-edit.ts`, `RoutePlanner`): adding, inserting, moving or removing a point on a route that is on screen recomputes only a stretch around it (see `BRIEF-local-edits.md`). `PlannerStore` records each change as a `PointEdit` (`editBehind(points)` is non-null only while the points are those it produced; moving both ends of a loop records none); `planLocalEdit` (pure) gives the window (`max(500 m, 2 × distance from the point to the route)` each side, clamped to the neighbouring points) and the points of the short `POST /route` (route vertex before, the point, route vertex after; one alternative, no `loop`); `PlannerStore.applyLocalEdit` splices the answer (`applyStretch`: totals from the kept parts), keeps only the selected alternative and marks the inputs as restored. Removing the waypoint at the tip of a spur routes between a place before and after it (never from a place to itself). Full computation stays for: profile or alternatives change, a route not up to date with the points (still loading, or in error: `setLocalEditError` keeps the route on screen), a start or end removed, a loop's start moved. Two edits before the first answer arrives compute in full.
 - **Elevation profile** (`apps/web/src/app/planner/elevation-profile.ts`, `elevation-panel.*`): `buildProfile` (pure: cumulative distance, grade over a 50 m window) and `ElevationPanel` under the map. The shared cursor is `PlannerStore.cursor` (index in the selected geometry): the panel sets it on pointer or keys, `Planner` sets it from `PlannerMapDriver.onHoverRoute`, and an effect shows it as a dot through `setCursor`.
 - **User position** (`apps/web/src/app/location`): the user shares it with the "My position" button on the map; it stays in memory (`LocationStore`: status, fix, error code), never stored, logged or sent to the API. The source sits behind the `GEOLOCATION` token (browser `watchPosition`; a fake in tests, a Capacitor plugin later). `PlannerMapDriver.setLocation` draws a blue dot, the accuracy circle (`accuracyCircle`, a map layer) and a cone when `coords.heading` is known, and moves the view to the first fix only. "My position" in the panel and the map menu adds a point at the fix like a click would (`addPoint`). Errors are `LocationErrorCode`s translated under `location.errors.*`; the button is disabled outside a secure context.
 - **GPX import** (`apps/web/src/app/import/gpx-import.ts`, button in `saved-routes`): `parseGpx` (DOMParser, `querySelectorAll`: live collections are quadratic in jsdom) reads the first `<trk>` (segments joined) else the first `<rte>`; geometry thinned to 5000 points, climb with a 3 m threshold, duration estimated per profile. No elevation on every point → `ascentMeters: null` (type `number | null` on `PlannedRoute`/`SavedRoute`): the profile is hidden, sharing is disabled, `buildGpx` gets `withElevation: false`. Errors are `GpxImportError` codes translated under `gpxImport.errors.*`.
@@ -47,3 +48,27 @@ npm run generate-client     # regenerate packages/api-client
 ```
 
 Tests: while iterating, run only the project and file you changed (for example `npx nx test api -- brouter`, or `npx nx test web --include='**/app.spec.ts'`). Run the whole suite once at the end (`npm test`). CI runs lint, build, tests, and fails if regenerating the client leaves a diff.
+
+<!-- nx configuration start-->
+<!-- Leave the start & end comments to automatically receive updates. -->
+
+## General Guidelines for working with Nx
+
+- For navigating/exploring the workspace, invoke the `nx-workspace` skill first - it has patterns for querying projects, targets, and dependencies
+- When running tasks (for example build, lint, test, e2e, etc.), always prefer running the task through `nx` (i.e. `nx run`, `nx run-many`, `nx affected`) instead of using the underlying tooling directly
+- Prefix nx commands with the workspace's package manager (e.g., `pnpm nx build`, `npm exec nx test`) - avoids using globally installed CLI
+- You have access to the Nx MCP server and its tools, use them to help the user
+- For Nx plugin best practices, check `node_modules/@nx/<plugin>/PLUGIN.md`. Not all plugins have this file - proceed without it if unavailable.
+- NEVER guess CLI flags - always check nx_docs or `--help` first when unsure
+
+## Scaffolding & Generators
+
+- For scaffolding tasks (creating apps, libs, project structure, setup), ALWAYS invoke the `nx-generate` skill FIRST before exploring or calling MCP tools
+
+## When to use nx_docs
+
+- USE for: advanced config options, unfamiliar flags, migration guides, plugin configuration, edge cases
+- DON'T USE for: basic generator syntax (`nx g @nx/react:app`), standard commands, things you already know
+- The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
+
+<!-- nx configuration end-->
