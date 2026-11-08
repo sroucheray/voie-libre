@@ -31,6 +31,7 @@ import { PlannerStore, pointRole } from '../planner/planner-store';
 import {
   ShareError,
   type ShareErrorCode,
+  SHARING_ENABLED,
   ShareService,
 } from '../sharing/share.service';
 import {
@@ -69,6 +70,7 @@ export class SavedRoutes {
   private readonly download = inject(FILE_DOWNLOADER);
   private readonly transloco = inject(TranslocoService);
   private readonly sharing = inject(ShareService);
+  protected readonly sharingEnabled = inject(SHARING_ENABLED);
   private readonly relief = inject(ElevationService);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -88,6 +90,8 @@ export class SavedRoutes {
   protected readonly copiedId = signal<string | null>(null);
   protected readonly renamingId = signal<string | null>(null);
   protected readonly confirmingId = signal<string | null>(null);
+  /** The route whose opening waits for the user's yes, because a route is being planned. */
+  protected readonly confirmingOpenId = signal<string | null>(null);
   protected readonly savable = this.planner.savable;
   /** Translation key of what the last import tells the user, or null. */
   protected readonly notice = signal<string | null>(null);
@@ -205,6 +209,24 @@ export class SavedRoutes {
   /** Shows a route on the map while the pointer or the focus is on its row. */
   protected preview(geometry: SavedRoute['geometry'] | null): void {
     this.planner.preview.set(geometry);
+  }
+
+  /** Opens at once when nothing is planned, else asks before replacing the route on screen. */
+  protected requestOpen(id: string): void {
+    if (this.planner.points().length === 0) {
+      void this.open(id);
+      return;
+    }
+    this.confirmingOpenId.set(id);
+  }
+
+  protected cancelOpen(): void {
+    this.confirmingOpenId.set(null);
+  }
+
+  protected async confirmOpen(id: string): Promise<void> {
+    this.confirmingOpenId.set(null);
+    await this.open(id);
   }
 
   protected async open(id: string): Promise<void> {

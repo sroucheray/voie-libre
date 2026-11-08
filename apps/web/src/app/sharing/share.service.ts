@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, InjectionToken, inject } from '@angular/core';
 import { API_CLIENT } from '../core/api/api-client';
 import type { PlannedRoute, Profile } from '../planner/planner-store';
 import type { LngLat } from '../core/map/map-factory';
@@ -56,6 +56,11 @@ export interface SharedRoute extends PlannedRoute {
  * open a link, `DELETE` with the secret token returned at creation. A shared route is a snapshot:
  * it never follows later changes of the local one.
  */
+/** Whether the UI offers to share a route by link. Off for now: the API and the code stay. */
+export const SHARING_ENABLED = new InjectionToken<boolean>('SHARING_ENABLED', {
+  factory: () => false,
+});
+
 @Injectable({ providedIn: 'root' })
 export class ShareService {
   private readonly client = inject(API_CLIENT);

@@ -12,6 +12,7 @@ import { FakeMap, provideFakeMap } from '../../testing/fake-map';
 import { provideTestTransloco } from '../../testing/transloco-testing';
 import { API_CLIENT } from '../core/api/api-client';
 import { LanguageService } from '../core/i18n/language.service';
+import { SHARING_ENABLED } from '../sharing/share.service';
 import { Planner } from '../planner/planner';
 import { ROUTE_DEBOUNCE_MS } from '../planner/route-planner';
 import { FILE_DOWNLOADER } from '../export/file-download';
@@ -38,6 +39,7 @@ describe('Saved routes', () => {
   let routeStore: InMemoryRouteStore;
   let downloads: { content: string; fileName: string; mimeType: string }[];
   let downloadFails: boolean;
+  let sharingEnabled: boolean;
   let sharingCalls: {
     method: string;
     path: string;
@@ -68,6 +70,7 @@ describe('Saved routes', () => {
     downloads = [];
     downloadFails = false;
     sharingCalls = [];
+    sharingEnabled = true;
     shareRespond = () => json({ id: 'x', deleteToken: 'secret-token' }, 201);
     elevationRequests = 0;
     elevationRespond = (count) =>
@@ -81,6 +84,7 @@ describe('Saved routes', () => {
         provideFakeMap([] as FakeMap[]),
         provideFakePlannerDriver(drivers),
         provideInMemoryRouteStore(routeStore),
+        { provide: SHARING_ENABLED, useFactory: () => sharingEnabled },
         {
           provide: FILE_DOWNLOADER,
           useValue: (content: string, fileName: string, mimeType: string) => {
@@ -151,6 +155,12 @@ describe('Saved routes', () => {
       items: () => Array.from(root.querySelectorAll('.list li')),
       button: (label: string) =>
         root.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!,
+      /** Clicks "Open <name>" and answers yes when the route being planned would be replaced. */
+      open(label: string) {
+        view.button(label).click();
+        fixture.detectChanges();
+        root.querySelector<HTMLButtonElement>('.confirm-open')?.click();
+      },
       confirmButton: (text: string) =>
         Array.from(
           root.querySelectorAll<HTMLButtonElement>('.confirm button'),
@@ -226,7 +236,7 @@ describe('Saved routes', () => {
       await view.settle();
       expect((await routeStore.list())[0].elevationSource).toBe('srtm');
       view.driver.handlers.onClick([3.0, 45.0]); // leaves the saved route
-      view.button('Open Road, 41 km').click();
+      view.open('Open Road, 41 km');
       await view.settle();
       expect(
         view.root.querySelector('.profile .source')?.textContent,
@@ -250,7 +260,7 @@ describe('Saved routes', () => {
         durationSeconds: 300,
       });
       const view = await render();
-      view.button('Open From a GPS').click();
+      view.open('Open From a GPS');
       await view.settle();
       expect(view.root.querySelector('.profile')).not.toBeNull();
       expect(view.root.querySelector('.profile .source')).toBeNull();
@@ -340,6 +350,47 @@ describe('Saved routes', () => {
   });
 
   describe('opening', () => {
+    it('opens a route from its name, which is stretched over the whole card', async () => {
+      const view = await renderWithSavedRoute();
+      (view.root.querySelector('.clear') as HTMLButtonElement).click();
+      await view.settle(ROUTE_DEBOUNCE_MS + 10);
+      view.items()[0].querySelector<HTMLButtonElement>('.name.open')!.click();
+      await view.settle(5 * ROUTE_DEBOUNCE_MS);
+      expect(view.driver.routes).toEqual([geometry]);
+    });
+
+    it('asks before replacing a route being planned, and keeps it on cancel', async () => {
+      const view = await renderWithSavedRoute();
+      view.driver.handlers.onClick([3.0, 45.0]);
+      await view.settle(ROUTE_DEBOUNCE_MS + 10);
+      const points = view.root.querySelectorAll('.points li').length;
+      view.items()[0].querySelector<HTMLButtonElement>('.name.open')!.click();
+      view.fixture.detectChanges();
+      expect(view.text()).toContain('Replace the route being planned');
+      const cancel = Array.from(
+        view.root.querySelectorAll<HTMLButtonElement>('.confirm button'),
+      ).find((b) => b.textContent?.trim() === 'Cancel');
+      cancel!.click();
+      await view.settle();
+      expect(view.text()).not.toContain('Replace the route being planned');
+      expect(view.root.querySelectorAll('.points li')).toHaveLength(points);
+    });
+
+    it('does not open when a button inside the card is clicked', async () => {
+      const view = await renderWithSavedRoute();
+      (view.root.querySelector('.clear') as HTMLButtonElement).click();
+      await view.settle(ROUTE_DEBOUNCE_MS + 10);
+      view.button('Rename Road, 41 km').click();
+      await view.settle();
+      expect(view.root.querySelectorAll('.points li')).toHaveLength(0);
+    });
+
+    it('hides the share button while sharing is off', async () => {
+      sharingEnabled = false;
+      const view = await renderWithSavedRoute();
+      expect(view.root.querySelector('.share')).toBeNull();
+    });
+
     it('restores the route without calling the API, and shows it on the map', async () => {
       const view = await renderWithSavedRoute();
       expect(calls).toBe(1);
@@ -352,7 +403,7 @@ describe('Saved routes', () => {
       await view.settle(ROUTE_DEBOUNCE_MS + 10);
       expect(calls).toBe(2);
 
-      view.button('Open Road, 41 km').click();
+      view.open('Open Road, 41 km');
       await view.settle(5 * ROUTE_DEBOUNCE_MS);
       expect(calls).toBe(2);
       expect(view.driver.markers.map((m) => m.lngLat)).toEqual([
@@ -376,7 +427,7 @@ describe('Saved routes', () => {
         throw new TypeError('Failed to fetch');
       };
 
-      view.button('Open Road, 41 km').click();
+      view.open('Open Road, 41 km');
       await view.settle(5 * ROUTE_DEBOUNCE_MS);
 
       expect(calls).toBe(0);
@@ -390,7 +441,7 @@ describe('Saved routes', () => {
       const view = await renderWithSavedRoute();
       (view.root.querySelector('.clear') as HTMLButtonElement).click();
       await view.settle(ROUTE_DEBOUNCE_MS + 10);
-      view.button('Open Road, 41 km').click();
+      view.open('Open Road, 41 km');
       await view.settle(5 * ROUTE_DEBOUNCE_MS);
       calls = 0;
       view.driver.handlers.onMovePoint(1, [3.3, 45.5]);
@@ -401,7 +452,7 @@ describe('Saved routes', () => {
     it('says so when the route was deleted elsewhere, and drops it from the list', async () => {
       const view = await renderWithSavedRoute();
       routeStore.records.clear();
-      view.button('Open Road, 41 km').click();
+      view.open('Open Road, 41 km');
       await view.settle();
       expect(view.alert()).toContain('no longer exists');
       expect(view.items()).toHaveLength(0);

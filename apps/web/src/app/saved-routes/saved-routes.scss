@@ -55,12 +55,44 @@
     // Same orange as the route previewed on the map while the row is hovered or focused.
     border-left: 3px solid transparent;
     transition: background-color 0.15s, border-color 0.15s;
+    position: relative;
+    cursor: pointer;
 
     &:hover,
     &:focus-within {
       background: #fff6e5;
       border-left-color: #f79009;
     }
+  }
+
+  // The name opens the route (the whole card does too): it looks like text, not like a button.
+  .name {
+    all: unset;
+    box-sizing: border-box;
+    font-weight: 600;
+    cursor: pointer;
+
+    // Stretched over the whole card: a click anywhere on it opens the route, while the other
+    // buttons, fields and links sit above (see below) and keep their own job.
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #1570ef;
+      outline-offset: 2px;
+    }
+  }
+
+  button:not(.name),
+  input,
+  a,
+  .confirm,
+  .rename {
+    position: relative;
+    z-index: 1;
   }
 
   .meta {
