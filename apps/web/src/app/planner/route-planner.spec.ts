@@ -630,4 +630,137 @@ describe('RoutePlanner', () => {
       });
     });
   });
+
+  describe('undo and redo', () => {
+    const line = Array.from({ length: 201 }, (_, i) => [i / 1000, 0, 100]);
+    const longRoute = {
+      routes: [
+        {
+          geometry: line,
+          distanceMeters: 22_239,
+          ascentMeters: 10,
+          durationSeconds: 3600,
+        },
+      ],
+    };
+    const detour = {
+      routes: [
+        {
+          geometry: [
+            [0.09, 0, 100],
+            [0.1, 0.002, 100],
+            [0.11, 0, 100],
+          ],
+          distanceMeters: 2_600,
+          ascentMeters: 0,
+          durationSeconds: 400,
+        },
+      ],
+    };
+
+    beforeEach(async () => {
+      respond = async () => json(longRoute);
+      store.addPoint([0, 0]);
+      store.addPoint([0.2, 0]);
+      await settle();
+      expect(requests).toHaveLength(1);
+      respond = async () => json(detour);
+    });
+
+    it('brings back the route before a local edit, and does the edit again, without a request', async () => {
+      store.addPoint([0.1, 0.002]);
+      await settle();
+      expect(requests).toHaveLength(2);
+      const edited = store.routes()[0].geometry;
+      expect(edited).not.toEqual(line);
+
+      store.undo();
+      await settle();
+      expect(store.routes()[0].geometry).toEqual(line);
+      expect(store.points()).toHaveLength(2);
+      expect(store.status()).toBe('ready');
+
+      store.redo();
+      await settle();
+      expect(store.routes()[0].geometry).toEqual(edited);
+      expect(store.points()).toHaveLength(3);
+      await vi.advanceTimersByTimeAsync(5 * ROUTE_DEBOUNCE_MS);
+      expect(requests).toHaveLength(2);
+    });
+
+    it('brings back the route of the previous profile without a request', async () => {
+      respond = async () => json(routeBody);
+      store.setProfile('gravel');
+      await settle();
+      expect(requests).toHaveLength(2);
+      expect(store.routes()[0].distanceMeters).toBe(41007);
+
+      store.undo();
+      await settle();
+      expect(store.profile()).toBe('road');
+      expect(store.routes()[0].distanceMeters).toBe(22_239);
+      expect(requests).toHaveLength(2);
+    });
+
+    it('cancels the request in flight and shows the route that was there', async () => {
+      respond = () => new Promise<Response>(() => undefined);
+      store.addPoint([0.1, 0.002]);
+      await settle();
+      expect(requests).toHaveLength(2);
+      expect(store.status()).toBe('loading');
+
+      store.undo();
+      TestBed.tick();
+      expect(requests[1].signal.aborted).toBe(true);
+      expect(store.status()).toBe('ready');
+      expect(store.routes()[0].geometry).toEqual(line);
+      await vi.advanceTimersByTimeAsync(5 * ROUTE_DEBOUNCE_MS);
+      expect(requests).toHaveLength(2);
+    });
+
+    it('computes a state that was not up to date with its points', async () => {
+      // Two quick edits: the second starts from points whose route has not come yet.
+      store.addPoint([0.1, 0.002]);
+      store.addPoint([0.15, 0.002]);
+      await settle();
+      requests.length = 0;
+      respond = async () => json(longRoute);
+      store.undo();
+      await settle();
+      expect(store.points()).toHaveLength(3);
+      expect(requests).toHaveLength(1);
+      expect((requests[0].body as { points: unknown[] }).points).toHaveLength(
+        3,
+      );
+      expect(store.status()).toBe('ready');
+    });
+
+    it('goes back to a start alone and to the route after a clear, without a request', async () => {
+      store.clear();
+      await settle();
+      expect(store.routes()).toEqual([]);
+      store.undo();
+      await settle();
+      expect(store.points()).toHaveLength(2);
+      expect(store.routes()[0].geometry).toEqual(line);
+      expect(requests).toHaveLength(1);
+    });
+
+    it('lets the first edit after an undo recompute only a stretch', async () => {
+      store.addPoint([0.1, 0.002]);
+      await settle();
+      store.undo();
+      await settle();
+      requests.length = 0;
+      store.addPoint([0.12, 0.002]);
+      await settle();
+      expect(requests).toHaveLength(1);
+      const body = requests[0].body as { points: { lon: number }[] };
+      expect(body.points).toHaveLength(3);
+      expect(body.points[1].lon).toBe(0.12);
+      expect(store.routes()[0].geometry.slice(0, 50)).toEqual(
+        line.slice(0, 50),
+      );
+    });
+  });
 });
