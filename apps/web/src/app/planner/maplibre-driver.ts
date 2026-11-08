@@ -157,6 +157,11 @@ export async function createMapLibreDriver(
     originalEvent?: MouseEvent;
   }) => {
     if (!ghostSpec || !finePointer || !ghostMarker || !ghostElement) return;
+    // The marker being dragged trails the pointer: no ghost of the next point meanwhile.
+    if (dragging) {
+      hideGhost();
+      return;
+    }
     const target = event.originalEvent?.target as Element | null | undefined;
     if (target?.closest?.('.planner-marker')) {
       hideGhost();
@@ -398,6 +403,7 @@ export async function createMapLibreDriver(
           .addTo(map);
         marker.on('dragstart', () => {
           dragging = true;
+          hideGhost();
         });
         marker.on('dragend', () => {
           // The click that ends a drag must not count as a click on the marker.
