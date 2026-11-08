@@ -29,6 +29,8 @@ function accuracyData(fix: LocationFix | null): GeoJSON.GeoJSON {
 
 /** Pixels around a click that still count as hitting an alternative route. */
 const HIT_TOLERANCE = 6;
+/** Pixels the mouse must move after a click before the ghost of the next point shows. */
+const GHOST_MOVE_PX = 30;
 
 /**
  * Draws the planner on the real MapLibre map: draggable DOM markers and a GeoJSON source with two
@@ -150,6 +152,13 @@ export async function createMapLibreDriver(
     setAiming(false);
   };
 
+  // Where the last click was: the ghost of the next point waits for a short move away from it.
+  let clickedAt: { x: number; y: number } | null = null;
+  map.on('click', (event: { point: { x: number; y: number } }) => {
+    clickedAt = { x: event.point.x, y: event.point.y };
+    if (ghostElement) ghostElement.style.display = 'none';
+  });
+
   /** Moves the ghost under the pointer, unless it is over a marker or an alternative route. */
   const moveGhost = (event: {
     point: { x: number; y: number };
@@ -168,6 +177,10 @@ export async function createMapLibreDriver(
       return;
     }
     const { x, y } = event.point;
+    if (clickedAt) {
+      if (Math.hypot(x - clickedAt.x, y - clickedAt.y) < GHOST_MOVE_PX) return;
+      clickedAt = null;
+    }
     const overAlternative =
       !!map.getLayer(ALTERNATIVE_LAYER) &&
       map.queryRenderedFeatures(
