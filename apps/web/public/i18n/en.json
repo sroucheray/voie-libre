@@ -49,6 +49,13 @@
       "waypoint": "Waypoint {{n}}",
       "remove": "Remove {{name}}"
     },
+    "history": {
+      "label": "History",
+      "undo": "Undo",
+      "redo": "Redo",
+      "undoHint": "Undo (Ctrl+Z)",
+      "redoHint": "Redo (Ctrl+Shift+Z)"
+    },
     "clear": "Clear all points",
     "status": {
       "loading": "Computing the route…"

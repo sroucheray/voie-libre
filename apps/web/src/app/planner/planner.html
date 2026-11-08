@@ -158,6 +158,31 @@
   <section class="panel" [attr.aria-label]="'planner.title' | transloco">
     <h2>{{ 'planner.title' | transloco }}</h2>
 
+    <div
+      class="history"
+      role="group"
+      [attr.aria-label]="'planner.history.label' | transloco"
+    >
+      <button
+        type="button"
+        class="history__undo"
+        [disabled]="!store.canUndo()"
+        [title]="'planner.history.undoHint' | transloco"
+        (click)="undo()"
+      >
+        ↶ {{ 'planner.history.undo' | transloco }}
+      </button>
+      <button
+        type="button"
+        class="history__redo"
+        [disabled]="!store.canRedo()"
+        [title]="'planner.history.redoHint' | transloco"
+        (click)="redo()"
+      >
+        ↷ {{ 'planner.history.redo' | transloco }}
+      </button>
+    </div>
+
     <fieldset class="profiles">
       <legend>{{ 'planner.profile.label' | transloco }}</legend>
       @for (profile of profiles; track profile) {

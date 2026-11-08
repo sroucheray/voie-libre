@@ -49,6 +49,13 @@
       "waypoint": "Étape {{n}}",
       "remove": "Supprimer {{name}}"
     },
+    "history": {
+      "label": "Historique",
+      "undo": "Annuler",
+      "redo": "Rétablir",
+      "undoHint": "Annuler (Ctrl+Z)",
+      "redoHint": "Rétablir (Ctrl+Maj+Z)"
+    },
     "clear": "Effacer tous les points",
     "status": {
       "loading": "Calcul du parcours…"

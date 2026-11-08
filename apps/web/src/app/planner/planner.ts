@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -131,6 +132,14 @@ export class Planner {
   constructor() {
     // Starts recomputing the route whenever the inputs change.
     inject(RoutePlanner);
+
+    // Ctrl+Z undoes and Ctrl+Shift+Z (or Ctrl+Y) redoes, wherever the focus is but in a field.
+    const document = inject(DOCUMENT);
+    const onKeydown = (event: KeyboardEvent) => this.onHistoryKey(event);
+    document.addEventListener('keydown', onKeydown);
+    inject(DestroyRef).onDestroy(() =>
+      document.removeEventListener('keydown', onKeydown),
+    );
 
     inject(DestroyRef).onDestroy(() => {
       this.destroyed = true;
@@ -362,6 +371,37 @@ export class Planner {
 
   protected setLoopKm(value: string): void {
     this.store.setLoopDistance(Number(value) * 1000);
+  }
+
+  /** `Ctrl/Cmd+Z` undo, `Ctrl/Cmd+Shift+Z` and `Ctrl+Y` redo. A field keeps its own undo. */
+  private onHistoryKey(event: KeyboardEvent): void {
+    if (event.defaultPrevented || event.altKey) return;
+    if (!(event.ctrlKey || event.metaKey) || this.loopDialogOpen()) return;
+    const target = event.target as Element | null;
+    if (
+      target?.closest?.(
+        'input:not([type=radio]):not([type=checkbox]):not([type=button]), textarea, select, [contenteditable=""], [contenteditable="true"]',
+      )
+    ) {
+      return;
+    }
+    const key = event.key.toLowerCase();
+    if (key === 'z' && !event.shiftKey) this.undo();
+    else if (
+      (key === 'z' && event.shiftKey) ||
+      (key === 'y' && !event.shiftKey)
+    ) {
+      this.redo();
+    } else return;
+    event.preventDefault();
+  }
+
+  protected undo(): void {
+    this.store.undo();
+  }
+
+  protected redo(): void {
+    this.store.redo();
   }
 
   protected setLoopAscent(value: string): void {

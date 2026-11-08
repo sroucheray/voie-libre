@@ -625,6 +625,88 @@ describe('Planner', () => {
     expect(view.text()).toContain('Click the map to set the start.');
   });
 
+  describe('undo and redo', () => {
+    const press = (
+      key: string,
+      init: KeyboardEventInit = {},
+      target?: Element,
+    ) => {
+      const event = new KeyboardEvent('keydown', {
+        key,
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true,
+        ...init,
+      });
+      (target ?? document.body).dispatchEvent(event);
+      return event;
+    };
+    const buttons = (root: HTMLElement) => ({
+      undo: root.querySelector<HTMLButtonElement>('.history__undo')!,
+      redo: root.querySelector<HTMLButtonElement>('.history__redo')!,
+    });
+
+    it('undoes with Ctrl+Z and redoes with Ctrl+Shift+Z or Ctrl+Y', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.click(3.249, 45.544);
+      const store = TestBed.inject(PlannerStore);
+      expect(press('z').defaultPrevented).toBe(true);
+      expect(store.points()).toHaveLength(1);
+      press('Z', { shiftKey: true });
+      expect(store.points()).toHaveLength(2);
+      press('z');
+      press('y');
+      expect(store.points()).toHaveLength(2);
+      press('z', { ctrlKey: false, metaKey: true });
+      expect(store.points()).toHaveLength(1);
+    });
+
+    it('leaves Ctrl+Z to a field, and ignores other keys and the dialog', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.click(3.249, 45.544);
+      const store = TestBed.inject(PlannerStore);
+      const field = document.createElement('input');
+      field.type = 'number';
+      document.body.append(field);
+      expect(press('z', {}, field).defaultPrevented).toBe(false);
+      field.remove();
+      expect(press('x').defaultPrevented).toBe(false);
+      expect(press('z', { ctrlKey: false }).defaultPrevented).toBe(false);
+      expect(store.points()).toHaveLength(2);
+      (view.root.querySelector('.loop') as HTMLButtonElement).click();
+      view.fixture.detectChanges();
+      press('z');
+      expect(store.points()).toHaveLength(2);
+    });
+
+    it('has buttons that follow what can be undone and redone', async () => {
+      const view = await render();
+      const { undo, redo } = buttons(view.root);
+      expect(undo.disabled).toBe(true);
+      expect(redo.disabled).toBe(true);
+      view.click(3.087, 45.777);
+      expect(undo.disabled).toBe(false);
+      undo.click();
+      view.fixture.detectChanges();
+      expect(TestBed.inject(PlannerStore).points()).toEqual([]);
+      expect(undo.disabled).toBe(true);
+      expect(redo.disabled).toBe(false);
+      redo.click();
+      view.fixture.detectChanges();
+      expect(TestBed.inject(PlannerStore).points()).toHaveLength(1);
+    });
+
+    it('stops listening to the keys when the planner is destroyed', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.fixture.destroy();
+      expect(press('z').defaultPrevented).toBe(false);
+      expect(TestBed.inject(PlannerStore).points()).toHaveLength(1);
+    });
+  });
+
   describe('errors', () => {
     it.each([
       [
