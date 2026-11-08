@@ -334,6 +334,146 @@ describe('RoutePlanner', () => {
     });
   });
 
+  describe('every kind of route', () => {
+    /** A square loop of 0.1° (about 11 km a side) from [0, 0], one vertex per 0.001°. */
+    const side = Array.from({ length: 100 }, (_, i) => i / 1000);
+    const loopGeometry = [
+      ...side.map((x) => [x, 0, 100]),
+      ...side.map((y) => [0.1, y, 100]),
+      ...side.map((x) => [0.1 - x, 0.1, 100]),
+      ...side.map((y) => [0, 0.1 - y, 100]),
+      [0, 0, 100],
+    ];
+    const loopBody = {
+      routes: [
+        {
+          geometry: loopGeometry,
+          distanceMeters: 44_000,
+          ascentMeters: 100,
+          durationSeconds: 8000,
+        },
+      ],
+    };
+    const stretchBody = {
+      routes: [
+        {
+          geometry: [
+            [0.04, 0, 100],
+            [0.05, 0.004, 100],
+            [0.06, 0, 100],
+          ],
+          distanceMeters: 2_000,
+          ascentMeters: 0,
+          durationSeconds: 300,
+        },
+      ],
+    };
+    const S: [number, number] = [0, 0];
+
+    type Body = {
+      points: { lon: number; lat: number }[];
+      alternatives: number;
+      loop?: unknown;
+    };
+
+    it('keeps a loop by distance when a point is added on or beside it', async () => {
+      respond = async () => json(loopBody);
+      store.addPoint(S);
+      store.closeLoop({ mode: 'distance', distanceMeters: 30_000 });
+      await settle();
+      expect((requests[0].body as Body).loop).toEqual({
+        mode: 'distance',
+        distanceMeters: 30_000,
+      });
+
+      respond = async () => json(stretchBody);
+      store.addPoint([0.05, 0.004]);
+      await settle();
+      expect(requests).toHaveLength(2);
+      const body = requests[1].body as Body;
+      expect(body.loop).toBeUndefined();
+      expect(body.points).toHaveLength(3);
+      expect(body.points[1]).toEqual({ lon: 0.05, lat: 0.004 });
+
+      const [route] = store.routes();
+      // About 900 m of the loop on each side of the point were replaced by 3 vertices.
+      expect(route.geometry.length).toBeGreaterThan(loopGeometry.length - 30);
+      expect(route.geometry.length).toBeLessThan(loopGeometry.length - 5);
+      expect(route.geometry.slice(0, 40)).toEqual(loopGeometry.slice(0, 40));
+      expect(route.geometry.slice(-300)).toEqual(loopGeometry.slice(-300));
+      expect(store.loop()).toBeNull();
+      expect(store.isLoop()).toBe(true);
+    });
+
+    it('moves the start of a loop by distance by computing the loop again', async () => {
+      respond = async () => json(loopBody);
+      store.addPoint(S);
+      store.closeLoop({ mode: 'distance', distanceMeters: 30_000 });
+      await settle();
+      store.movePoint(0, [0.2, 0.2]);
+      await settle();
+      expect(requests).toHaveLength(2);
+      const body = requests[1].body as Body;
+      expect(body.points).toHaveLength(2);
+      expect(body.loop).toEqual({ mode: 'distance', distanceMeters: 30_000 });
+    });
+
+    it('moves the turnaround of a loop avoiding the way out without computing the loop again', async () => {
+      respond = async () => json(loopBody);
+      store.addPoint(S);
+      store.addPoint([0.1, 0.1]);
+      store.closeLoop({ mode: 'avoid_outbound' });
+      await settle();
+      expect((requests[0].body as Body).loop).toEqual({
+        mode: 'avoid_outbound',
+      });
+
+      respond = async () => json(stretchBody);
+      store.movePoint(1, [0.1, 0.103]);
+      await settle();
+      await vi.advanceTimersByTimeAsync(5 * ROUTE_DEBOUNCE_MS);
+      expect(requests).toHaveLength(2);
+      const body = requests[1].body as Body;
+      expect(body.loop).toBeUndefined();
+      expect(body.points).toHaveLength(3);
+      expect(body.points[1]).toEqual({ lon: 0.1, lat: 0.103 });
+      expect(store.routes()[0].geometry[0]).toEqual([0, 0, 100]);
+      expect(store.status()).toBe('ready');
+    });
+
+    it('keeps an imported route without elevation as it is outside the stretch', async () => {
+      const line = Array.from({ length: 201 }, (_, i) => [i / 1000, 0, 0]);
+      store.loadSaved({
+        points: [
+          [0, 0],
+          [0.2, 0],
+        ],
+        profile: 'gravel',
+        geometry: line as [number, number, number][],
+        distanceMeters: 22_239,
+        ascentMeters: null,
+        durationSeconds: 3600,
+        elevationSource: undefined,
+      });
+      await settle();
+      expect(requests).toHaveLength(0);
+
+      respond = async () => json(stretchBody);
+      store.addPoint([0.05, 0.004]);
+      await settle();
+      expect(requests).toHaveLength(1);
+      expect(requests[0].body).toMatchObject({
+        profile: 'gravel',
+        alternatives: 1,
+      });
+      const [route] = store.routes();
+      expect(route.ascentMeters).toBeNull();
+      expect(store.elevationKnown()).toBe(false);
+      expect(route.geometry.slice(0, 30)).toEqual(line.slice(0, 30));
+      expect(route.geometry.slice(-30)).toEqual(line.slice(-30));
+    });
+  });
+
   describe('opening a saved route', () => {
     const saved: SavedRoute = {
       schemaVersion: SAVED_ROUTE_SCHEMA_VERSION,
