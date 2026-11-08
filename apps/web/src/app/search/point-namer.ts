@@ -12,7 +12,8 @@ const keyOf = (point: LngLat) => `${point[0]},${point[1]}`;
 /**
  * Finds the address of the start and the end when they were placed another way than by search
  * (a click, the menu, a drag, "My position"), so that the fields can show it. Only these two
- * points are looked up. Nothing is asked offline, and a failure leaves the coordinates.
+ * points are looked up. Nothing is asked offline or for a route that was opened (saved, imported
+ * or shared: opening one never calls the API), and a failure leaves the coordinates.
  */
 @Injectable({ providedIn: 'root' })
 export class PointNamer {
@@ -32,6 +33,7 @@ export class PointNamer {
         (point, i) =>
           ends.findIndex((other) => keyOf(other) === keyOf(point)) === i &&
           !labels[keyOf(point)] &&
+          this.store.lookupWanted(point) &&
           !this.asked.has(keyOf(point)),
       );
       if (missing.length === 0) return;

@@ -433,7 +433,10 @@ describe('Saved routes', () => {
       expect(calls).toBe(0);
       expect(view.alert()).toBeNull();
       expect(view.driver.routes).toEqual([geometry]);
-      expect(view.root.querySelectorAll('.points li')).toHaveLength(2);
+      // The start and the end are in their fields, with coordinates: no address is looked up.
+      expect(view.root.querySelectorAll('vl-place-field input')).toHaveLength(
+        2,
+      );
       expect(view.text()).toMatch(/41(\.0)? km/);
     });
 

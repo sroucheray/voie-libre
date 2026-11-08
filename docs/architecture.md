@@ -82,7 +82,7 @@ OpenStreetMap fournit le réseau, Copernicus ou l'IGN le relief, et des extraits
 | Relief France | IGN RGE ALTI (5 m) | Ouvert (Licence ouverte Etalab 2.0) | Plus précis que GLO-30 |
 | Fond de carte hors-ligne | Extraits PMTiles (Protomaps) | Ouvert | Un fichier par région, lu par MapLibre |
 | Fond vélo | CyclOSM | Ouvert | Utile en superposition |
-| Géocodage | Photon | Ouvert | Serveur public à remplacer par une instance propre si le trafic grossit |
+| Géocodage | Photon | Ouvert | Appelé par l'API seulement (`GET /geocode`, interface `Geocoder`), jamais par le navigateur. Serveur public à remplacer par une instance propre si le trafic grossit |
 | Preuves visuelles | Mapillary | CC-BY-SA | Photos de rue pour vérifier un état de route |
 | Événements routiers | Bison Futé, transport.data.gouv.fr | Gratuit, accès parfois restreint | Réseau national non concédé seulement, pas les petites routes |
 | Météo | Météo-France (AROME) | Ouvert | Alertes éventuelles |

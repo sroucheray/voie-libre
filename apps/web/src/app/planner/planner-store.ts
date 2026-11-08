@@ -162,6 +162,8 @@ export class PlannerStore {
    */
   private readonly labelsState = signal<Readonly<Record<string, string>>>({});
   readonly labels = this.labelsState.asReadonly();
+  /** Positions of a route that was opened, not planned: nothing is asked about them. */
+  private readonly noLookup = new Set<string>();
   readonly profile = this.profileState.asReadonly();
   readonly alternatives = this.alternativesState.asReadonly();
   readonly routes = this.routesState.asReadonly();
@@ -404,6 +406,14 @@ export class PlannerStore {
     this.labelsState.set(Object.fromEntries(entries.slice(-MAX_LABELS)));
   }
 
+  /**
+   * False for the ends of a route that was opened (saved, imported or shared): opening one never
+   * calls the API, so its ends keep their coordinates until the user changes them.
+   */
+  lookupWanted(point: LngLat): boolean {
+    return !this.noLookup.has(labelKey(point));
+  }
+
   /** The name of the place at `point`, if one is known. */
   labelOf(point: LngLat): string | null {
     return this.labelsState()[labelKey(point)] ?? null;
@@ -508,6 +518,10 @@ export class PlannerStore {
       1,
     );
     this.pointsState.set(saved.points.map((p) => [p[0], p[1]] as LngLat));
+    this.noLookup.clear();
+    for (const p of [saved.points[0], saved.points[saved.points.length - 1]]) {
+      if (p) this.noLookup.add(labelKey([p[0], p[1]]));
+    }
     this.profileState.set(saved.profile);
     this.alternativesState.set(1);
     this.routesState.set([

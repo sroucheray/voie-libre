@@ -310,6 +310,23 @@ describe('PlannerStore', () => {
       expect(store.labelOf([1, 1])).toBe('Renamed');
     });
 
+    it('asks no lookup for the ends of an opened route, until they change', () => {
+      store.loadSaved({
+        points: [
+          [1, 1],
+          [2, 2],
+        ],
+        profile: 'road',
+        geometry: route.geometry,
+        distanceMeters: 1,
+        ascentMeters: 1,
+        durationSeconds: 1,
+      });
+      expect(store.lookupWanted([1, 1])).toBe(false);
+      expect(store.lookupWanted([2, 2])).toBe(false);
+      expect(store.lookupWanted([3, 3])).toBe(true);
+    });
+
     it('forgets the oldest names beyond the limit', () => {
       for (let i = 0; i < 105; i++) store.setLabel([i, 0], `place ${i}`);
       expect(store.labelOf([0, 0])).toBeNull();
