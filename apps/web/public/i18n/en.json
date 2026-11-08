@@ -49,6 +49,23 @@
       "waypoint": "Waypoint {{n}}",
       "remove": "Remove {{name}}"
     },
+    "search": {
+      "start": "Start",
+      "end": "Destination",
+      "swap": "Swap start and end",
+      "placeholder": {
+        "start": "Search a start or click the map",
+        "end": "Search a destination"
+      },
+      "noResults": "No place found.",
+      "offline": "Place search needs a connection.",
+      "errors": {
+        "invalid_request": "This search is not valid.",
+        "unavailable": "Place search is not available. Try again in a moment.",
+        "rate_limited": "Too many searches. Wait a moment.",
+        "unknown": "The search failed."
+      }
+    },
     "history": {
       "label": "History",
       "undo": "Undo",

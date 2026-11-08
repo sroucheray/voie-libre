@@ -214,36 +214,59 @@
     <button type="button" class="place-position" (click)="placeMyPosition()">
       {{ 'location.place.' + store.nextRole() | transloco }}
     </button>
-    } @if (store.points().length > 0) {
+    }
+    <div class="route-fields">
+      <vl-place-field
+        role="start"
+        [label]="startLabel()"
+        [near]="endPoint()"
+        (picked)="pickStart($event)"
+      />
+      <button
+        type="button"
+        class="swap"
+        [disabled]="!canSwap()"
+        [title]="'planner.search.swap' | transloco"
+        [attr.aria-label]="'planner.search.swap' | transloco"
+        (click)="store.swapEnds()"
+      >
+        <span aria-hidden="true">⇅</span>
+      </button>
+      <vl-place-field
+        role="end"
+        [label]="endLabel()"
+        [near]="startPoint()"
+        [blocked]="store.points().length === 0"
+        (picked)="pickEnd($event)"
+      />
+    </div>
+    @if (stops().length > 0) {
     <ol class="points" [attr.aria-label]="'planner.points.label' | transloco">
-      @for (point of store.points(); track $index; let i = $index) {
+      @for (stop of stops(); track stop.index) {
       <li
-        [draggable]="store.points().length > 1"
-        [class.dragging]="dragFrom() === i"
-        [class.drop-target]="dragOver() === i && dragFrom() !== i"
-        (dragstart)="onPointDragStart($event, i)"
-        (dragover)="onPointDragOver($event, i)"
-        (drop)="onPointDrop($event, i)"
+        draggable="true"
+        [class.dragging]="dragFrom() === stop.index"
+        [class.drop-target]="dragOver() === stop.index && dragFrom() !== stop.index"
+        (dragstart)="onPointDragStart($event, stop.index)"
+        (dragover)="onPointDragOver($event, stop.index)"
+        (drop)="onPointDrop($event, stop.index)"
         (dragend)="endPointDrag()"
       >
-        @if (store.points().length > 1) {
         <span class="point-grip" aria-hidden="true">⋮⋮</span>
-        }
-        <span class="point-name">{{ pointName(i) }}</span>
-        <span class="point-coordinates"
-          >{{ coordinates(point[0], point[1]) }}</span
-        >
+        <span class="point-name">{{ pointName(stop.index) }}</span>
+        <span class="point-coordinates">{{ pointText(stop.point) }}</span>
         <button
           type="button"
-          (click)="store.removePoint(i)"
-          [attr.aria-label]="'planner.points.remove' | transloco : { name: pointName(i) }"
+          (click)="store.removePoint(stop.index)"
+          [attr.aria-label]="'planner.points.remove' | transloco : { name: pointName(stop.index) }"
         >
           <span aria-hidden="true">&times;</span>
         </button>
       </li>
       }
     </ol>
-    @if (store.loop(); as loop) { @if (loop.mode === 'distance') {
+    } @if (store.points().length > 0) { @if (store.loop(); as loop) { @if
+    (loop.mode === 'distance') {
     <label class="loop-length">
       {{ 'planner.loop.length' | transloco }}
       <input

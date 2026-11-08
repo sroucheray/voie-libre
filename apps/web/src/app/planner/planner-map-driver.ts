@@ -52,6 +52,8 @@ export interface PlannerMapDriver {
   setRoutes(routes: LngLat3[][], selected: number): void;
   /** Moves the view so that the whole route is visible. */
   fitRoute(geometry: LngLat3[]): void;
+  /** Moves the view to a place (a search result), keeping it clear of the panel. */
+  centerOn(point: LngLat): void;
   /** Shows the ghost under the pointer (desktop only), or hides it with `null`. */
   setGhost(ghost: GhostSpec | null): void;
   /** Draws a route temporarily (a saved route under the pointer) without moving the view; `null` removes it. */

@@ -1,0 +1,45 @@
+<div class="field" [class.field--disabled]="disabled()">
+  <span class="field__marker" aria-hidden="true"
+    >{{ role() === 'start' ? 'A' : 'B' }}</span
+  >
+  <input
+    type="text"
+    role="combobox"
+    autocomplete="off"
+    spellcheck="false"
+    aria-autocomplete="list"
+    [id]="inputId"
+    [value]="shown()"
+    [disabled]="disabled()"
+    [placeholder]="'planner.search.placeholder.' + role() | transloco"
+    [attr.aria-label]="'planner.search.' + role() | transloco"
+    [attr.aria-expanded]="open()"
+    [attr.aria-controls]="listId"
+    [attr.aria-activedescendant]="active() >= 0 ? optionId(active()) : null"
+    (focus)="onFocus($event)"
+    (input)="onInput($event)"
+    (keydown)="onKeydown($event)"
+    (blur)="reset()"
+  />
+  @if (open()) {
+  <ul class="suggestions" role="listbox" [id]="listId">
+    @for (place of results(); track $index; let i = $index) {
+    <!-- The focus stays in the input (aria-activedescendant), keys are handled there. -->
+    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+    <li
+      role="option"
+      [id]="optionId(i)"
+      [class.suggestions__active]="i === active()"
+      [attr.aria-selected]="i === active()"
+      (mousedown)="$event.preventDefault()"
+      (click)="pick(place)"
+    >
+      {{ place.label }}
+    </li>
+    }
+  </ul>
+  }
+</div>
+@if (messageKey(); as key) {
+<p class="message" role="status">{{ key | transloco }}</p>
+}

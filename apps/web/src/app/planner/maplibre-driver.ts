@@ -21,6 +21,7 @@ const ACCURACY_FILL_LAYER = 'planner-location-accuracy-fill';
 const ACCURACY_LINE_LAYER = 'planner-location-accuracy-line';
 /** Zoom the view reaches when it first moves to the user (it never zooms out). */
 const LOCATION_ZOOM = 15;
+const PLACE_ZOOM = 14;
 
 /** The circle of the accuracy as GeoJSON, empty without a fix. */
 function accuracyData(fix: LocationFix | null): GeoJSON.GeoJSON {
@@ -475,6 +476,15 @@ export async function createMapLibreDriver(
         },
         duration: 0,
         maxZoom: 16,
+      });
+    },
+    centerOn(point: LngLat) {
+      const width = map.getContainer().clientWidth;
+      map.easeTo({
+        center: point,
+        zoom: Math.max(map.getZoom(), PLACE_ZOOM),
+        padding: { left: Math.min(340, Math.round(width / 3)) },
+        duration: 600,
       });
     },
     setGhost(spec: GhostSpec | null) {

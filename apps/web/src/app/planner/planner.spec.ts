@@ -16,6 +16,8 @@ import { LanguageService } from '../core/i18n/language.service';
 import { Planner } from './planner';
 import { PlannerStore } from './planner-store';
 import { ROUTE_DEBOUNCE_MS } from './route-planner';
+import { SEARCH_DEBOUNCE_MS } from '../search/place-field';
+import { NAME_DEBOUNCE_MS } from '../search/point-namer';
 
 const line = (offset: number) => [
   [3.087, 45.777, 402],
@@ -54,6 +56,8 @@ describe('Planner', () => {
     loop?: unknown;
   }[];
   let respond: (count: number) => Response;
+  let geocoded: string[];
+  let geocode: (url: URL) => Response;
 
   beforeEach(async () => {
     vi.useFakeTimers();
@@ -62,9 +66,19 @@ describe('Planner', () => {
     requests = [];
     geolocation = new FakeGeolocation();
     respond = () => json(routes(1));
+    geocoded = [];
+    geocode = (url) =>
+      json(
+        url.pathname === '/geocode/reverse' ? { place: null } : { places: [] },
+      );
     const client = createApiClient({
       baseUrl: 'http://api.test',
       fetch: async (request) => {
+        const url = new URL(request.url);
+        if (url.pathname.startsWith('/geocode')) {
+          geocoded.push(`${url.pathname}${url.search}`);
+          return geocode(url);
+        }
         const body = await request.clone().json();
         requests.push(body);
         return respond(body.alternatives);
@@ -607,22 +621,24 @@ describe('Planner', () => {
     expect(requests[1].points[1]).toEqual({ lon: 3.3, lat: 45.5 });
   });
 
-  it('removes a point from the panel or with the map handler', async () => {
+  it('removes a stop from the panel or with the map handler', async () => {
     const view = await render();
     view.click(3.087, 45.777);
     view.click(3.15, 45.65);
     view.click(3.249, 45.544);
-    expect(view.root.querySelectorAll('.points li')).toHaveLength(3);
+    // The start and the end have their fields: only the stops are listed.
+    expect(view.root.querySelectorAll('.points li')).toHaveLength(1);
     const remove = view.root.querySelector(
-      '.points li:nth-child(2) button',
+      '.points li button',
     ) as HTMLButtonElement;
     expect(remove.getAttribute('aria-label')).toBe('Remove Waypoint 1');
     remove.click();
     view.fixture.detectChanges();
-    expect(view.root.querySelectorAll('.points li')).toHaveLength(2);
+    expect(view.root.querySelector('.points')).toBeNull();
+    expect(TestBed.inject(PlannerStore).points()).toHaveLength(2);
     view.driver.handlers.onRemovePoint(0);
     view.fixture.detectChanges();
-    expect(view.root.querySelectorAll('.points li')).toHaveLength(1);
+    expect(TestBed.inject(PlannerStore).points()).toHaveLength(1);
   });
 
   it('clears everything, markers and routes included', async () => {
@@ -646,39 +662,47 @@ describe('Planner', () => {
       return event;
     };
 
-    it('drags a step onto another one: the list and the map follow', async () => {
+    it('drags a stop onto another one: the list and the map follow', async () => {
       const view = await render();
-      view.click(3.087, 45.777);
-      view.click(3.15, 45.65);
-      view.click(3.249, 45.544);
+      view.click(3.0, 45.0);
+      view.click(3.1, 45.1);
+      view.click(3.2, 45.2);
+      view.click(3.3, 45.3);
       view.fixture.detectChanges();
+      // The points are the start, two stops, and the end.
+      expect(TestBed.inject(PlannerStore).points()).toEqual([
+        [3.0, 45.0],
+        [3.2, 45.2],
+        [3.3, 45.3],
+        [3.1, 45.1],
+      ]);
       const rows = () => view.root.querySelectorAll('.points li');
+      expect(rows()).toHaveLength(2);
       expect(rows()[0].getAttribute('draggable')).toBe('true');
       drag(rows()[0], 'dragstart');
       view.fixture.detectChanges();
       expect(rows()[0].classList.contains('dragging')).toBe(true);
-      expect(drag(rows()[2], 'dragover').defaultPrevented).toBe(true);
+      expect(drag(rows()[1], 'dragover').defaultPrevented).toBe(true);
       view.fixture.detectChanges();
-      expect(rows()[2].classList.contains('drop-target')).toBe(true);
-      drag(rows()[2], 'drop');
+      expect(rows()[1].classList.contains('drop-target')).toBe(true);
+      drag(rows()[1], 'drop');
       TestBed.tick();
       view.fixture.detectChanges();
       expect(view.driver.markers.map((m) => m.lngLat)).toEqual([
-        [3.249, 45.544],
-        [3.15, 45.65],
-        [3.087, 45.777],
+        [3.0, 45.0],
+        [3.3, 45.3],
+        [3.2, 45.2],
+        [3.1, 45.1],
       ]);
       expect(view.root.querySelector('.dragging')).toBeNull();
       expect(view.root.querySelector('.drop-target')).toBeNull();
     });
 
-    it('cannot drag the only step', async () => {
+    it('lists no stops while there are only a start and an end', async () => {
       const view = await render();
       view.click(3.087, 45.777);
-      view.fixture.detectChanges();
-      expect(
-        view.root.querySelector('.points li')?.getAttribute('draggable'),
-      ).toBe('false');
+      view.click(3.249, 45.544);
+      expect(view.root.querySelector('.points')).toBeNull();
     });
   });
 
@@ -844,8 +868,227 @@ describe('Planner', () => {
     view.fixture.detectChanges();
     TestBed.tick();
     expect(view.text()).toContain('Planificateur de parcours');
-    expect(view.text()).toContain('Départ');
+    expect(
+      view.root
+        .querySelector('vl-place-field input')
+        ?.getAttribute('aria-label'),
+    ).toBe('Départ');
     expect(view.driver.markers[0].ariaLabel).toBe('Départ');
+  });
+
+  describe('start and end search', () => {
+    const gare = { label: 'Gare de Lyon, Paris', lon: 2.37, lat: 48.84 };
+    const mairie = { label: 'Mairie, Lyon', lon: 4.83, lat: 45.76 };
+    const inputs = (root: HTMLElement) =>
+      Array.from(
+        root.querySelectorAll<HTMLInputElement>('vl-place-field input'),
+      );
+
+    async function type(
+      view: Awaited<ReturnType<typeof render>>,
+      input: HTMLInputElement,
+      text: string,
+    ) {
+      input.value = text;
+      input.dispatchEvent(new Event('input'));
+      view.fixture.detectChanges();
+      await vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS + 10);
+      view.fixture.detectChanges();
+    }
+
+    const options = (root: HTMLElement) =>
+      Array.from(root.querySelectorAll<HTMLElement>('[role=option]'));
+
+    beforeEach(() => {
+      geocode = (url) =>
+        url.pathname === '/geocode/reverse'
+          ? json({ place: null })
+          : json({
+              places: url.searchParams.get('q')?.includes('lyon')
+                ? [gare, mairie]
+                : [],
+            });
+    });
+
+    it('finds the start, puts it on the map and names it', async () => {
+      const view = await render();
+      const [start] = inputs(view.root);
+      await type(view, start, 'gare de lyon');
+      expect(geocoded).toHaveLength(1);
+      expect(geocoded[0]).toContain('q=gare%20de%20lyon');
+      expect(options(view.root).map((o) => o.textContent?.trim())).toEqual([
+        gare.label,
+        mairie.label,
+      ]);
+      options(view.root)[0].click();
+      view.fixture.detectChanges();
+      const store = TestBed.inject(PlannerStore);
+      expect(store.points()).toEqual([[gare.lon, gare.lat]]);
+      expect(store.labelOf([gare.lon, gare.lat])).toBe(gare.label);
+      expect(view.driver.centered).toEqual([[gare.lon, gare.lat]]);
+      expect(inputs(view.root)[0].value).toBe(gare.label);
+      expect(options(view.root)).toHaveLength(0);
+    });
+
+    it('picks a suggestion with the keyboard', async () => {
+      const view = await render();
+      const [start] = inputs(view.root);
+      await type(view, start, 'lyon');
+      const key = (name: string) => {
+        const event = new KeyboardEvent('keydown', {
+          key: name,
+          bubbles: true,
+          cancelable: true,
+        });
+        start.dispatchEvent(event);
+        view.fixture.detectChanges();
+        return event;
+      };
+      key('ArrowDown');
+      key('ArrowDown');
+      expect(options(view.root)[1].getAttribute('aria-selected')).toBe('true');
+      expect(start.getAttribute('aria-activedescendant')).toBe(
+        options(view.root)[1].id,
+      );
+      expect(key('Enter').defaultPrevented).toBe(true);
+      expect(TestBed.inject(PlannerStore).points()).toEqual([
+        [mairie.lon, mairie.lat],
+      ]);
+    });
+
+    it('does not search a text that is too short, nor after Escape', async () => {
+      const view = await render();
+      const [start] = inputs(view.root);
+      await type(view, start, 'g');
+      expect(geocoded).toHaveLength(0);
+      await type(view, start, 'lyon');
+      start.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      );
+      view.fixture.detectChanges();
+      expect(options(view.root)).toHaveLength(0);
+      expect(start.value).toBe('');
+    });
+
+    it('says when nothing is found and when the search fails', async () => {
+      const view = await render();
+      const [start] = inputs(view.root);
+      await type(view, start, 'nowhere');
+      expect(view.text()).toContain('No place found.');
+      geocode = () => json({ code: 'unavailable', message: 'down' }, 503);
+      await type(view, start, 'lyon');
+      expect(view.text()).toContain('Place search is not available');
+    });
+
+    it('blocks the end until there is a start, then sets the end', async () => {
+      const view = await render();
+      const [start, end] = inputs(view.root);
+      expect(end.disabled).toBe(true);
+      await type(view, start, 'gare de lyon');
+      options(view.root)[0].click();
+      view.fixture.detectChanges();
+      expect(inputs(view.root)[1].disabled).toBe(false);
+      await type(view, inputs(view.root)[1], 'lyon');
+      options(view.root)[1].click();
+      view.fixture.detectChanges();
+      const store = TestBed.inject(PlannerStore);
+      expect(store.points()).toEqual([
+        [gare.lon, gare.lat],
+        [mairie.lon, mairie.lat],
+      ]);
+      expect(inputs(view.root).map((i) => i.value)).toEqual([
+        gare.label,
+        mairie.label,
+      ]);
+    });
+
+    it('swaps the start and the end, names included', async () => {
+      const view = await render();
+      const store = TestBed.inject(PlannerStore);
+      store.setStart([gare.lon, gare.lat]);
+      store.setLabel([gare.lon, gare.lat], gare.label);
+      store.addPoint([mairie.lon, mairie.lat]);
+      store.setLabel([mairie.lon, mairie.lat], mairie.label);
+      view.fixture.detectChanges();
+      const swap = view.root.querySelector('.swap') as HTMLButtonElement;
+      expect(swap.disabled).toBe(false);
+      swap.click();
+      view.fixture.detectChanges();
+      expect(store.points()).toEqual([
+        [mairie.lon, mairie.lat],
+        [gare.lon, gare.lat],
+      ]);
+      expect(inputs(view.root).map((i) => i.value)).toEqual([
+        mairie.label,
+        gare.label,
+      ]);
+    });
+
+    it('cannot swap a single point or a loop', async () => {
+      const view = await render();
+      const swap = () => view.root.querySelector('.swap') as HTMLButtonElement;
+      expect(swap().disabled).toBe(true);
+      view.click(3.0, 45.0);
+      expect(swap().disabled).toBe(true);
+      view.click(3.1, 45.1);
+      expect(swap().disabled).toBe(false);
+      TestBed.inject(PlannerStore).closeLoop();
+      view.fixture.detectChanges();
+      expect(swap().disabled).toBe(true);
+    });
+
+    it('shows the address found for a point placed on the map, and coordinates before', async () => {
+      geocode = (url) =>
+        url.pathname === '/geocode/reverse'
+          ? json({
+              place: {
+                label: `Rue ${url.searchParams.get('lon')}`,
+                lon: 0,
+                lat: 0,
+              },
+            })
+          : json({ places: [] });
+      const view = await render();
+      view.click(3.087, 45.777);
+      expect(inputs(view.root)[0].value).toBe('45.7770, 3.0870');
+      await vi.advanceTimersByTimeAsync(NAME_DEBOUNCE_MS + 10);
+      TestBed.tick();
+      view.fixture.detectChanges();
+      expect(geocoded).toHaveLength(1);
+      expect(inputs(view.root)[0].value).toBe('Rue 3.087');
+      // Only the start and the end are looked up, and each place once.
+      view.click(3.15, 45.65);
+      view.click(3.249, 45.544);
+      await vi.advanceTimersByTimeAsync(NAME_DEBOUNCE_MS + 10);
+      expect(geocoded).toHaveLength(2);
+    });
+
+    it('keeps the coordinates when the address cannot be found', async () => {
+      geocode = () => json({ code: 'unavailable', message: 'down' }, 503);
+      const view = await render();
+      view.click(3.087, 45.777);
+      await vi.advanceTimersByTimeAsync(NAME_DEBOUNCE_MS + 10);
+      TestBed.tick();
+      view.fixture.detectChanges();
+      expect(inputs(view.root)[0].value).toBe('45.7770, 3.0870');
+    });
+  });
+
+  describe('offline', () => {
+    it('disables the search fields and explains why, without asking for addresses', async () => {
+      vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+      const view = await render();
+      view.click(3.087, 45.777);
+      await vi.advanceTimersByTimeAsync(NAME_DEBOUNCE_MS + 10);
+      view.fixture.detectChanges();
+      const fields = Array.from(
+        view.root.querySelectorAll<HTMLInputElement>('vl-place-field input'),
+      );
+      expect(fields.every((field) => field.disabled)).toBe(true);
+      expect(view.text()).toContain('Place search needs a connection.');
+      expect(geocoded).toHaveLength(0);
+      vi.restoreAllMocks();
+    });
   });
 
   it('detaches from the map when destroyed', async () => {

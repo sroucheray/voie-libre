@@ -40,6 +40,9 @@ import { insertionIndex } from './insert-point';
 import { RoutePlanner } from './route-planner';
 import { ElevationPanel } from './elevation-panel';
 import { SavedRoutes } from '../saved-routes/saved-routes';
+import type { FoundPlace } from '../search/geocoding.service';
+import { PlaceField } from '../search/place-field';
+import { PointNamer } from '../search/point-namer';
 
 /**
  * The map with its planning panel. Clicks place the start, the end and waypoints; markers can be
@@ -50,7 +53,7 @@ const UNDO_MS = 6000;
 
 @Component({
   selector: 'vl-planner',
-  imports: [MapView, TranslocoPipe, SavedRoutes, ElevationPanel],
+  imports: [MapView, TranslocoPipe, SavedRoutes, ElevationPanel, PlaceField],
   templateUrl: './planner.html',
   styleUrl: './planner.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -89,6 +92,32 @@ export class Planner {
   /** The user can put a point on themselves: they have a position and room for a point. */
   protected readonly canPlaceMyPosition = computed(
     () => !!this.location.fix() && this.store.points().length < MAX_POINTS,
+  );
+
+  protected readonly startPoint = computed(
+    () => this.store.points()[0] ?? null,
+  );
+  protected readonly endPoint = computed(() => {
+    const points = this.store.points();
+    return points.length >= 2 ? points[points.length - 1] : null;
+  });
+  protected readonly startLabel = computed(() => {
+    const point = this.startPoint();
+    return point ? this.pointText(point) : null;
+  });
+  protected readonly endLabel = computed(() => {
+    const point = this.endPoint();
+    return point ? this.pointText(point) : null;
+  });
+  /** The points between the start and the end, with their place in the whole list. */
+  protected readonly stops = computed(() =>
+    this.store
+      .points()
+      .slice(1, -1)
+      .map((point, i) => ({ point, index: i + 1 })),
+  );
+  protected readonly canSwap = computed(
+    () => this.store.points().length >= 2 && !this.store.isLoop(),
   );
 
   /** The menu opened by a right click or a long press: where, and at which pixel. */
@@ -132,6 +161,8 @@ export class Planner {
   constructor() {
     // Starts recomputing the route whenever the inputs change.
     inject(RoutePlanner);
+    // Finds the address of the start and the end when they were not searched.
+    inject(PointNamer);
 
     // Ctrl+Z undoes and Ctrl+Shift+Z (or Ctrl+Y) redoes, wherever the focus is but in a field.
     const document = inject(DOCUMENT);
@@ -359,6 +390,26 @@ export class Planner {
       { n: index },
       language,
     );
+  }
+
+  /** The name of the place when it is known, its coordinates otherwise. */
+  protected pointText(point: LngLat): string {
+    return this.store.labelOf(point) ?? this.coordinates(point[0], point[1]);
+  }
+
+  /** A place picked in the start field: it becomes the start and the map goes there. */
+  protected pickStart(place: FoundPlace): void {
+    this.store.setStart(place.point);
+    this.store.setLabel(place.point, place.label);
+    this.driver()?.centerOn(place.point);
+  }
+
+  /** A place picked in the end field. Without a start there is no end yet: the field is blocked. */
+  protected pickEnd(place: FoundPlace): void {
+    if (this.store.points().length === 0) return;
+    this.store.setEnd(place.point);
+    this.store.setLabel(place.point, place.label);
+    this.driver()?.centerOn(place.point);
   }
 
   /** Applies a choice of the map menu at the place where it was opened. */

@@ -49,6 +49,23 @@
       "waypoint": "Étape {{n}}",
       "remove": "Supprimer {{name}}"
     },
+    "search": {
+      "start": "Départ",
+      "end": "Arrivée",
+      "swap": "Intervertir le départ et l'arrivée",
+      "placeholder": {
+        "start": "Chercher un départ ou cliquer sur la carte",
+        "end": "Chercher une arrivée"
+      },
+      "noResults": "Aucun lieu trouvé.",
+      "offline": "La recherche de lieux demande une connexion.",
+      "errors": {
+        "invalid_request": "Cette recherche n'est pas valide.",
+        "unavailable": "La recherche de lieux n'est pas disponible. Réessayez dans un instant.",
+        "rate_limited": "Trop de recherches. Patientez un instant.",
+        "unknown": "La recherche a échoué."
+      }
+    },
     "history": {
       "label": "Historique",
       "undo": "Annuler",

@@ -69,6 +69,31 @@ fieldset.profiles {
   color: #b42318;
 }
 
+.route-fields {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.25rem 0.25rem;
+  margin: 0.5rem 0 0;
+
+  vl-place-field:first-child {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  vl-place-field:last-child {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .swap {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    padding: 0.25rem 0.5rem;
+    font-size: 1.125rem;
+  }
+}
+
 .points,
 .routes {
   list-style: none;

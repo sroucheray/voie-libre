@@ -15,6 +15,7 @@ export class FakePlannerDriver implements PlannerMapDriver {
   routes: LngLat3[][] = [];
   selected = 0;
   fitted: LngLat3[][] = [];
+  centered: [number, number][] = [];
   cursor: [number, number] | null = null;
   ghost: GhostSpec | null = null;
   location: LocationFix | null = null;
@@ -32,6 +33,9 @@ export class FakePlannerDriver implements PlannerMapDriver {
   }
   fitRoute(geometry: LngLat3[]) {
     this.fitted.push(geometry);
+  }
+  centerOn(point: [number, number]) {
+    this.centered.push(point);
   }
   setGhost(ghost: GhostSpec | null) {
     this.ghost = ghost;
