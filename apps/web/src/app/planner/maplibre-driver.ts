@@ -138,8 +138,16 @@ export async function createMapLibreDriver(
     }
   };
 
+  /**
+   * The cursor on the map says what a click does: a cross where it creates a point (the ghost is
+   * shown), a pointer on the selected route (see `styles.scss`), the usual hand elsewhere.
+   */
+  const setAiming = (aiming: boolean) =>
+    map.getCanvasContainer().classList.toggle('planner-aiming', aiming);
+
   const hideGhost = () => {
     if (ghostElement) ghostElement.style.display = 'none';
+    setAiming(false);
   };
 
   /** Moves the ghost under the pointer, unless it is over a marker or an alternative route. */
@@ -169,6 +177,7 @@ export async function createMapLibreDriver(
       return;
     }
     ghostElement.style.display = '';
+    setAiming(true);
     ghostMarker.setLngLat([event.lngLat.lng, event.lngLat.lat]);
   };
   const container = map.getCanvasContainer();
@@ -303,6 +312,7 @@ export async function createMapLibreDriver(
         ],
         { layers: [SELECTED_LAYER] },
       ).length > 0;
+    map.getCanvasContainer().classList.toggle('planner-on-route', hit);
     if (hit) {
       hovering = true;
       handlers.onHoverRoute([event.lngLat.lng, event.lngLat.lat]);
@@ -379,7 +389,11 @@ export async function createMapLibreDriver(
         element.addEventListener('touchmove', stopPress, { passive: true });
         element.addEventListener('touchend', stopPress);
         element.addEventListener('touchcancel', stopPress);
-        const marker = new maplibre.Marker({ element, draggable: true })
+        const marker = new maplibre.Marker({
+          element,
+          draggable: true,
+          clickTolerance: 5,
+        })
           .setLngLat(spec.lngLat)
           .addTo(map);
         marker.on('dragstart', () => {
