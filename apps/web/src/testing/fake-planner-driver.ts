@@ -1,3 +1,4 @@
+import type { LocationFix } from '../app/location/geolocation';
 import {
   GhostSpec,
   LngLat3,
@@ -16,6 +17,7 @@ export class FakePlannerDriver implements PlannerMapDriver {
   fitted: LngLat3[][] = [];
   cursor: [number, number] | null = null;
   ghost: GhostSpec | null = null;
+  location: LocationFix | null = null;
   destroyed = false;
 
   constructor(readonly handlers: PlannerMapHandlers) {}
@@ -35,6 +37,9 @@ export class FakePlannerDriver implements PlannerMapDriver {
   }
   setCursor(point: [number, number] | null) {
     this.cursor = point;
+  }
+  setLocation(fix: LocationFix | null) {
+    this.location = fix;
   }
   destroy() {
     this.destroyed = true;

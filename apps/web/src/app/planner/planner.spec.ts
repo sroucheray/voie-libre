@@ -5,6 +5,10 @@ import {
   provideFakePlannerDriver,
 } from '../../testing/fake-planner-driver';
 import { FakeMap, provideFakeMap } from '../../testing/fake-map';
+import {
+  FakeGeolocation,
+  provideFakeGeolocation,
+} from '../../testing/fake-geolocation';
 import { provideTestTransloco } from '../../testing/transloco-testing';
 import { provideInMemoryRouteStore } from '../../testing/in-memory-route-store';
 import { API_CLIENT } from '../core/api/api-client';
@@ -42,6 +46,7 @@ const flush = () => vi.advanceTimersByTimeAsync(0);
 
 describe('Planner', () => {
   let drivers: FakePlannerDriver[];
+  let geolocation: FakeGeolocation;
   let requests: {
     points: unknown[];
     profile: string;
@@ -55,6 +60,7 @@ describe('Planner', () => {
     localStorage.clear();
     drivers = [];
     requests = [];
+    geolocation = new FakeGeolocation();
     respond = () => json(routes(1));
     const client = createApiClient({
       baseUrl: 'http://api.test',
@@ -70,6 +76,7 @@ describe('Planner', () => {
         provideTestTransloco(),
         provideFakeMap([] as FakeMap[]),
         provideFakePlannerDriver(drivers),
+        provideFakeGeolocation(geolocation),
         provideInMemoryRouteStore(),
         { provide: API_CLIENT, useValue: client },
       ],
@@ -266,6 +273,118 @@ describe('Planner', () => {
     expect(store.points().length).toBe(4);
     expect(store.points()[3]).toEqual([3.249, 45.544]);
     expect(store.points()[2]).toEqual([3.3, 45.5]);
+  });
+
+  describe('my position', () => {
+    const button = (root: HTMLElement) =>
+      root.querySelector<HTMLButtonElement>('.locate__button')!;
+
+    it('shows the position only once the user asks, then hides it', async () => {
+      const view = await render();
+      expect(geolocation.starts).toBe(0);
+      expect(button(view.root).getAttribute('aria-pressed')).toBe('false');
+
+      button(view.root).click();
+      view.fixture.detectChanges();
+      expect(button(view.root).getAttribute('aria-pressed')).toBe('true');
+      expect(
+        view.root.querySelector('.locate__message')?.textContent,
+      ).toContain('Looking for your position');
+
+      geolocation.emit({ accuracyMeters: 30, heading: 45 });
+      TestBed.tick();
+      view.fixture.detectChanges();
+      expect(view.driver.location).toEqual({
+        position: [3.08, 45.78],
+        accuracyMeters: 30,
+        heading: 45,
+      });
+      expect(view.root.querySelector('.locate__message')?.textContent).toBe('');
+
+      button(view.root).click();
+      view.fixture.detectChanges();
+      TestBed.tick();
+      expect(view.driver.location).toBeNull();
+      expect(geolocation.watching).toBe(false);
+    });
+
+    it('explains a refusal and leaves the planner usable', async () => {
+      const view = await render();
+      button(view.root).click();
+      geolocation.fail('denied');
+      view.fixture.detectChanges();
+      expect(
+        view.root.querySelector('.locate__message')?.textContent,
+      ).toContain('Location access was refused');
+      view.click(3.087, 45.777);
+      expect(TestBed.inject(PlannerStore).points().length).toBe(1);
+    });
+
+    it('disables the button outside a secure page', async () => {
+      geolocation.supported = 'insecure';
+      const view = await render();
+      expect(button(view.root).disabled).toBe(true);
+      expect(button(view.root).title).toContain('secure');
+    });
+
+    it('puts the start, a stop and the end on the user from the panel', async () => {
+      const view = await render();
+      const store = TestBed.inject(PlannerStore);
+      const place = () =>
+        view.root.querySelector<HTMLButtonElement>('.place-position');
+      expect(place()).toBeNull();
+
+      button(view.root).click();
+      geolocation.emit({ position: [3.1, 45.7] });
+      view.fixture.detectChanges();
+      expect(place()?.textContent).toContain('as the start');
+      place()!.click();
+      view.fixture.detectChanges();
+      expect(store.points()).toEqual([[3.1, 45.7]]);
+
+      expect(place()?.textContent).toContain('as the end');
+      geolocation.emit({ position: [3.2, 45.6] });
+      view.fixture.detectChanges();
+      place()!.click();
+      view.fixture.detectChanges();
+      expect(store.points()).toEqual([
+        [3.1, 45.7],
+        [3.2, 45.6],
+      ]);
+      expect(place()?.textContent).toContain('as a stop');
+    });
+
+    it('offers "My position" in the map menu only with a position', async () => {
+      const view = await render();
+      const store = TestBed.inject(PlannerStore);
+      const items = () =>
+        Array.from(
+          view.root.querySelectorAll<HTMLButtonElement>('.map-menu button'),
+        );
+      view.driver.handlers.onContextMenu([3, 45], { x: 40, y: 60 });
+      view.fixture.detectChanges();
+      expect(items().some((b) => b.textContent?.includes('my position'))).toBe(
+        false,
+      );
+      view.driver.handlers.onContextMenu([3, 45], { x: 40, y: 60 });
+
+      button(view.root).click();
+      geolocation.emit({ position: [3.3, 45.5] });
+      view.fixture.detectChanges();
+      items()
+        .find((b) => b.textContent?.includes('Use my position'))!
+        .click();
+      view.fixture.detectChanges();
+      expect(store.points()).toEqual([[3.3, 45.5]]);
+      expect(view.root.querySelector('.map-menu')).toBeNull();
+    });
+
+    it('stops watching when the planner is destroyed', async () => {
+      const view = await render();
+      button(view.root).click();
+      view.fixture.destroy();
+      expect(geolocation.watching).toBe(false);
+    });
   });
 
   describe('touch menu and undo', () => {

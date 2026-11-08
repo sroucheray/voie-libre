@@ -1,5 +1,6 @@
 import { InjectionToken } from '@angular/core';
 import type { LngLat, MapLike } from '../core/map/map-factory';
+import type { LocationFix } from '../location/geolocation';
 import type { PointRole } from './planner-store';
 import { createMapLibreDriver } from './maplibre-driver';
 
@@ -55,6 +56,11 @@ export interface PlannerMapDriver {
   setGhost(ghost: GhostSpec | null): void;
   /** Shows a dot at this position (the point hovered on the profile), or hides it. */
   setCursor(point: LngLat | null): void;
+  /**
+   * Shows where the user is: a dot, the circle of its accuracy and, with a heading, a cone. The
+   * first fix after `null` also moves the view there. `null` hides everything.
+   */
+  setLocation(fix: LocationFix | null): void;
   destroy(): void;
 }
 

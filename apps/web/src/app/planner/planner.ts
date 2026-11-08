@@ -15,6 +15,7 @@ import { map, switchMap } from 'rxjs';
 import { FormattingService } from '../core/format/formatting.service';
 import type { LngLat, MapLike } from '../core/map/map-factory';
 import { MapView } from '../core/map/map-view';
+import { LocationStore } from '../location/location-store';
 import {
   PLANNER_MAP_DRIVER,
   type PlannerMapDriver,
@@ -55,6 +56,7 @@ const UNDO_MS = 6000;
 export class Planner {
   protected readonly store = inject(PlannerStore);
   protected readonly format = inject(FormattingService);
+  protected readonly location = inject(LocationStore);
   protected readonly profiles = PROFILES;
   protected readonly alternativeChoices = Array.from(
     { length: MAX_ALTERNATIVES },
@@ -68,6 +70,24 @@ export class Planner {
     if (count === 1) return 'planner.hint.end';
     return this.store.isLoop() ? 'planner.hint.loop' : 'planner.hint.route';
   });
+
+  /** What to tell about the user's position: searching, or why it failed. */
+  protected readonly locationMessageKey = computed(() => {
+    if (this.location.status() === 'searching') return 'location.searching';
+    const code = this.location.errorCode();
+    return code ? `location.errors.${code}` : null;
+  });
+
+  /** Why the button is disabled, when the device or page cannot give a position. */
+  protected readonly locationUnsupportedKey = computed(() => {
+    const support = this.location.support();
+    return support === 'ok' ? null : `location.errors.${support}`;
+  });
+
+  /** The user can put a point on themselves: they have a position and room for a point. */
+  protected readonly canPlaceMyPosition = computed(
+    () => !!this.location.fix() && this.store.points().length < MAX_POINTS,
+  );
 
   /** The menu opened by a right click or a long press: where, and at which pixel. */
   protected readonly menu = signal<{
@@ -110,6 +130,8 @@ export class Planner {
 
     inject(DestroyRef).onDestroy(() => {
       this.destroyed = true;
+      // Leaving the planner stops asking the device for positions.
+      this.location.stop();
       this.driver()?.destroy();
     });
 
@@ -204,6 +226,13 @@ export class Planner {
       if (driver && view) driver.fitRoute(view.geometry);
     });
 
+    // The user's own position, when they share it.
+    effect(() => {
+      const driver = this.driver();
+      const fix = this.location.fix();
+      driver?.setLocation(fix);
+    });
+
     // The dot on the map follows the cursor of the profile.
     effect(() => {
       const driver = this.driver();
@@ -290,6 +319,13 @@ export class Planner {
     if (choice === 'start') this.store.setStart(menu.point);
     else if (choice === 'end') this.store.setEnd(menu.point);
     else this.store.addPoint(menu.point);
+  }
+
+  /** Puts a point on the user, the way a click on the map would (start, stop or end). */
+  protected placeMyPosition(): void {
+    this.menu.set(null);
+    const fix = this.location.fix();
+    if (fix) this.store.addPoint(fix.position);
   }
 
   protected closeLoop(mode?: LoopMode): void {

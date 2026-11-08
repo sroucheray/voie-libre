@@ -117,6 +117,30 @@ body {
   pointer-events: none;
 }
 
+/* Where the user is: a dot, with a cone when the heading is known (the accuracy circle is a map layer). */
+.planner-location {
+  position: relative;
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #1a73e8;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 55%);
+  pointer-events: none;
+
+  &--heading::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    width: 3.5rem;
+    height: 3.5rem;
+    margin-left: -1.75rem;
+    background: linear-gradient(to top, rgb(26 115 232 / 75%), transparent);
+    clip-path: polygon(50% 100%, 0 0, 100% 0);
+  }
+}
+
 /* Choice offered when the loop is closed. */
 .loop-dialog {
   position: absolute;

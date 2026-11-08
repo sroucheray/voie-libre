@@ -7,11 +7,26 @@ import type {
   PlannerMapDriver,
   PlannerMapHandlers,
 } from './planner-map-driver';
+import { accuracyCircle } from '../location/accuracy-circle';
+import type { LocationFix } from '../location/geolocation';
 import { routesToGeoJson } from './route-geojson';
 
 const SOURCE = 'planner-routes';
 const ALTERNATIVE_LAYER = 'planner-routes-alternative';
 const SELECTED_LAYER = 'planner-routes-selected';
+const ACCURACY_SOURCE = 'planner-location-accuracy';
+const ACCURACY_FILL_LAYER = 'planner-location-accuracy-fill';
+const ACCURACY_LINE_LAYER = 'planner-location-accuracy-line';
+/** Zoom the view reaches when it first moves to the user (it never zooms out). */
+const LOCATION_ZOOM = 15;
+
+/** The circle of the accuracy as GeoJSON, empty without a fix. */
+function accuracyData(fix: LocationFix | null): GeoJSON.GeoJSON {
+  return fix
+    ? accuracyCircle(fix.position, fix.accuracyMeters)
+    : { type: 'FeatureCollection', features: [] };
+}
+
 /** Pixels around a click that still count as hitting an alternative route. */
 const HIT_TOLERANCE = 6;
 
@@ -35,6 +50,8 @@ export async function createMapLibreDriver(
   let selected = 0;
   let markers: Marker[] = [];
   let cursorMarker: Marker | null = null;
+  let locationFix: LocationFix | null = null;
+  let locationMarker: Marker | null = null;
   let ghostSpec: GhostSpec | null = null;
   let ghostMarker: Marker | null = null;
   let ghostElement: HTMLElement | null = null;
@@ -47,6 +64,27 @@ export async function createMapLibreDriver(
   /** Adds the source and layers. Idempotent: a new style (language change) removes them. */
   const ensureLayers = () => {
     if (destroyed || map.getSource(SOURCE)) return;
+    // The accuracy circle goes under the routes, which are added right after it.
+    map.addSource(ACCURACY_SOURCE, {
+      type: 'geojson',
+      data: accuracyData(locationFix),
+    });
+    map.addLayer({
+      id: ACCURACY_FILL_LAYER,
+      type: 'fill',
+      source: ACCURACY_SOURCE,
+      paint: { 'fill-color': '#1570ef', 'fill-opacity': 0.14 },
+    });
+    map.addLayer({
+      id: ACCURACY_LINE_LAYER,
+      type: 'line',
+      source: ACCURACY_SOURCE,
+      paint: {
+        'line-color': '#1570ef',
+        'line-opacity': 0.4,
+        'line-width': 1,
+      },
+    });
     map.addSource(SOURCE, { type: 'geojson', data: routesToGeoJson([], 0) });
     map.addLayer({
       id: ALTERNATIVE_LAYER,
@@ -426,8 +464,47 @@ export async function createMapLibreDriver(
         cursorMarker.setLngLat(point);
       }
     },
+    setLocation(fix: LocationFix | null) {
+      const first = !locationFix && !!fix;
+      locationFix = fix;
+      const circle = map.getSource(ACCURACY_SOURCE) as
+        { setData(data: unknown): void } | undefined;
+      circle?.setData(accuracyData(fix));
+      if (!fix) {
+        locationMarker?.remove();
+        locationMarker = null;
+        return;
+      }
+      if (!locationMarker) {
+        const element = document.createElement('div');
+        element.className = 'planner-location';
+        element.setAttribute('aria-hidden', 'true');
+        locationMarker = new maplibre.Marker({
+          element,
+          rotationAlignment: 'map',
+          pitchAlignment: 'map',
+        })
+          .setLngLat(fix.position)
+          .addTo(map);
+      }
+      locationMarker.setLngLat(fix.position);
+      // A cone points where the user heads; it is hidden while the heading is unknown.
+      locationMarker
+        .getElement()
+        .classList.toggle('planner-location--heading', fix.heading !== null);
+      locationMarker.setRotation(fix.heading ?? 0);
+      if (first) {
+        map.easeTo({
+          center: fix.position,
+          zoom: Math.max(map.getZoom(), LOCATION_ZOOM),
+          duration: 600,
+        });
+      }
+    },
     destroy() {
       destroyed = true;
+      locationMarker?.remove();
+      locationMarker = null;
       clearMarkers();
       cursorMarker?.remove();
       cursorMarker = null;
@@ -442,10 +519,17 @@ export async function createMapLibreDriver(
       map.off('mousemove', onMouseMove);
       map.off('styledata', onStyleData);
       map.off('click', onClick);
-      for (const id of [SELECTED_LAYER, ALTERNATIVE_LAYER]) {
+      for (const id of [
+        SELECTED_LAYER,
+        ALTERNATIVE_LAYER,
+        ACCURACY_LINE_LAYER,
+        ACCURACY_FILL_LAYER,
+      ]) {
         if (map.getLayer(id)) map.removeLayer(id);
       }
-      if (map.getSource(SOURCE)) map.removeSource(SOURCE);
+      for (const id of [SOURCE, ACCURACY_SOURCE]) {
+        if (map.getSource(id)) map.removeSource(id);
+      }
     },
   };
 }

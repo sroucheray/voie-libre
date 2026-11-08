@@ -91,7 +91,8 @@
       "label": "Place on the map",
       "setStart": "Set as start",
       "addStop": "Add a stop here",
-      "setEnd": "Set as end"
+      "setEnd": "Set as end",
+      "myPosition": "Use my position"
     },
     "removed": {
       "message": "Point removed.",
@@ -207,6 +208,21 @@
       "unavailable": "The terrain data could not be read. Try again later.",
       "no_data": "The terrain data does not cover this route.",
       "unknown": "The climb could not be computed."
+    }
+  },
+  "location": {
+    "button": "My position",
+    "searching": "Looking for your position…",
+    "place": {
+      "start": "Set my position as the start",
+      "waypoint": "Add my position as a stop",
+      "end": "Set my position as the end"
+    },
+    "errors": {
+      "denied": "Location access was refused. Allow it in your browser settings to see your position.",
+      "unavailable": "Your position could not be determined.",
+      "timeout": "Your position is taking too long to arrive. Try again.",
+      "insecure": "Your position is only available on a secure (HTTPS) page."
     }
   },
   "update": {

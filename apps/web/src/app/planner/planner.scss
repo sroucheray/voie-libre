@@ -191,8 +191,62 @@ fieldset.profiles {
 }
 
 .loop,
-.loop-cancel {
+.loop-cancel,
+.place-position {
   margin-top: 0.5rem;
+}
+
+/* The "My position" button sits above the attribution, the message grows to its left. */
+.locate {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.locate__button {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #475467;
+  background: #fff;
+  border: 1px solid #c9cdd3;
+  border-radius: 0.375rem;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: #f2f4f7;
+  }
+
+  &[aria-pressed='true'] {
+    color: #fff;
+    background: #1a73e8;
+    border-color: #1a73e8;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.locate__message {
+  margin: 0;
+  max-width: 16rem;
+  font-size: 0.8125rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  background: rgb(16 24 40 / 85%);
+  color: #fff;
+
+  /* Nothing to say: no empty bubble, but the live region stays in the page. */
+  &:empty {
+    display: none;
+  }
 }
 
 .map-menu-backdrop {

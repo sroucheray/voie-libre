@@ -91,7 +91,8 @@
       "label": "Placer sur la carte",
       "setStart": "Définir comme départ",
       "addStop": "Ajouter une étape ici",
-      "setEnd": "Définir comme arrivée"
+      "setEnd": "Définir comme arrivée",
+      "myPosition": "Utiliser ma position"
     },
     "removed": {
       "message": "Point supprimé.",
@@ -207,6 +208,21 @@
       "unavailable": "Les données de relief n'ont pas pu être lues. Réessayez plus tard.",
       "no_data": "Les données de relief ne couvrent pas ce parcours.",
       "unknown": "Le dénivelé n'a pas pu être calculé."
+    }
+  },
+  "location": {
+    "button": "Ma position",
+    "searching": "Recherche de votre position…",
+    "place": {
+      "start": "Définir ma position comme départ",
+      "waypoint": "Ajouter ma position comme étape",
+      "end": "Définir ma position comme arrivée"
+    },
+    "errors": {
+      "denied": "L'accès à la position a été refusé. Autorisez-le dans les réglages du navigateur pour voir votre position.",
+      "unavailable": "Votre position n'a pas pu être déterminée.",
+      "timeout": "Votre position met trop de temps à arriver. Réessayez.",
+      "insecure": "Votre position n'est disponible que sur une page sécurisée (HTTPS)."
     }
   },
   "update": {
