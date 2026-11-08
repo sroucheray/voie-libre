@@ -1,6 +1,7 @@
 import { Injectable, computed, signal } from '@angular/core';
 import type { LngLat } from '../core/map/map-factory';
 import type { SavedRoute } from '../storage/saved-route';
+import { applyStretch, type EditWindow, type Stretch } from './local-edit';
 
 /** What it takes to show a route as it was: a saved route, or one opened from a shared link. */
 export type RestorableRoute = Pick<
@@ -84,6 +85,17 @@ export function inputsSignature(
   return JSON.stringify([points, profile, alternatives, loop]);
 }
 
+/**
+ * A change to the list of points that can be applied to a computed route by recomputing only a
+ * stretch of it. `previous` and `next` are the lists before and after: an edit applies only
+ * while `next` is still the current list.
+ */
+export type PointEdit = (
+  | { kind: 'insert'; index: number; point: LngLat }
+  | { kind: 'move'; index: number; from: LngLat; point: LngLat }
+  | { kind: 'remove'; index: number; point: LngLat }
+) & { previous: LngLat[]; next: LngLat[] };
+
 /** The selected route with what it was computed from: what "Save" stores. */
 export interface SavableRoute extends PlannedRoute {
   points: LngLat[];
@@ -135,6 +147,9 @@ export class PlannerStore {
   readonly isLoop = computed(() => isLoopOf(this.pointsState()));
 
   private readonly loopState = signal<LoopMode | null>(null);
+
+  /** The last change to the points that is a {@link PointEdit}, if it still is the latest. */
+  private lastEdit: PointEdit | null = null;
 
   /**
    * The loop mode that applies to the current points, or null (plain route, or plain loop back to
@@ -194,10 +209,16 @@ export class PlannerStore {
    * just before the end. Ignored beyond {@link MAX_POINTS}.
    */
   addPoint(point: LngLat): void {
-    this.pointsState.update((points) => {
-      if (points.length >= MAX_POINTS) return points;
-      if (points.length < 2) return [...points, point];
-      return [...points.slice(0, -1), point, points[points.length - 1]];
+    const points = this.pointsState();
+    if (points.length >= MAX_POINTS) return;
+    if (points.length < 2) {
+      this.setPoints([...points, point]);
+      return;
+    }
+    this.setPoints([...points.slice(0, -1), point, points[points.length - 1]], {
+      kind: 'insert',
+      index: points.length - 1,
+      point,
     });
   }
 
@@ -206,10 +227,13 @@ export class PlannerStore {
    * after the end). Ignored beyond {@link MAX_POINTS}.
    */
   insertPoint(index: number, point: LngLat): void {
-    this.pointsState.update((points) => {
-      if (points.length < 2 || points.length >= MAX_POINTS) return points;
-      const at = Math.min(Math.max(index, 1), points.length - 1);
-      return [...points.slice(0, at), point, ...points.slice(at)];
+    const points = this.pointsState();
+    if (points.length < 2 || points.length >= MAX_POINTS) return;
+    const at = Math.min(Math.max(index, 1), points.length - 1);
+    this.setPoints([...points.slice(0, at), point, ...points.slice(at)], {
+      kind: 'insert',
+      index: at,
+      point,
     });
   }
 
@@ -251,16 +275,22 @@ export class PlannerStore {
 
   /** The start and the end of a loop move together, so that it stays closed. */
   movePoint(index: number, point: LngLat): void {
-    this.pointsState.update((points) => {
-      if (index < 0 || index >= points.length) return points;
-      const together =
-        isLoopOf(points) && (index === 0 || index === points.length - 1);
-      return points.map((p, i) =>
-        i === index || (together && (i === 0 || i === points.length - 1))
-          ? point
-          : p,
-      );
-    });
+    const points = this.pointsState();
+    if (index < 0 || index >= points.length) return;
+    const together =
+      isLoopOf(points) && (index === 0 || index === points.length - 1);
+    const next = points.map((p, i) =>
+      i === index || (together && (i === 0 || i === points.length - 1))
+        ? point
+        : p,
+    );
+    // Both ends of a loop move at once: no single stretch to recompute.
+    this.setPoints(
+      next,
+      together
+        ? undefined
+        : { kind: 'move', index, from: points[index], point },
+    );
   }
 
   /** Sets the start (the first point): the first one if there is none yet. */
@@ -274,10 +304,18 @@ export class PlannerStore {
    * loop only the end moves, which opens the loop.
    */
   setEnd(point: LngLat): void {
-    this.pointsState.update((points) => {
-      if (points.length === 0) return points;
-      if (points.length === 1) return [...points, point];
-      return [...points.slice(0, -1), point];
+    const points = this.pointsState();
+    if (points.length === 0) return;
+    if (points.length === 1) {
+      this.setPoints([...points, point]);
+      return;
+    }
+    const index = points.length - 1;
+    this.setPoints([...points.slice(0, -1), point], {
+      kind: 'move',
+      index,
+      from: points[index],
+      point,
     });
   }
 
@@ -285,7 +323,10 @@ export class PlannerStore {
     const point = this.pointsState()[index];
     if (!point) return;
     this.removedState.set({ index, point });
-    this.pointsState.update((points) => points.filter((_, i) => i !== index));
+    this.setPoints(
+      this.pointsState().filter((_, i) => i !== index),
+      { kind: 'remove', index, point },
+    );
   }
 
   /** Puts back the point removed last, at its place (or the end if the list got shorter). */
@@ -293,11 +334,13 @@ export class PlannerStore {
     const removed = this.removedState();
     if (!removed) return;
     this.removedState.set(null);
-    this.pointsState.update((points) => {
-      if (points.length >= MAX_POINTS) return points;
-      const at = Math.min(removed.index, points.length);
-      return [...points.slice(0, at), removed.point, ...points.slice(at)];
-    });
+    const points = this.pointsState();
+    if (points.length >= MAX_POINTS) return;
+    const at = Math.min(removed.index, points.length);
+    this.setPoints(
+      [...points.slice(0, at), removed.point, ...points.slice(at)],
+      { kind: 'insert', index: at, point: removed.point },
+    );
   }
 
   /** Forgets the removed point: the time to undo has passed. */
@@ -355,6 +398,50 @@ export class PlannerStore {
       id: (view?.id ?? 0) + 1,
       geometry: saved.geometry,
     }));
+  }
+
+  /** Sets the points, remembering the change when it is one a stretch of the route can absorb. */
+  private setPoints(
+    next: LngLat[],
+    edit?:
+      | { kind: 'insert'; index: number; point: LngLat }
+      | { kind: 'move'; index: number; from: LngLat; point: LngLat }
+      | { kind: 'remove'; index: number; point: LngLat },
+  ): void {
+    this.lastEdit = edit
+      ? { ...edit, previous: this.pointsState(), next }
+      : null;
+    this.pointsState.set(next);
+  }
+
+  /**
+   * The change that produced `points`, when it was a single edit of the previous list (and nothing
+   * has changed the points since). `null` otherwise: the route must be computed in full.
+   */
+  editBehind(points: readonly LngLat[]): PointEdit | null {
+    return this.lastEdit?.next === points ? this.lastEdit : null;
+  }
+
+  /**
+   * Replaces `window` of the selected route with `stretch`, the answer for that stretch alone. Only
+   * the selected alternative is kept, so alternatives go back to 1, and the result counts as
+   * restored: {@link RoutePlanner} must not compute it again.
+   */
+  applyLocalEdit(window: EditWindow, stretch: Stretch): void {
+    const route = this.routesState()[this.selectedState()];
+    if (!route) return;
+    this.restored = inputsSignature(
+      this.pointsState(),
+      this.profileState(),
+      1,
+      this.loop(),
+    );
+    this.alternativesState.set(1);
+    this.routesState.set([applyStretch(route, window, stretch)]);
+    this.selectedState.set(0);
+    this.cursor.set(null);
+    this.errorState.set(null);
+    this.statusState.set('ready');
   }
 
   /** True while the inputs are exactly those of the route restored by {@link loadSaved}. */

@@ -4,8 +4,10 @@ import {
   MAX_POINTS,
   PlannedRoute,
   PlannerStore,
+  inputsSignature,
   pointRole,
 } from './planner-store';
+import type { LngLat3 } from './planner-map-driver';
 
 const route: PlannedRoute = {
   geometry: [
@@ -352,6 +354,175 @@ describe('PlannerStore', () => {
       store.resetResult();
       expect(store.status()).toBe('idle');
       expect(store.errorCode()).toBeNull();
+    });
+  });
+
+  describe('point edits', () => {
+    const A: [number, number] = [3, 45];
+    const B: [number, number] = [3.1, 45];
+    const C: [number, number] = [3.2, 45];
+    const X: [number, number] = [3.05, 45.01];
+
+    it('remembers no edit while there is no route to edit', () => {
+      store.addPoint(A);
+      expect(store.editBehind(store.points())).toBeNull();
+      store.addPoint(B);
+      expect(store.editBehind(store.points())).toBeNull();
+    });
+
+    it('remembers a point added before the end', () => {
+      store.addPoint(A);
+      store.addPoint(C);
+      const before = store.points();
+      store.addPoint(X);
+      expect(store.editBehind(store.points())).toEqual({
+        kind: 'insert',
+        index: 1,
+        point: X,
+        previous: before,
+        next: store.points(),
+      });
+    });
+
+    it('remembers a point inserted at its index, kept between start and end', () => {
+      store.addPoint(A);
+      store.addPoint(C);
+      store.insertPoint(0, X);
+      expect(store.editBehind(store.points())).toMatchObject({
+        kind: 'insert',
+        index: 1,
+        point: X,
+      });
+    });
+
+    it('remembers a point moved and where it was', () => {
+      store.addPoint(A);
+      store.addPoint(B);
+      store.addPoint(C);
+      // Points are now [A, C, B]: a click adds a waypoint before the end.
+      store.movePoint(1, X);
+      expect(store.editBehind(store.points())).toMatchObject({
+        kind: 'move',
+        index: 1,
+        from: C,
+        point: X,
+      });
+    });
+
+    it('remembers the end moved', () => {
+      store.addPoint(A);
+      store.addPoint(B);
+      store.setEnd(C);
+      expect(store.editBehind(store.points())).toMatchObject({
+        kind: 'move',
+        index: 1,
+        from: B,
+        point: C,
+      });
+    });
+
+    it('remembers no edit when both ends of a loop move together', () => {
+      store.addPoint(A);
+      store.addPoint(B);
+      store.closeLoop();
+      store.movePoint(0, X);
+      expect(store.points()[2]).toEqual(X);
+      expect(store.editBehind(store.points())).toBeNull();
+    });
+
+    it('remembers a point removed, and the undo as an insert', () => {
+      store.addPoint(A);
+      store.addPoint(B);
+      store.addPoint(C);
+      store.removePoint(1);
+      expect(store.editBehind(store.points())).toMatchObject({
+        kind: 'remove',
+        index: 1,
+        point: C,
+      });
+      store.undoRemove();
+      expect(store.editBehind(store.points())).toMatchObject({
+        kind: 'insert',
+        index: 1,
+        point: C,
+      });
+    });
+
+    it('forgets an edit once the points changed some other way', () => {
+      store.addPoint(A);
+      store.addPoint(C);
+      store.addPoint(X);
+      expect(store.editBehind(store.points())).not.toBeNull();
+      store.closeLoop();
+      expect(store.editBehind(store.points())).toBeNull();
+    });
+  });
+
+  describe('applyLocalEdit', () => {
+    /** A straight route along the equator, one vertex per 0.001° (about 111 m). */
+    const geometry: LngLat3[] = Array.from({ length: 201 }, (_, i) => [
+      i / 1000,
+      0,
+      100,
+    ]);
+    const planned: PlannedRoute = {
+      geometry,
+      distanceMeters: 22_000,
+      ascentMeters: 50,
+      durationSeconds: 3600,
+      elevationSource: 'srtm',
+    };
+    const stretch = {
+      geometry: [
+        [0.095, 0, 100],
+        [0.1, 0.003, 100],
+        [0.105, 0, 100],
+      ] as LngLat3[],
+      distanceMeters: 1300,
+      ascentMeters: 0,
+      durationSeconds: 200,
+    };
+
+    beforeEach(() => {
+      store.addPoint([0, 0]);
+      store.addPoint([0.2, 0]);
+      store.setAlternatives(3);
+      store.setRoutes([planned, { ...planned, distanceMeters: 23_000 }]);
+      store.selectRoute(1);
+    });
+
+    it('keeps only the selected route, with the stretch spliced in', () => {
+      store.applyLocalEdit({ from: 95, to: 105 }, stretch);
+      expect(store.routes()).toHaveLength(1);
+      expect(store.selectedIndex()).toBe(0);
+      const [edited] = store.routes();
+      expect(edited.geometry).toHaveLength(95 + 3 + 95);
+      expect(edited.geometry.slice(95, 98)).toEqual(stretch.geometry);
+      expect(edited.distanceMeters).toBeCloseTo(
+        23_000 * (1 - 1112 / 22_239) + 1300,
+        -1,
+      );
+      expect(edited.elevationSource).toBe('srtm');
+      expect(store.status()).toBe('ready');
+      expect(store.errorCode()).toBeNull();
+    });
+
+    it('goes back to one alternative and counts as restored', () => {
+      store.applyLocalEdit({ from: 95, to: 105 }, stretch);
+      expect(store.alternatives()).toBe(1);
+      expect(
+        store.isRestored(
+          inputsSignature(store.points(), store.profile(), 1, store.loop()),
+        ),
+      ).toBe(true);
+    });
+
+    it('does nothing without a route', () => {
+      store.resetResult();
+      store.applyLocalEdit({ from: 95, to: 105 }, stretch);
+      expect(store.routes()).toEqual([]);
+      expect(store.status()).toBe('idle');
+      expect(store.alternatives()).toBe(3);
     });
   });
 });
