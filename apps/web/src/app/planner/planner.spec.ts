@@ -639,6 +639,49 @@ describe('Planner', () => {
     expect(view.text()).toContain('Click the map to set the start.');
   });
 
+  describe('reordering the steps', () => {
+    const drag = (row: Element, type: string) => {
+      const event = new Event(type, { bubbles: true, cancelable: true });
+      row.dispatchEvent(event);
+      return event;
+    };
+
+    it('drags a step onto another one: the list and the map follow', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.click(3.15, 45.65);
+      view.click(3.249, 45.544);
+      view.fixture.detectChanges();
+      const rows = () => view.root.querySelectorAll('.points li');
+      expect(rows()[0].getAttribute('draggable')).toBe('true');
+      drag(rows()[0], 'dragstart');
+      view.fixture.detectChanges();
+      expect(rows()[0].classList.contains('dragging')).toBe(true);
+      expect(drag(rows()[2], 'dragover').defaultPrevented).toBe(true);
+      view.fixture.detectChanges();
+      expect(rows()[2].classList.contains('drop-target')).toBe(true);
+      drag(rows()[2], 'drop');
+      TestBed.tick();
+      view.fixture.detectChanges();
+      expect(view.driver.markers.map((m) => m.lngLat)).toEqual([
+        [3.249, 45.544],
+        [3.15, 45.65],
+        [3.087, 45.777],
+      ]);
+      expect(view.root.querySelector('.dragging')).toBeNull();
+      expect(view.root.querySelector('.drop-target')).toBeNull();
+    });
+
+    it('cannot drag the only step', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.fixture.detectChanges();
+      expect(
+        view.root.querySelector('.points li')?.getAttribute('draggable'),
+      ).toBe('false');
+    });
+  });
+
   describe('undo and redo', () => {
     const press = (
       key: string,

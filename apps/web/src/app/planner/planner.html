@@ -217,7 +217,18 @@
     } @if (store.points().length > 0) {
     <ol class="points" [attr.aria-label]="'planner.points.label' | transloco">
       @for (point of store.points(); track $index; let i = $index) {
-      <li>
+      <li
+        [draggable]="store.points().length > 1"
+        [class.dragging]="dragFrom() === i"
+        [class.drop-target]="dragOver() === i && dragFrom() !== i"
+        (dragstart)="onPointDragStart($event, i)"
+        (dragover)="onPointDragOver($event, i)"
+        (drop)="onPointDrop($event, i)"
+        (dragend)="endPointDrag()"
+      >
+        @if (store.points().length > 1) {
+        <span class="point-grip" aria-hidden="true">⋮⋮</span>
+        }
         <span class="point-name">{{ pointName(i) }}</span>
         <span class="point-coordinates"
           >{{ coordinates(point[0], point[1]) }}</span

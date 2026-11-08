@@ -250,6 +250,41 @@ describe('PlannerStore', () => {
       expect(store.removed()).toBeNull();
     });
 
+    it('moves a point to another place in the list, and undoes it', () => {
+      store.addPoint([1, 1]);
+      store.addPoint([2, 2]);
+      store.addPoint([3, 3]);
+      // The third point lands before the end: [1, 1], [3, 3], [2, 2].
+      store.reorderPoint(0, 2);
+      expect(store.points()).toEqual([
+        [3, 3],
+        [2, 2],
+        [1, 1],
+      ]);
+      store.undo();
+      expect(store.points()).toEqual([
+        [1, 1],
+        [3, 3],
+        [2, 2],
+      ]);
+    });
+
+    it('ignores a move onto itself or outside the list', () => {
+      store.addPoint([1, 1]);
+      store.addPoint([2, 2]);
+      store.reorderPoint(1, 1);
+      store.reorderPoint(0, 5);
+      store.reorderPoint(3, 0);
+      expect(store.points()).toEqual([
+        [1, 1],
+        [2, 2],
+      ]);
+      expect(store.canUndo()).toBe(true);
+      store.undo();
+      store.undo();
+      expect(store.canUndo()).toBe(false);
+    });
+
     it('forgets the removed point when asked, and when everything is cleared', () => {
       store.addPoint([1, 1]);
       store.removePoint(0);

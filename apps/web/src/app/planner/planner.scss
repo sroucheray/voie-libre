@@ -87,6 +87,26 @@ fieldset.profiles {
     font-weight: 600;
   }
 
+  &[draggable='true'] {
+    cursor: grab;
+  }
+
+  .point-grip {
+    color: #98a2b3;
+    letter-spacing: -0.2em;
+    user-select: none;
+  }
+
+  &.dragging {
+    opacity: 0.4;
+  }
+
+  // Where the dragged step would land.
+  &.drop-target {
+    background: #eff8ff;
+    box-shadow: inset 0 2px 0 #1570ef;
+  }
+
   .point-coordinates {
     flex: 1;
     color: #475467;

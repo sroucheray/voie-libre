@@ -354,7 +354,7 @@ describe('Saved routes', () => {
       const view = await renderWithSavedRoute();
       (view.root.querySelector('.clear') as HTMLButtonElement).click();
       await view.settle(ROUTE_DEBOUNCE_MS + 10);
-      view.items()[0].querySelector<HTMLButtonElement>('.name.open')!.click();
+      view.items()[0].querySelector<HTMLButtonElement>('.name.open')?.click();
       await view.settle(5 * ROUTE_DEBOUNCE_MS);
       expect(view.driver.routes).toEqual([geometry]);
     });
@@ -364,13 +364,13 @@ describe('Saved routes', () => {
       view.driver.handlers.onClick([3.0, 45.0]);
       await view.settle(ROUTE_DEBOUNCE_MS + 10);
       const points = view.root.querySelectorAll('.points li').length;
-      view.items()[0].querySelector<HTMLButtonElement>('.name.open')!.click();
+      view.items()[0].querySelector<HTMLButtonElement>('.name.open')?.click();
       view.fixture.detectChanges();
       expect(view.text()).toContain('Replace the route being planned');
       const cancel = Array.from(
         view.root.querySelectorAll<HTMLButtonElement>('.confirm button'),
       ).find((b) => b.textContent?.trim() === 'Cancel');
-      cancel!.click();
+      cancel?.click();
       await view.settle();
       expect(view.text()).not.toContain('Replace the route being planned');
       expect(view.root.querySelectorAll('.points li')).toHaveLength(points);

@@ -314,6 +314,39 @@ export class Planner {
   }
 
   /** "Start", "Waypoint 2" or "End", in the UI language. */
+  /** Index of the point being dragged in the list, and of the row it would take the place of. */
+  protected readonly dragFrom = signal<number | null>(null);
+  protected readonly dragOver = signal<number | null>(null);
+
+  protected onPointDragStart(event: DragEvent, index: number): void {
+    this.dragFrom.set(index);
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      // Firefox starts no drag without data.
+      event.dataTransfer.setData('text/plain', String(index));
+    }
+  }
+
+  protected onPointDragOver(event: DragEvent, index: number): void {
+    if (this.dragFrom() === null) return;
+    // Allows the drop here.
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    this.dragOver.set(index);
+  }
+
+  protected onPointDrop(event: DragEvent, index: number): void {
+    event.preventDefault();
+    const from = this.dragFrom();
+    this.endPointDrag();
+    if (from !== null) this.store.reorderPoint(from, index);
+  }
+
+  protected endPointDrag(): void {
+    this.dragFrom.set(null);
+    this.dragOver.set(null);
+  }
+
   protected pointName(index: number): string {
     // Reading this signal makes templates and effects follow language changes. It only changes
     // once the language file is loaded: translating earlier would return the raw key.

@@ -382,6 +382,18 @@ export class PlannerStore {
     });
   }
 
+  /** Moves the point at `from` to the place `to` (after the move, it is at index `to`). */
+  reorderPoint(from: number, to: number): void {
+    const points = this.pointsState();
+    if (from === to || !points[from] || to < 0 || to >= points.length) return;
+    const next = [...points];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    this.removedState.set(null);
+    // Several segments change: no local edit, the whole route is computed again.
+    this.setPoints(next);
+  }
+
   removePoint(index: number): void {
     const point = this.pointsState()[index];
     if (!point) return;
