@@ -205,6 +205,48 @@ describe('avoidZoneParams', () => {
       expect(route.distanceMeters).toBe(45_000);
     });
 
+    it('cuts the spurs and corrects the radius on the length that is left', async () => {
+      // About 4 km each way along a parallel (0.05 degree is 3.9 km at 45 N).
+      const withSpur = (reported: number) =>
+        JSON.stringify({
+          features: [
+            {
+              properties: {
+                'track-length': String(reported),
+                'filtered ascend': '100',
+                'total-time': '3600',
+              },
+              geometry: {
+                coordinates: [
+                  [3.0, 45.0, 400],
+                  [3.0, 45.05, 400],
+                  [3.05, 45.05, 400],
+                  [3.0, 45.05, 400],
+                  [3.0, 45.1, 400],
+                  [3.1, 45.1, 400],
+                  [3.0, 45.0, 400],
+                ],
+              },
+            },
+          ],
+        });
+      const radii: number[] = [];
+      const provider = new BRouterProvider(
+        'http://brouter:17777',
+        async (url) => {
+          radii.push(Number(/roundTripDistance=(\d+)/.exec(url)?.[1]));
+          return new Response(withSpur(30_000));
+        },
+      );
+      const [route] = await provider.roundTrip(A, 'road', [], 1, 30_000);
+      // The spur is gone from the geometry and from the length.
+      expect(route.geometry).toHaveLength(5);
+      expect(route.distanceMeters).toBeLessThan(30_000);
+      // 30 km minus the spur is further than 10% from the target: the radius grew.
+      expect(radii.length).toBeGreaterThan(1);
+      expect(radii[1]).toBeGreaterThan(radii[0]);
+    });
+
     it('rejects an unknown number of alternatives', async () => {
       const provider = new BRouterProvider(
         'http://brouter:17777',

@@ -7,6 +7,7 @@ import {
   type RoutingProfile,
   type RoutingProvider,
 } from './routing-provider';
+import { retracedRatio, trimSpurs } from './spurs';
 
 /**
  * Voie Libre profile to BRouter profile. `trail` uses `hiking-mountain`: on the Clermont test region
@@ -102,8 +103,10 @@ export class BRouterProvider implements RoutingProvider {
   /**
    * BRouter's round trip takes a radius, not a length: the loop comes out at about 5 times the
    * radius, and by how much depends on the roads and on the direction. So the radius is
-   * corrected from what comes back, up to {@link ROUND_TRIP_TRIES} calls, and the loop closest
-   * to the target wins. Alternatives head in evenly spaced directions.
+   * corrected from what comes back, up to {@link ROUND_TRIP_TRIES} calls. BRouter sometimes goes
+   * to a far point and back by the same road: those spurs are cut out of each answer (so the
+   * radius is corrected on the length that is left), and the loop closest to the target with the
+   * least road driven twice wins. Alternatives head in evenly spaced directions.
    */
   async roundTrip(
     start: Position,
@@ -148,6 +151,7 @@ export class BRouterProvider implements RoutingProvider {
   ): Promise<RouteResult> {
     let radius = target / ROUND_TRIP_RATIO;
     let best: RouteResult | null = null;
+    let bestScore = Infinity;
     for (let attempt = 0; attempt < ROUND_TRIP_TRIES; attempt++) {
       const query = [
         `lonlats=${start.lon},${start.lat}`,
@@ -159,15 +163,16 @@ export class BRouterProvider implements RoutingProvider {
         `direction=${direction}`,
         avoidZoneParams(zones),
       ].filter(Boolean);
-      const route = await this.fetchRoute(
-        `${this.baseUrl}/brouter?${query.join('&')}`,
+      const route = trimSpurs(
+        await this.fetchRoute(`${this.baseUrl}/brouter?${query.join('&')}`),
       );
-      if (
-        !best ||
-        Math.abs(route.distanceMeters - target) <
-          Math.abs(best.distanceMeters - target)
-      ) {
+      // Distance error and share of road driven twice, both as fractions of a whole.
+      const score =
+        Math.abs(route.distanceMeters - target) / target +
+        retracedRatio(route.geometry);
+      if (score < bestScore) {
         best = route;
+        bestScore = score;
       }
       const error = Math.abs(route.distanceMeters - target) / target;
       if (error <= ROUND_TRIP_TOLERANCE || route.distanceMeters <= 0) break;

@@ -17,7 +17,7 @@ const MAX_AVOID_POINTS = 350;
 const EARTH_RADIUS = 6_371_000;
 const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
 
-function distance(a: readonly number[], b: readonly number[]): number {
+export function distance(a: readonly number[], b: readonly number[]): number {
   const dLat = toRadians(b[1] - a[1]);
   const dLon = toRadians(b[0] - a[0]);
   const h =
