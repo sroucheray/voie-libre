@@ -342,6 +342,15 @@ describe('RoutePlanner', () => {
       );
     });
 
+    it('computes everything when two points are added before the route of the first is in place', async () => {
+      store.addPoint([0.05, 0.002]);
+      store.addPoint([0.15, 0.002]);
+      await settle();
+      expect(requests).toHaveLength(2);
+      const body = requests[1].body as { points: unknown[] };
+      expect(body.points).toHaveLength(4);
+    });
+
     it('computes everything when the end is removed', async () => {
       store.addPoint([0.1, 0.002]);
       await settle();

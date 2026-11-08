@@ -168,6 +168,8 @@ export class PlannerStore {
 
   /** The last change to the points that is a {@link PointEdit}, if it still is the latest. */
   private lastEdit: PointEdit | null = null;
+  /** True when the route on screen was that of the points `lastEdit` started from. */
+  private lastEditFromRoute = false;
 
   /**
    * The loop mode that applies to the current points, or null (plain route, or plain loop back to
@@ -479,6 +481,11 @@ export class PlannerStore {
       | { kind: 'remove'; index: number; point: LngLat },
   ): void {
     this.record();
+    // A second edit made before the route of the first is in place starts from a route that is not
+    // the one of its points: it cannot be applied to it.
+    this.lastEditFromRoute =
+      this.statusState() === 'ready' &&
+      this.routesFor === this.currentSignature();
     this.lastEdit = edit
       ? { ...edit, previous: this.pointsState(), next }
       : null;
@@ -568,7 +575,9 @@ export class PlannerStore {
    * has changed the points since). `null` otherwise: the route must be computed in full.
    */
   editBehind(points: readonly LngLat[]): PointEdit | null {
-    return this.lastEdit?.next === points ? this.lastEdit : null;
+    return this.lastEdit?.next === points && this.lastEditFromRoute
+      ? this.lastEdit
+      : null;
   }
 
   /**

@@ -388,6 +388,8 @@ describe('PlannerStore', () => {
     const B: [number, number] = [3.1, 45];
     const C: [number, number] = [3.2, 45];
     const X: [number, number] = [3.05, 45.01];
+    /** The route of the points is on screen: an edit can be applied to it. */
+    const onScreen = () => store.setRoutes([route]);
 
     it('remembers no edit while there is no route to edit', () => {
       store.addPoint(A);
@@ -396,9 +398,20 @@ describe('PlannerStore', () => {
       expect(store.editBehind(store.points())).toBeNull();
     });
 
+    it('remembers no edit when the route on screen is not the one of the points it started from', () => {
+      store.addPoint(A);
+      store.addPoint(C);
+      onScreen();
+      store.addPoint(X);
+      // The route of that edit has not come yet: the next edit starts from a route that is stale.
+      store.addPoint([3.15, 45.02]);
+      expect(store.editBehind(store.points())).toBeNull();
+    });
+
     it('remembers a point added before the end', () => {
       store.addPoint(A);
       store.addPoint(C);
+      onScreen();
       const before = store.points();
       store.addPoint(X);
       expect(store.editBehind(store.points())).toEqual({
@@ -413,6 +426,7 @@ describe('PlannerStore', () => {
     it('remembers a point inserted at its index, kept between start and end', () => {
       store.addPoint(A);
       store.addPoint(C);
+      onScreen();
       store.insertPoint(0, X);
       expect(store.editBehind(store.points())).toMatchObject({
         kind: 'insert',
@@ -426,6 +440,7 @@ describe('PlannerStore', () => {
       store.addPoint(B);
       store.addPoint(C);
       // Points are now [A, C, B]: a click adds a waypoint before the end.
+      onScreen();
       store.movePoint(1, X);
       expect(store.editBehind(store.points())).toMatchObject({
         kind: 'move',
@@ -438,6 +453,7 @@ describe('PlannerStore', () => {
     it('remembers the end moved', () => {
       store.addPoint(A);
       store.addPoint(B);
+      onScreen();
       store.setEnd(C);
       expect(store.editBehind(store.points())).toMatchObject({
         kind: 'move',
@@ -460,12 +476,14 @@ describe('PlannerStore', () => {
       store.addPoint(A);
       store.addPoint(B);
       store.addPoint(C);
+      onScreen();
       store.removePoint(1);
       expect(store.editBehind(store.points())).toMatchObject({
         kind: 'remove',
         index: 1,
         point: C,
       });
+      onScreen();
       store.undoRemove();
       expect(store.editBehind(store.points())).toMatchObject({
         kind: 'insert',
@@ -477,6 +495,7 @@ describe('PlannerStore', () => {
     it('forgets an edit once the points changed some other way', () => {
       store.addPoint(A);
       store.addPoint(C);
+      onScreen();
       store.addPoint(X);
       expect(store.editBehind(store.points())).not.toBeNull();
       store.closeLoop();

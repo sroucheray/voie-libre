@@ -642,8 +642,8 @@ describe('Planner', () => {
       return event;
     };
     const buttons = (root: HTMLElement) => ({
-      undo: root.querySelector<HTMLButtonElement>('.history__undo')!,
-      redo: root.querySelector<HTMLButtonElement>('.history__redo')!,
+      undo: root.querySelector('.history__undo') as HTMLButtonElement,
+      redo: root.querySelector('.history__redo') as HTMLButtonElement,
     });
 
     it('undoes with Ctrl+Z and redoes with Ctrl+Shift+Z or Ctrl+Y', async () => {
