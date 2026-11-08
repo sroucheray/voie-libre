@@ -108,7 +108,7 @@ export class Planner {
   protected readonly distanceMaxKm = LOOP_DISTANCE_MAX_METERS / 1000;
   protected readonly canClose = computed(
     () =>
-      this.store.points().length >= 2 &&
+      this.store.points().length >= 1 &&
       this.store.points().length < MAX_POINTS &&
       !this.store.isLoop(),
   );

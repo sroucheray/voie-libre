@@ -158,15 +158,24 @@ describe('Planner', () => {
   });
 
   describe('loop', () => {
-    it('offers to close the loop on the start marker from two points on', async () => {
+    it('offers to close the loop on the start marker, even before there is an end', async () => {
       const view = await render();
       view.click(3.087, 45.777);
       TestBed.tick();
-      expect(view.driver.markers[0].closable).toBeUndefined();
+      expect(view.driver.markers[0].closable).toBe('Close the loop');
       view.click(3.249, 45.544);
       TestBed.tick();
       expect(view.driver.markers[0].closable).toBe('Close the loop');
       expect(view.driver.markers[1].closable).toBeUndefined();
+    });
+
+    it('offers only the loop by distance when there is just a start', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.fixture.detectChanges();
+      (view.root.querySelector('.loop') as HTMLButtonElement).click();
+      view.fixture.detectChanges();
+      expect(view.root.querySelectorAll('.loop-choice')).toHaveLength(1);
     });
 
     it('asks how to close the loop, with three choices', async () => {

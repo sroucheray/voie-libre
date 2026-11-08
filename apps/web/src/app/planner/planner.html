@@ -94,7 +94,7 @@
       (keydown.escape)="loopDialogOpen.set(false)"
     >
       <h2 id="loop-dialog-title">{{ 'planner.loop.title' | transloco }}</h2>
-      @if (loopStep() === 'choose') {
+      @if (loopStep() === 'choose') { @if (store.points().length >= 2) {
       <button type="button" class="loop-choice" (click)="closeLoop()">
         <strong>{{ 'planner.loop.back' | transloco }}</strong>
         <span>{{ 'planner.loop.backDescription' | transloco }}</span>
@@ -107,6 +107,7 @@
         <strong>{{ 'planner.loop.avoid' | transloco }}</strong>
         <span>{{ 'planner.loop.avoidDescription' | transloco }}</span>
       </button>
+      }
       <button
         type="button"
         class="loop-choice"
