@@ -12,6 +12,10 @@ export interface Config {
   routeRateLimitMax: number;
   /** Limit for POST /elevation (up to 5000 points per request). */
   elevationRateLimitMax: number;
+  /** Limit for GET /geocode and /geocode/reverse (search as you type needs room). */
+  geocodeRateLimitMax: number;
+  /** Photon server asked for places; the public one by default (only the API calls it). */
+  geocoderUrl: string;
   /** Stricter limit for PUT /p/{id}: anyone can write without an account. */
   shareRateLimitMax: number;
   shareRateLimitWindowMs: number;
@@ -65,6 +69,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       env['ELEVATION_RATE_LIMIT_MAX'],
       30,
     ),
+    geocodeRateLimitMax: integer(
+      'GEOCODE_RATE_LIMIT_MAX',
+      env['GEOCODE_RATE_LIMIT_MAX'],
+      60,
+    ),
+    geocoderUrl: env['GEOCODER_URL'] || 'https://photon.komoot.io',
     shareRateLimitMax: integer(
       'SHARE_RATE_LIMIT_MAX',
       env['SHARE_RATE_LIMIT_MAX'],

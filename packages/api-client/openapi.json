@@ -636,6 +636,293 @@
         }
       }
     },
+    "/geocode": {
+      "get": {
+        "operationId": "searchPlaces",
+        "summary": "Places and addresses matching a text",
+        "tags": ["geocoding"],
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 2,
+              "maxLength": 200,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "q",
+            "required": true
+          },
+          {
+            "schema": {
+              "default": "en",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": ["en"]
+                },
+                {
+                  "type": "string",
+                  "enum": ["fr"]
+                }
+              ]
+            },
+            "in": "query",
+            "name": "lang",
+            "required": false
+          },
+          {
+            "schema": {
+              "minimum": -90,
+              "maximum": 90,
+              "type": "number"
+            },
+            "in": "query",
+            "name": "lat",
+            "required": false
+          },
+          {
+            "schema": {
+              "minimum": -180,
+              "maximum": 180,
+              "type": "number"
+            },
+            "in": "query",
+            "name": "lon",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["places"],
+                  "properties": {
+                    "places": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["label", "lon", "lat"],
+                        "properties": {
+                          "label": {
+                            "type": "string"
+                          },
+                          "lon": {
+                            "type": "number"
+                          },
+                          "lat": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["code", "message"],
+                  "properties": {
+                    "code": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["invalid_request"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["unavailable"]
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["code", "message"],
+                  "properties": {
+                    "code": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["invalid_request"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["unavailable"]
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/geocode/reverse": {
+      "get": {
+        "operationId": "reverseGeocode",
+        "summary": "The address or place nearest to a position",
+        "tags": ["geocoding"],
+        "parameters": [
+          {
+            "schema": {
+              "minimum": -90,
+              "maximum": 90,
+              "type": "number"
+            },
+            "in": "query",
+            "name": "lat",
+            "required": true
+          },
+          {
+            "schema": {
+              "minimum": -180,
+              "maximum": 180,
+              "type": "number"
+            },
+            "in": "query",
+            "name": "lon",
+            "required": true
+          },
+          {
+            "schema": {
+              "default": "en",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": ["en"]
+                },
+                {
+                  "type": "string",
+                  "enum": ["fr"]
+                }
+              ]
+            },
+            "in": "query",
+            "name": "lang",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["place"],
+                  "properties": {
+                    "place": {
+                      "description": "The nearest address or place, null when there is none.",
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["label", "lon", "lat"],
+                          "properties": {
+                            "label": {
+                              "type": "string"
+                            },
+                            "lon": {
+                              "type": "number"
+                            },
+                            "lat": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["code", "message"],
+                  "properties": {
+                    "code": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["invalid_request"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["unavailable"]
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["code", "message"],
+                  "properties": {
+                    "code": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["invalid_request"]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["unavailable"]
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/p/{id}": {
       "put": {
         "operationId": "shareRoute",
@@ -1301,6 +1588,10 @@
     {
       "name": "routing",
       "description": "Route computation"
+    },
+    {
+      "name": "geocoding",
+      "description": "Place and address search"
     },
     {
       "name": "sharing",

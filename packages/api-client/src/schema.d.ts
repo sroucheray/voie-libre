@@ -55,6 +55,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/geocode': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Places and addresses matching a text */
+    get: operations['searchPlaces'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/geocode/reverse': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The address or place nearest to a position */
+    get: operations['reverseGeocode'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/p/{id}': {
     parameters: {
       query?: never;
@@ -312,6 +346,116 @@ export interface operations {
           'application/json': {
             /** @description Ground elevation in meters per point, in order; null where there is no data. */
             elevations: (number | null)[];
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            code: 'invalid_request' | 'unavailable';
+            message: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            code: 'invalid_request' | 'unavailable';
+            message: string;
+          };
+        };
+      };
+    };
+  };
+  searchPlaces: {
+    parameters: {
+      query: {
+        q: string;
+        lang?: 'en' | 'fr';
+        lat?: number;
+        lon?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            places: {
+              label: string;
+              lon: number;
+              lat: number;
+            }[];
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            code: 'invalid_request' | 'unavailable';
+            message: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            code: 'invalid_request' | 'unavailable';
+            message: string;
+          };
+        };
+      };
+    };
+  };
+  reverseGeocode: {
+    parameters: {
+      query: {
+        lat: number;
+        lon: number;
+        lang?: 'en' | 'fr';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @description The nearest address or place, null when there is none. */
+            place: {
+              label: string;
+              lon: number;
+              lat: number;
+            } | null;
           };
         };
       };

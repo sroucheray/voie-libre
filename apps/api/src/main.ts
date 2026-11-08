@@ -5,6 +5,7 @@ import { isAbsolute, join } from 'node:path';
 import { buildApp } from './app/app';
 import { loadConfig } from './app/config';
 import { createDatabase } from './db/database';
+import { PhotonProvider } from './geocoding/photon-provider';
 import { CopernicusElevationProvider } from './relief/copernicus-provider';
 import { BRouterProvider } from './routing/brouter-provider';
 
@@ -36,6 +37,7 @@ async function main() {
     elevation: new CopernicusElevationProvider(
       resolveDirectory(config.reliefDir),
     ),
+    geocoder: new PhotonProvider(config.geocoderUrl),
     logger: { level: config.logLevel },
   });
 
