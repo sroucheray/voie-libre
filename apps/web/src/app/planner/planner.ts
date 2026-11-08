@@ -256,6 +256,10 @@ export class Planner {
     });
 
     effect(() => {
+      this.driver()?.setPreview(this.store.preview());
+    });
+
+    effect(() => {
       const driver = this.driver();
       const routes = this.store.routes();
       const selected = this.store.selectedIndex();
@@ -271,7 +275,7 @@ export class Planner {
       const driver = await this.createDriver(map, {
         onClick: (point) => this.store.addPoint(point),
         onSelectRoute: (index) => this.store.selectRoute(index),
-        onCloseLoop: () => this.loopDialogOpen.set(true),
+        onCloseLoop: () => this.openLoopDialog(),
         onInsertPoint: (hit, to) => this.insertOnRoute(hit, to),
         onContextMenu: (point, screen) =>
           this.menu.set({ point, x: screen.x, y: screen.y }),
@@ -339,6 +343,12 @@ export class Planner {
     this.menu.set(null);
     const fix = this.location.fix();
     if (fix) this.store.addPoint(fix.position);
+  }
+
+  /** With only the start placed there is one way to close the loop: go straight to its length. */
+  protected openLoopDialog(): void {
+    this.loopStep.set(this.store.points().length >= 2 ? 'choose' : 'distance');
+    this.loopDialogOpen.set(true);
   }
 
   protected closeLoop(mode?: LoopMode): void {

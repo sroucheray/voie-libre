@@ -54,6 +54,8 @@ export interface PlannerMapDriver {
   fitRoute(geometry: LngLat3[]): void;
   /** Shows the ghost under the pointer (desktop only), or hides it with `null`. */
   setGhost(ghost: GhostSpec | null): void;
+  /** Draws a route temporarily (a saved route under the pointer) without moving the view; `null` removes it. */
+  setPreview(geometry: LngLat3[] | null): void;
   /** Shows a dot at this position (the point hovered on the profile), or hides it. */
   setCursor(point: LngLat | null): void;
   /**

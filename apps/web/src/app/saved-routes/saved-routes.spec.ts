@@ -324,6 +324,21 @@ describe('Saved routes', () => {
     });
   });
 
+  describe('hovering', () => {
+    it('shows the route on the map while the pointer is on its row, without moving the view', async () => {
+      const view = await renderWithSavedRoute();
+      const fitted = view.driver.fitted.length;
+      const row = view.items()[0];
+      row.dispatchEvent(new MouseEvent('mouseenter'));
+      await view.settle();
+      expect(view.driver.preview?.length).toBeGreaterThan(1);
+      expect(view.driver.fitted).toHaveLength(fitted);
+      row.dispatchEvent(new MouseEvent('mouseleave'));
+      await view.settle();
+      expect(view.driver.preview).toBeNull();
+    });
+  });
+
   describe('opening', () => {
     it('restores the route without calling the API, and shows it on the map', async () => {
       const view = await renderWithSavedRoute();

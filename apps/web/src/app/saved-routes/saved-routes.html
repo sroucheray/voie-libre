@@ -56,7 +56,12 @@
   } @else {
   <ul class="list">
     @for (route of routes(); track route.id) {
-    <li>
+    <li
+      (mouseenter)="preview(route.geometry)"
+      (mouseleave)="preview(null)"
+      (focusin)="preview(route.geometry)"
+      (focusout)="preview(null)"
+    >
       @if (renamingId() === route.id) {
       <form
         class="rename"

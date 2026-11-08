@@ -14,6 +14,8 @@ import { routesToGeoJson } from './route-geojson';
 const SOURCE = 'planner-routes';
 const ALTERNATIVE_LAYER = 'planner-routes-alternative';
 const SELECTED_LAYER = 'planner-routes-selected';
+const PREVIEW_SOURCE = 'planner-preview';
+const PREVIEW_LAYER = 'planner-preview-line';
 const ACCURACY_SOURCE = 'planner-location-accuracy';
 const ACCURACY_FILL_LAYER = 'planner-location-accuracy-fill';
 const ACCURACY_LINE_LAYER = 'planner-location-accuracy-line';
@@ -62,6 +64,7 @@ export async function createMapLibreDriver(
     typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches;
   let destroyed = false;
   let dragging = false;
+  let preview: LngLat3[] | null = null;
 
   /** Adds the source and layers. Idempotent: a new style (language change) removes them. */
   const ensureLayers = () => {
@@ -104,7 +107,28 @@ export async function createMapLibreDriver(
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: { 'line-color': '#1570ef', 'line-width': 6 },
     });
+    map.addSource(PREVIEW_SOURCE, {
+      type: 'geojson',
+      data: routesToGeoJson(preview ? [preview] : [], 0),
+    });
+    map.addLayer({
+      id: PREVIEW_LAYER,
+      type: 'line',
+      source: PREVIEW_SOURCE,
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': '#f79009',
+        'line-width': 5,
+        'line-opacity': 0.9,
+      },
+    });
     pushRoutes();
+  };
+
+  const pushPreview = () => {
+    const source = map.getSource(PREVIEW_SOURCE) as
+      { setData(data: unknown): void } | undefined;
+    source?.setData(routesToGeoJson(preview ? [preview] : [], 0));
   };
 
   const pushRoutes = () => {
@@ -432,6 +456,10 @@ export async function createMapLibreDriver(
       selected = nextSelected;
       pushRoutes();
     },
+    setPreview(geometry: LngLat3[] | null) {
+      preview = geometry;
+      pushPreview();
+    },
     fitRoute(geometry: LngLat3[]) {
       if (geometry.length === 0) return;
       const bounds = new maplibre.LngLatBounds();
@@ -554,6 +582,7 @@ export async function createMapLibreDriver(
       map.off('styledata', onStyleData);
       map.off('click', onClick);
       for (const id of [
+        PREVIEW_LAYER,
         SELECTED_LAYER,
         ALTERNATIVE_LAYER,
         ACCURACY_LINE_LAYER,
@@ -561,7 +590,7 @@ export async function createMapLibreDriver(
       ]) {
         if (map.getLayer(id)) map.removeLayer(id);
       }
-      for (const id of [SOURCE, ACCURACY_SOURCE]) {
+      for (const id of [SOURCE, PREVIEW_SOURCE, ACCURACY_SOURCE]) {
         if (map.getSource(id)) map.removeSource(id);
       }
     },

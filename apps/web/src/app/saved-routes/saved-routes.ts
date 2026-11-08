@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   Injector,
   afterNextRender,
@@ -107,6 +108,8 @@ export class SavedRoutes {
 
   constructor() {
     void this.refresh();
+    // A row can vanish under the pointer (delete, page change): no preview must stay behind.
+    inject(DestroyRef).onDestroy(() => this.planner.preview.set(null));
   }
 
   protected onNameInput(event: Event): void {
@@ -197,6 +200,11 @@ export class SavedRoutes {
 
   protected keepClimbUnknown(): void {
     this.climbPromptId.set(null);
+  }
+
+  /** Shows a route on the map while the pointer or the focus is on its row. */
+  protected preview(geometry: SavedRoute['geometry'] | null): void {
+    this.planner.preview.set(geometry);
   }
 
   protected async open(id: string): Promise<void> {
@@ -370,6 +378,7 @@ export class SavedRoutes {
         // public copy could never be removed. If the server cannot be reached, nothing is deleted.
         if (route?.share) await this.sharing.unshare(route);
         await this.routeStore.delete(id);
+        this.planner.preview.set(null);
         this.routes.update((routes) => routes.filter((r) => r.id !== id));
         this.confirmingId.set(null);
       } finally {

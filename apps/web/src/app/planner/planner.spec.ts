@@ -169,13 +169,27 @@ describe('Planner', () => {
       expect(view.driver.markers[1].closable).toBeUndefined();
     });
 
-    it('offers only the loop by distance when there is just a start', async () => {
+    it('goes straight to the length and climb when there is just a start', async () => {
       const view = await render();
       view.click(3.087, 45.777);
       view.fixture.detectChanges();
       (view.root.querySelector('.loop') as HTMLButtonElement).click();
       view.fixture.detectChanges();
+      expect(
+        view.root.querySelectorAll('.loop-dialog .loop-length input'),
+      ).toHaveLength(2);
+      // The only button left besides "cancel" draws the loop.
       expect(view.root.querySelectorAll('.loop-choice')).toHaveLength(1);
+    });
+
+    it('goes straight to the length when the start marker is clicked', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.driver.handlers.onCloseLoop();
+      view.fixture.detectChanges();
+      expect(
+        view.root.querySelectorAll('.loop-dialog .loop-length input'),
+      ).toHaveLength(2);
     });
 
     it('asks how to close the loop, with three choices', async () => {

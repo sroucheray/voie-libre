@@ -160,6 +160,8 @@ export class PlannerStore {
    * hovering the route on the map. Followed by the dot on the map and the cursor on the profile.
    */
   readonly cursor = signal<number | null>(null);
+  /** A saved route shown for a moment on the map (hovered in the list); never part of the plan. */
+  readonly preview = signal<[number, number, number][] | null>(null);
 
   /** True when the end is on the start. */
   readonly isLoop = computed(() => isLoopOf(this.pointsState()));
@@ -442,6 +444,7 @@ export class PlannerStore {
    * first edit made afterwards computes normally.
    */
   loadSaved(saved: RestorableRoute): void {
+    this.preview.set(null);
     this.undoStack.set([]);
     this.redoStack.set([]);
     this.loopState.set(null);
