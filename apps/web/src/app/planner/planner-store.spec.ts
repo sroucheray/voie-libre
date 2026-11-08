@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import {
+  HISTORY_DEPTH,
   MAX_ALTERNATIVES,
   MAX_POINTS,
   PlannedRoute,
@@ -548,6 +549,192 @@ describe('PlannerStore', () => {
       expect(store.routes()).toEqual([]);
       expect(store.status()).toBe('idle');
       expect(store.alternatives()).toBe(3);
+    });
+  });
+
+  describe('history', () => {
+    /** Two points with their route on screen, as the planner leaves them once computed. */
+    const computed = () => {
+      store.addPoint([3, 45]);
+      store.addPoint([3.2, 45.2]);
+      store.setRoutes([route]);
+    };
+
+    it('starts empty', () => {
+      expect(store.canUndo()).toBe(false);
+      expect(store.canRedo()).toBe(false);
+      store.undo();
+      store.redo();
+      expect(store.points()).toEqual([]);
+    });
+
+    it('undoes and redoes the points', () => {
+      store.addPoint([3, 45]);
+      store.addPoint([3.2, 45.2]);
+      store.undo();
+      expect(store.points()).toEqual([[3, 45]]);
+      store.undo();
+      expect(store.points()).toEqual([]);
+      expect(store.canUndo()).toBe(false);
+      store.redo();
+      store.redo();
+      expect(store.points()).toEqual([
+        [3, 45],
+        [3.2, 45.2],
+      ]);
+      expect(store.canRedo()).toBe(false);
+    });
+
+    it('undoes a move, an insert, a removal and a clear', () => {
+      computed();
+      store.insertPoint(1, [3.1, 45.1]);
+      store.movePoint(1, [3.15, 45.12]);
+      store.removePoint(1);
+      store.clear();
+      store.undo();
+      expect(store.points()).toHaveLength(2);
+      store.undo();
+      expect(store.points()[1]).toEqual([3.15, 45.12]);
+      store.undo();
+      expect(store.points()[1]).toEqual([3.1, 45.1]);
+      store.undo();
+      expect(store.points()).toHaveLength(2);
+    });
+
+    it('undoes the profile, the alternatives and the loop settings', () => {
+      computed();
+      store.setProfile('gravel');
+      store.setAlternatives(2);
+      store.closeLoop({ mode: 'distance', distanceMeters: 30_000 });
+      store.setLoopDistance(40_000);
+      store.setLoopAscent(800);
+      store.undo();
+      expect(store.loop()).toEqual({
+        mode: 'distance',
+        distanceMeters: 40_000,
+      });
+      store.undo();
+      expect(store.loop()).toEqual({
+        mode: 'distance',
+        distanceMeters: 30_000,
+      });
+      store.undo();
+      expect(store.loop()).toBeNull();
+      expect(store.points()).toHaveLength(2);
+      store.undo();
+      expect(store.alternatives()).toBe(1);
+      store.undo();
+      expect(store.profile()).toBe('road');
+    });
+
+    it('does not record a change that changes nothing', () => {
+      store.setProfile('road');
+      store.setAlternatives(store.alternatives());
+      store.clear();
+      expect(store.canUndo()).toBe(false);
+    });
+
+    it('brings back the route that was on screen, without computing', () => {
+      computed();
+      store.setProfile('trail');
+      store.startLoading();
+      store.setRoutes([{ ...route, distanceMeters: 2000 }]);
+      store.undo();
+      expect(store.profile()).toBe('road');
+      expect(store.routes()).toEqual([route]);
+      expect(store.status()).toBe('ready');
+      expect(
+        store.isRestored(
+          inputsSignature(store.points(), 'road', store.alternatives()),
+        ),
+      ).toBe(true);
+      store.redo();
+      expect(store.profile()).toBe('trail');
+      expect(store.routes()[0].distanceMeters).toBe(2000);
+      expect(store.status()).toBe('ready');
+    });
+
+    it('keeps no route for a state that was not up to date with its points', () => {
+      computed();
+      store.addPoint([3.1, 45.1]);
+      // The route on screen is that of the two first points: the third is still to be computed.
+      store.addPoint([3.15, 45.12]);
+      store.undo();
+      expect(store.points()).toHaveLength(3);
+      expect(store.routes()).toEqual([]);
+      expect(store.status()).toBe('idle');
+      expect(store.isRestored(JSON.stringify('x'))).toBe(false);
+    });
+
+    it('empties what can be redone when a new change is made', () => {
+      store.addPoint([3, 45]);
+      store.addPoint([3.2, 45.2]);
+      store.undo();
+      expect(store.canRedo()).toBe(true);
+      store.addPoint([4, 46]);
+      expect(store.canRedo()).toBe(false);
+    });
+
+    it('keeps the last steps only', () => {
+      for (let i = 0; i < HISTORY_DEPTH + 5; i++) {
+        store.setStart([i, i]);
+      }
+      let undone = 0;
+      while (store.canUndo()) {
+        store.undo();
+        undone++;
+      }
+      expect(undone).toBe(HISTORY_DEPTH);
+    });
+
+    it('forgets the history when a saved route is opened', () => {
+      computed();
+      store.setProfile('gravel');
+      store.undo();
+      store.loadSaved({
+        points: [
+          [3, 45],
+          [3.2, 45.2],
+        ],
+        profile: 'road',
+        geometry: route.geometry,
+        distanceMeters: 1000,
+        ascentMeters: 10,
+        durationSeconds: 300,
+      });
+      expect(store.canUndo()).toBe(false);
+      expect(store.canRedo()).toBe(false);
+    });
+
+    it('goes along with the removal toast', () => {
+      computed();
+      store.insertPoint(1, [3.1, 45.1]);
+      store.removePoint(1);
+      expect(store.removed()).not.toBeNull();
+      store.undo();
+      expect(store.removed()).toBeNull();
+      expect(store.points()).toHaveLength(3);
+      store.redo();
+      expect(store.points()).toHaveLength(2);
+      // The toast is not shown again by a redo.
+      expect(store.removed()).toBeNull();
+      store.undo();
+      store.removePoint(1);
+      store.undoRemove();
+      expect(store.points()).toHaveLength(3);
+      store.undo();
+      expect(store.points()).toHaveLength(2);
+    });
+
+    it('lets the next edit be a local one after an undo', () => {
+      computed();
+      store.insertPoint(1, [3.1, 45.1]);
+      store.undo();
+      store.insertPoint(1, [3.12, 45.11]);
+      expect(store.editBehind(store.points())).toMatchObject({
+        kind: 'insert',
+        index: 1,
+      });
     });
   });
 });

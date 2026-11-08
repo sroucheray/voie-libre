@@ -21,6 +21,8 @@ export type Profile = (typeof PROFILES)[number];
 /** The API accepts up to 20 points and 4 alternatives; the planner offers 3. */
 export const MAX_POINTS = 20;
 export const MAX_ALTERNATIVES = 3;
+/** How many changes can be undone. */
+export const HISTORY_DEPTH = 20;
 
 export interface PlannedRoute {
   /** `[longitude, latitude, elevation in meters]` per point. */
@@ -98,6 +100,19 @@ export type PointEdit = (
   | { kind: 'move'; index: number; from: LngLat; point: LngLat }
   | { kind: 'remove'; index: number; point: LngLat }
 ) & { previous: LngLat[]; next: LngLat[] };
+
+/**
+ * The state before a change, to come back to. `routes` is what was on screen then, or `null` when
+ * it was not up to date with the points (still loading, or in error): going back to it computes.
+ */
+interface Snapshot {
+  points: LngLat[];
+  profile: Profile;
+  alternatives: number;
+  loop: LoopMode | null;
+  routes: PlannedRoute[] | null;
+  selected: number;
+}
 
 /** The selected route with what it was computed from: what "Save" stores. */
 export interface SavableRoute extends PlannedRoute {
@@ -197,6 +212,15 @@ export class PlannerStore {
    */
   private restored: string | null = null;
 
+  /** Signature of the inputs the routes on screen were computed from, or null (none, or unknown). */
+  private routesFor: string | null = null;
+
+  private readonly undoStack = signal<Snapshot[]>([]);
+  private readonly redoStack = signal<Snapshot[]>([]);
+  /** True when a change can be undone, and when an undone change can be redone. */
+  readonly canUndo = computed(() => this.undoStack().length > 0);
+  readonly canRedo = computed(() => this.redoStack().length > 0);
+
   /** The selected route, when it is computed and can be saved. */
   readonly savable = computed<SavableRoute | null>(() => {
     const route = this.routesState()[this.selectedState()];
@@ -249,15 +273,15 @@ export class PlannerStore {
     const points = this.pointsState();
     if (points.length < 1) return;
     if (mode?.mode === 'distance') {
+      this.record();
       this.pointsState.set([points[0], points[0]]);
       this.loopState.set(mode);
       return;
     }
     if (points.length < 2) return;
-    if (!isLoopOf(points)) {
-      if (points.length >= MAX_POINTS) return;
-      this.pointsState.set([...points, points[0]]);
-    }
+    if (!isLoopOf(points) && points.length >= MAX_POINTS) return;
+    this.record();
+    if (!isLoopOf(points)) this.pointsState.set([...points, points[0]]);
     this.loopState.set(mode ?? null);
   }
 
@@ -274,6 +298,10 @@ export class PlannerStore {
       Math.max(LOOP_DISTANCE_MIN_METERS, Math.round(distanceMeters)),
     );
     const current = this.loopState();
+    if (current?.mode === 'distance' && current.distanceMeters === clamped) {
+      return;
+    }
+    this.record();
     this.loopState.set({
       mode: 'distance',
       distanceMeters: clamped,
@@ -288,17 +316,19 @@ export class PlannerStore {
     const current = this.loopState();
     if (current?.mode !== 'distance') return;
     const { distanceMeters } = current;
-    if (ascentMeters === null || !Number.isFinite(ascentMeters)) {
-      this.loopState.set({ mode: 'distance', distanceMeters });
-      return;
-    }
+    const next =
+      ascentMeters === null || !Number.isFinite(ascentMeters)
+        ? undefined
+        : Math.min(
+            LOOP_ASCENT_MAX_METERS,
+            Math.max(0, Math.round(ascentMeters)),
+          );
+    if (next === current.ascentMeters) return;
+    this.record();
     this.loopState.set({
       mode: 'distance',
       distanceMeters,
-      ascentMeters: Math.min(
-        LOOP_ASCENT_MAX_METERS,
-        Math.max(0, Math.round(ascentMeters)),
-      ),
+      ...(next === undefined ? {} : { ascentMeters: next }),
     });
   }
 
@@ -324,7 +354,7 @@ export class PlannerStore {
 
   /** Sets the start (the first point): the first one if there is none yet. */
   setStart(point: LngLat): void {
-    if (this.pointsState().length === 0) this.pointsState.set([point]);
+    if (this.pointsState().length === 0) this.setPoints([point]);
     else this.movePoint(0, point);
   }
 
@@ -378,17 +408,22 @@ export class PlannerStore {
   }
 
   clear(): void {
+    if (this.pointsState().length > 0 || this.loopState()) this.record();
     this.removedState.set(null);
     this.loopState.set(null);
     this.pointsState.set([]);
   }
 
   setProfile(profile: Profile): void {
+    if (profile === this.profileState()) return;
+    this.record();
     this.profileState.set(profile);
   }
 
   setAlternatives(count: number): void {
     const clamped = Math.min(MAX_ALTERNATIVES, Math.max(1, Math.round(count)));
+    if (clamped === this.alternativesState()) return;
+    this.record();
     this.alternativesState.set(clamped);
   }
 
@@ -405,8 +440,14 @@ export class PlannerStore {
    * first edit made afterwards computes normally.
    */
   loadSaved(saved: RestorableRoute): void {
+    this.undoStack.set([]);
+    this.redoStack.set([]);
     this.loopState.set(null);
-    this.restored = inputsSignature(saved.points, saved.profile, 1);
+    this.restored = this.routesFor = inputsSignature(
+      saved.points,
+      saved.profile,
+      1,
+    );
     this.pointsState.set(saved.points.map((p) => [p[0], p[1]] as LngLat));
     this.profileState.set(saved.profile);
     this.alternativesState.set(1);
@@ -437,10 +478,89 @@ export class PlannerStore {
       | { kind: 'move'; index: number; from: LngLat; point: LngLat }
       | { kind: 'remove'; index: number; point: LngLat },
   ): void {
+    this.record();
     this.lastEdit = edit
       ? { ...edit, previous: this.pointsState(), next }
       : null;
     this.pointsState.set(next);
+  }
+
+  /** The current state, with the routes only if they are those of the current inputs. */
+  private snapshot(): Snapshot {
+    const upToDate =
+      this.statusState() === 'ready' &&
+      this.routesFor === this.currentSignature();
+    return {
+      points: this.pointsState(),
+      profile: this.profileState(),
+      alternatives: this.alternativesState(),
+      loop: this.loopState(),
+      routes: upToDate ? this.routesState() : null,
+      selected: this.selectedState(),
+    };
+  }
+
+  private currentSignature(): string {
+    return inputsSignature(
+      this.pointsState(),
+      this.profileState(),
+      this.alternativesState(),
+      this.loop(),
+    );
+  }
+
+  /** Remembers the state before a change, which also ends what could be redone. */
+  private record(): void {
+    this.undoStack.update((stack) =>
+      [...stack, this.snapshot()].slice(-HISTORY_DEPTH),
+    );
+    this.redoStack.set([]);
+  }
+
+  /** Goes back to the state before the last change. The route of that state is not computed again. */
+  undo(): void {
+    const stack = this.undoStack();
+    const target = stack[stack.length - 1];
+    if (!target) return;
+    const current = this.snapshot();
+    this.undoStack.set(stack.slice(0, -1));
+    this.redoStack.update((redo) => [...redo, current]);
+    this.restore(target);
+  }
+
+  /** Does again the change that was undone last, until a new change is made. */
+  redo(): void {
+    const stack = this.redoStack();
+    const target = stack[stack.length - 1];
+    if (!target) return;
+    const current = this.snapshot();
+    this.redoStack.set(stack.slice(0, -1));
+    this.undoStack.update((undo) => [...undo, current].slice(-HISTORY_DEPTH));
+    this.restore(target);
+  }
+
+  private restore(snapshot: Snapshot): void {
+    this.lastEdit = null;
+    this.removedState.set(null);
+    this.loopState.set(snapshot.loop);
+    this.pointsState.set(snapshot.points);
+    this.profileState.set(snapshot.profile);
+    this.alternativesState.set(snapshot.alternatives);
+    this.cursor.set(null);
+    this.errorState.set(null);
+    if (snapshot.routes) {
+      // The route was computed from exactly these inputs: no new computation.
+      this.routesState.set(snapshot.routes);
+      this.selectedState.set(snapshot.selected);
+      this.statusState.set('ready');
+      this.routesFor = this.restored = this.currentSignature();
+    } else {
+      // Nothing valid to show: the points compute as for any change (or reset with fewer than two).
+      this.routesState.set([]);
+      this.selectedState.set(0);
+      this.statusState.set('idle');
+      this.routesFor = this.restored = null;
+    }
   }
 
   /**
@@ -459,7 +579,7 @@ export class PlannerStore {
   applyLocalEdit(window: EditWindow, stretch: Stretch): void {
     const route = this.routesState()[this.selectedState()];
     if (!route) return;
-    this.restored = inputsSignature(
+    this.restored = this.routesFor = inputsSignature(
       this.pointsState(),
       this.profileState(),
       1,
@@ -490,6 +610,7 @@ export class PlannerStore {
   }
 
   setRoutes(routes: PlannedRoute[]): void {
+    this.routesFor = this.currentSignature();
     this.routesState.set(routes);
     this.selectedState.set(0);
     this.cursor.set(null);
