@@ -1,9 +1,9 @@
 import type { LngLat } from '../core/map/map-factory';
 import { climbOf } from '../import/gpx-import';
 import { haversine } from './elevation-profile';
-import { nearestVertex } from './insert-point';
+import { nearestVertex, pointVertices } from './insert-point';
 import type { LngLat3 } from './planner-map-driver';
-import type { PlannedRoute } from './planner-store';
+import type { PlannedRoute, PointEdit } from './planner-store';
 
 /** A local edit never replaces less than this much route on each side of the point. */
 export const WINDOW_FLOOR_METERS = 500;
@@ -124,5 +124,103 @@ export function applyStretch(
     ascentMeters,
     durationSeconds:
       route.durationSeconds * keptShare + stretch.durationSeconds,
+  };
+}
+
+/** What to ask the API for after an edit: the points of the short route, and what it replaces. */
+export interface LocalEditPlan {
+  window: EditWindow;
+  points: LngLat[];
+}
+
+/** The vertex between `bounds.min` and `bounds.max` closest to `point`, and how far it is. */
+function nearestInRange(
+  geometry: readonly LngLat3[],
+  point: LngLat,
+  bounds: { min: number; max: number },
+): { index: number; distanceMeters: number } {
+  const cos = Math.cos((point[1] * Math.PI) / 180);
+  let index = bounds.min;
+  let best = Infinity;
+  for (let i = bounds.min; i <= bounds.max; i++) {
+    const dx = (geometry[i][0] - point[0]) * cos;
+    const dy = geometry[i][1] - point[1];
+    const squared = dx * dx + dy * dy;
+    if (squared < best) {
+      best = squared;
+      index = i;
+    }
+  }
+  return {
+    index,
+    distanceMeters: haversine(geometry[index], [point[0], point[1], 0]),
+  };
+}
+
+/**
+ * How to absorb `edit` into the route `geometry` it applies to, by recomputing only a stretch:
+ * the window to replace and the points of the short route that replaces it (from the route before
+ * the window, through the edited point, to the route after it). `null` when the edit has to be
+ * computed in full: a start or an end removed, or fewer than two points left.
+ */
+export function planLocalEdit(
+  geometry: readonly LngLat3[],
+  edit: PointEdit,
+): LocalEditPlan | null {
+  const { previous, next } = edit;
+  if (geometry.length < 2 || previous.length < 2 || next.length < 2) {
+    return null;
+  }
+  const last = geometry.length - 1;
+  const vertices = pointVertices(geometry, previous);
+  const at = (vertex: number): LngLat => [
+    geometry[vertex][0],
+    geometry[vertex][1],
+  ];
+
+  if (edit.kind === 'insert') {
+    if (edit.index < 1 || edit.index > previous.length - 1) return null;
+    const bounds = {
+      min: vertices[edit.index - 1],
+      max: vertices[edit.index],
+    };
+    const { index, distanceMeters } = nearestInRange(
+      geometry,
+      edit.point,
+      bounds,
+    );
+    const window = editWindow(geometry, index, distanceMeters, bounds);
+    return { window, points: [at(window.from), edit.point, at(window.to)] };
+  }
+
+  const { index } = edit;
+  if (index < 0 || index >= previous.length) return null;
+  const isStart = index === 0;
+  const isEnd = index === previous.length - 1;
+  const bounds = {
+    min: isStart ? 0 : vertices[index - 1],
+    max: isEnd ? last : vertices[index + 1],
+  };
+
+  if (edit.kind === 'remove') {
+    // The start or the end going away leaves no point to route through: compute in full.
+    if (isStart || isEnd) return null;
+    const window = editWindow(geometry, vertices[index], 0, bounds);
+    return { window, points: [at(window.from), at(window.to)] };
+  }
+
+  if (previous.length !== next.length) return null;
+  const offset = haversine(
+    [edit.from[0], edit.from[1], 0],
+    [edit.point[0], edit.point[1], 0],
+  );
+  const window = editWindow(geometry, vertices[index], offset, bounds);
+  return {
+    window,
+    points: [
+      ...(isStart ? [] : [at(window.from)]),
+      edit.point,
+      ...(isEnd ? [] : [at(window.to)]),
+    ],
   };
 }

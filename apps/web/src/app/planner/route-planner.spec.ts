@@ -181,6 +181,159 @@ describe('RoutePlanner', () => {
     expect(store.errorCode()).toBe('unavailable');
   });
 
+  describe('editing a route on screen', () => {
+    /** A straight route along the equator, one vertex per 0.001° (about 111 m). */
+    const line = Array.from({ length: 201 }, (_, i) => [i / 1000, 0, 100]);
+    const longRoute = {
+      routes: [
+        {
+          geometry: line,
+          distanceMeters: 22_239,
+          ascentMeters: 10,
+          durationSeconds: 3600,
+        },
+      ],
+    };
+    const detour = {
+      routes: [
+        {
+          geometry: [
+            [0.09, 0, 100],
+            [0.1, 0.002, 100],
+            [0.11, 0, 100],
+          ],
+          distanceMeters: 2_600,
+          ascentMeters: 0,
+          durationSeconds: 400,
+        },
+      ],
+    };
+
+    beforeEach(async () => {
+      respond = async () => json(longRoute);
+      store.addPoint([0, 0]);
+      store.addPoint([0.2, 0]);
+      await settle();
+      expect(requests).toHaveLength(1);
+      respond = async () => json(detour);
+    });
+
+    it('recomputes only the stretch around a point added beside the route', async () => {
+      store.addPoint([0.1, 0.002]);
+      await settle();
+      expect(requests).toHaveLength(2);
+      const body = requests[1].body as {
+        points: { lon: number; lat: number }[];
+        alternatives: number;
+      };
+      expect(body.alternatives).toBe(1);
+      expect(body.points).toHaveLength(3);
+      expect(body.points[1]).toEqual({ lon: 0.1, lat: 0.002 });
+      // The other two points are vertices of the route, on both sides of the new one.
+      expect(body.points[0].lon).toBeLessThan(0.1);
+      expect(body.points[2].lon).toBeGreaterThan(0.1);
+      expect(body.points[0].lat).toBe(0);
+      expect(body.points[2].lat).toBe(0);
+
+      const [route] = store.routes();
+      expect(store.routes()).toHaveLength(1);
+      expect(route.geometry[0]).toEqual(line[0]);
+      expect(route.geometry.at(-1)).toEqual(line[200]);
+      expect(route.geometry).toContainEqual([0.1, 0.002, 100]);
+      // Far from the edit, the route is exactly what it was.
+      expect(route.geometry.slice(0, 50)).toEqual(line.slice(0, 50));
+      expect(route.geometry.slice(-50)).toEqual(line.slice(-50));
+      expect(store.status()).toBe('ready');
+    });
+
+    it('does not compute again once the stretch is in place', async () => {
+      store.addPoint([0.1, 0.002]);
+      await settle();
+      await vi.advanceTimersByTimeAsync(5 * ROUTE_DEBOUNCE_MS);
+      expect(requests).toHaveLength(2);
+      expect(store.alternatives()).toBe(1);
+    });
+
+    it('recomputes a moved waypoint locally and a removed one between its neighbours', async () => {
+      store.addPoint([0.1, 0.002]);
+      await settle();
+      store.movePoint(1, [0.1, 0.003]);
+      await settle();
+      expect(requests).toHaveLength(3);
+      expect((requests[2].body as { points: unknown[] }).points).toHaveLength(
+        3,
+      );
+      store.removePoint(1);
+      await settle();
+      expect(requests).toHaveLength(4);
+      expect((requests[3].body as { points: unknown[] }).points).toHaveLength(
+        2,
+      );
+    });
+
+    it('computes everything when the profile changes after an edit', async () => {
+      store.addPoint([0.1, 0.002]);
+      await settle();
+      respond = async () => json(longRoute);
+      store.setProfile('gravel');
+      await settle();
+      expect(requests).toHaveLength(3);
+      expect((requests[2].body as { points: unknown[] }).points).toHaveLength(
+        3,
+      );
+      expect(requests[2].body).toMatchObject({ profile: 'gravel' });
+      expect(store.routes()[0].geometry).toHaveLength(201);
+    });
+
+    it('computes everything when the route is not up to date with the points', async () => {
+      store.addPoint([0.1, 0.002]);
+      TestBed.tick();
+      expect(store.status()).toBe('loading');
+      store.addPoint([0.15, 0.002]);
+      await settle();
+      expect(requests).toHaveLength(2);
+      expect((requests[1].body as { points: unknown[] }).points).toHaveLength(
+        4,
+      );
+    });
+
+    it('computes everything when the end is removed', async () => {
+      store.addPoint([0.1, 0.002]);
+      await settle();
+      store.removePoint(2);
+      await settle();
+      expect(requests).toHaveLength(3);
+      expect((requests[2].body as { points: unknown[] }).points).toEqual([
+        { lon: 0, lat: 0 },
+        { lon: 0.1, lat: 0.002 },
+      ]);
+    });
+
+    it('keeps the route on screen when the stretch cannot be computed', async () => {
+      respond = async () => json({ code: 'no_route', message: 'x' }, 422);
+      store.addPoint([0.1, 0.002]);
+      await settle();
+      expect(store.status()).toBe('error');
+      expect(store.errorCode()).toBe('no_route');
+      expect(store.routes()).toHaveLength(1);
+      expect(store.routes()[0].geometry).toHaveLength(201);
+    });
+
+    it('computes everything on the next change after a failed stretch', async () => {
+      respond = async () => json({ code: 'no_route', message: 'x' }, 422);
+      store.addPoint([0.1, 0.002]);
+      await settle();
+      respond = async () => json(longRoute);
+      store.addPoint([0.15, 0.002]);
+      await settle();
+      expect(requests).toHaveLength(3);
+      expect((requests[2].body as { points: unknown[] }).points).toHaveLength(
+        4,
+      );
+      expect(store.status()).toBe('ready');
+    });
+  });
+
   describe('opening a saved route', () => {
     const saved: SavedRoute = {
       schemaVersion: SAVED_ROUTE_SCHEMA_VERSION,
@@ -235,15 +388,16 @@ describe('RoutePlanner', () => {
       expect(requests.at(-1)?.signal.aborted ?? true).toBe(true);
     });
 
-    it('computes normally on the first change made after opening', async () => {
+    it('computes only a stretch on the first change made after opening', async () => {
       store.loadSaved(saved);
       await settle();
       store.movePoint(1, [3.3, 45.5]);
       await settle();
       expect(requests).toHaveLength(1);
+      // The moved end is routed from the saved route's vertex just before it, not from the start.
       expect(requests[0].body).toEqual({
         points: [
-          { lon: 3.087, lat: 45.777 },
+          { lon: 3.15, lat: 45.65 },
           { lon: 3.3, lat: 45.5 },
         ],
         profile: 'trail',

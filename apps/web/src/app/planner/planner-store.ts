@@ -476,6 +476,15 @@ export class PlannerStore {
     this.statusState.set('error');
   }
 
+  /**
+   * A local edit could not be computed: the route stays on screen as it was, with the error. It is
+   * no longer the route of the points, so the next change computes in full.
+   */
+  setLocalEditError(code: PlannerErrorCode): void {
+    this.errorState.set(code);
+    this.statusState.set('error');
+  }
+
   /** Nothing to compute (fewer than two points). */
   resetResult(): void {
     this.routesState.set([]);

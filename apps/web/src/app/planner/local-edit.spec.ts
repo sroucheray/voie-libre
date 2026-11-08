@@ -4,11 +4,13 @@ import {
   applyStretch,
   cumulativeDistances,
   editWindow,
+  planLocalEdit,
   projectOnRoute,
+  type LocalEditPlan,
   spliceGeometry,
 } from './local-edit';
 import type { LngLat3 } from './planner-map-driver';
-import type { PlannedRoute } from './planner-store';
+import type { PlannedRoute, PointEdit } from './planner-store';
 
 /** A straight route along the equator, one vertex per 0.001° (about 111 m): 201 vertices. */
 const line: LngLat3[] = Array.from({ length: 201 }, (_, i) => [i / 1000, 0, 0]);
@@ -141,5 +143,142 @@ describe('applyStretch', () => {
       stretch,
     );
     expect(edited.ascentMeters).toBeNull();
+  });
+});
+
+describe('planLocalEdit', () => {
+  const route: [number, number][] = [
+    [0, 0],
+    [0.1, 0],
+    [0.2, 0],
+  ];
+  const edit = (
+    partial:
+      | { kind: 'insert'; index: number; point: [number, number] }
+      | {
+          kind: 'move';
+          index: number;
+          from: [number, number];
+          point: [number, number];
+        }
+      | { kind: 'remove'; index: number; point: [number, number] },
+    next: [number, number][],
+  ): PointEdit => ({ ...partial, previous: route, next });
+  const vertex = (i: number): [number, number] => [line[i][0], line[i][1]];
+
+  it('routes an inserted point from the route before the window to the route after it', () => {
+    const point: [number, number] = [0.05, 0.004];
+    const plan = planLocalEdit(
+      line,
+      edit({ kind: 'insert', index: 1, point }, [
+        route[0],
+        point,
+        ...route.slice(1),
+      ]),
+    );
+    expect(plan).not.toBeNull();
+    const { window, points } = plan as LocalEditPlan;
+    // Beside the route by about 445 m: 890 m on each side of vertex 50.
+    expect(window.from).toBeLessThan(50);
+    expect(window.to).toBeGreaterThan(50);
+    expect(points).toEqual([vertex(window.from), point, vertex(window.to)]);
+  });
+
+  it('stays between the neighbouring points when the point lands in the second half', () => {
+    const point: [number, number] = [0.15, 0.001];
+    const plan = planLocalEdit(
+      line,
+      edit({ kind: 'insert', index: 2, point }, [
+        route[0],
+        route[1],
+        point,
+        route[2],
+      ]),
+    ) as LocalEditPlan;
+    expect(plan.window.from).toBeGreaterThanOrEqual(100);
+    expect(plan.window.to).toBeLessThanOrEqual(200);
+  });
+
+  it('reroutes the stretch around a moved waypoint', () => {
+    const point: [number, number] = [0.1, 0.003];
+    const plan = planLocalEdit(
+      line,
+      edit({ kind: 'move', index: 1, from: route[1], point }, [
+        route[0],
+        point,
+        route[2],
+      ]),
+    ) as LocalEditPlan;
+    expect(plan.points).toHaveLength(3);
+    expect(plan.points[1]).toEqual(point);
+    expect(plan.window.from).toBeLessThan(100);
+    expect(plan.window.to).toBeGreaterThan(100);
+  });
+
+  it('replaces the route up to a moved start, and from a moved end', () => {
+    const start: [number, number] = [0.002, 0.001];
+    const moved = planLocalEdit(
+      line,
+      edit({ kind: 'move', index: 0, from: route[0], point: start }, [
+        start,
+        route[1],
+        route[2],
+      ]),
+    ) as LocalEditPlan;
+    expect(moved.window.from).toBe(0);
+    expect(moved.points).toHaveLength(2);
+    expect(moved.points[0]).toEqual(start);
+
+    const end: [number, number] = [0.198, 0.001];
+    const endMoved = planLocalEdit(
+      line,
+      edit({ kind: 'move', index: 2, from: route[2], point: end }, [
+        route[0],
+        route[1],
+        end,
+      ]),
+    ) as LocalEditPlan;
+    expect(endMoved.window.to).toBe(200);
+    expect(endMoved.points).toHaveLength(2);
+    expect(endMoved.points[1]).toEqual(end);
+  });
+
+  it('routes between the two sides of a removed waypoint', () => {
+    const plan = planLocalEdit(
+      line,
+      edit({ kind: 'remove', index: 1, point: route[1] }, [route[0], route[2]]),
+    ) as LocalEditPlan;
+    expect(plan.points).toEqual([
+      vertex(plan.window.from),
+      vertex(plan.window.to),
+    ]);
+    expect(plan.window.to - plan.window.from).toBe(10);
+  });
+
+  it('asks for a full computation when a start or an end is removed, or little is left', () => {
+    expect(
+      planLocalEdit(
+        line,
+        edit({ kind: 'remove', index: 0, point: route[0] }, [
+          route[1],
+          route[2],
+        ]),
+      ),
+    ).toBeNull();
+    expect(
+      planLocalEdit(
+        line,
+        edit({ kind: 'remove', index: 2, point: route[2] }, [
+          route[0],
+          route[1],
+        ]),
+      ),
+    ).toBeNull();
+    expect(
+      planLocalEdit(
+        line,
+        edit({ kind: 'remove', index: 1, point: route[1] }, [route[0]]),
+      ),
+    ).toBeNull();
   });
 });
