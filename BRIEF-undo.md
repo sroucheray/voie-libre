@@ -45,4 +45,5 @@ Persisting the history, undoing the selection of another alternative, undoing a 
 ## Open points
 
 - A change made while a recompute is still in flight (two quick edits) records a snapshot without a route for the second one: undoing to it computes. Acceptable for a first version.
+- Not checked in the browser: touch use of the buttons, Cmd+Z on macOS.
 - `Ctrl+Z` also happens in the elevation panel and on the map: no special case, the focus rule above is the only one.

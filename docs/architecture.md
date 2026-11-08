@@ -67,6 +67,8 @@ BRouter calcule tous les itinéraires derrière une interface « fournisseur de 
 
 **Retouches locales :** ajouter, déplacer ou supprimer un point d'un itinéraire déjà calculé ne recalcule qu'un court tronçon autour du point (au moins 500 m de chaque côté, ou deux fois la distance du point à la route), avec un seul appel de trois points. Le reste de la géométrie, une boucle par exemple, est conservé tel quel. Tout est côté web (`planner/local-edit.ts`), sans changement de l'API : changer de profil ou d'alternatives recalcule tout.
 
+**Annuler et rétablir :** le store web garde les 20 derniers états (points, profil, alternatives, mode de boucle, et le tracé affiché à ce moment-là). `Ctrl+Z` et deux boutons du panneau reviennent à l'état précédent sans aucun appel à l'API ; `Ctrl+Maj+Z` ou `Ctrl+Y` le rétablissent. Ouvrir un parcours enregistré ou importer un GPX repart d'un historique vide.
+
 **Alternatives :** OpenRouteService (clé d'API et quotas) et Valhalla (profils vélo moins fins) restent des plans de repli. GraphHopper peut aussi tourner sur Android si le calcul sur appareil devient un objectif.
 
 ## Données
