@@ -8,7 +8,11 @@ Brief: [BRIEF-local-edits.md](BRIEF-local-edits.md). Each step ends with lint, b
 4. **All routes.** Loop modes (`distance`, `avoid_outbound`, back to the start), A to B, saved and shared routes opened through `loadSaved`, imported GPX. The loop mode is dropped on the first edit but the geometry stays. Check: `planner.spec.ts` for each kind, loading still makes no call.
 5. **Visual check and docs.** Chromium on a 30 km loop by distance: a point on the loop, a point beside it, move and remove, the rest does not move. Update `CLAUDE.md` (planner section) and `docs/architecture.md`; full test run once.
 
+## Done
+
+All five steps done. Step 5 found, in Chromium, that removing the waypoint of a detour asked BRouter for a route from a place to itself (502): fixed in `planLocalEdit`.
+
 ## Open points
 
-- Window factor and floor to tune after step 5.
-- A point added very near the start or end of a route: the window is clamped, so it may replace most of a short route; check in step 5.
+- Window factor (2 ×) and floor (500 m) kept after the check in Chromium: one loop of 30 km and one detour, not tuned further.
+- A point added very near the start or end of a route: the window is clamped, so it may replace most of a short route; not checked in the browser.

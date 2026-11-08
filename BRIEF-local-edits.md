@@ -40,5 +40,7 @@ Hidden anchors or visible handles along the route, per-segment profiles, local e
 
 ## Open points
 
+- Two edits made before the first answer arrives compute the whole route (the route on screen is not up to date with the points yet).
+- Removing the waypoint at the tip of a spur routes between a place 500 m before and after it: the result can be a little longer than the route before the detour (28.7 km against 27.9 km on the 30 km loop checked in Chromium).
 - The window factor (`2 ×`) and floor (`500 m`) are first guesses; adjust after the visual check.
 - Dropping the other alternatives on the first edit is an assumption; say so if you would rather keep them hidden and restore them.

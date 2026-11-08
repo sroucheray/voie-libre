@@ -271,6 +271,51 @@ describe('RoutePlanner', () => {
       );
     });
 
+    it('routes between both sides of a spur when the waypoint at its tip is removed', async () => {
+      // The answer goes from a vertex of the route to the point and back, then on to the other
+      // vertex, like BRouter does for a point beside the road.
+      respond = async () =>
+        json({
+          routes: [
+            {
+              geometry: [
+                [0.095, 0, 100],
+                [0.1, 0.002, 100],
+                [0.095, 0, 100],
+                [0.105, 0, 100],
+              ],
+              distanceMeters: 2_300,
+              ascentMeters: 0,
+              durationSeconds: 300,
+            },
+          ],
+        });
+      store.addPoint([0.1, 0.002]);
+      await settle();
+      expect(requests).toHaveLength(2);
+      respond = async () =>
+        json({
+          routes: [
+            {
+              geometry: line.slice(90, 111),
+              distanceMeters: 2_200,
+              ascentMeters: 0,
+              durationSeconds: 300,
+            },
+          ],
+        });
+      store.removePoint(1);
+      await settle();
+      expect(requests).toHaveLength(3);
+      const points = (requests[2].body as { points: { lon: number }[] }).points;
+      // Never from a place to itself: that is not a route.
+      expect(points).toHaveLength(2);
+      expect(points[0]).not.toEqual(points[1]);
+      expect(store.status()).toBe('ready');
+      const [route] = store.routes();
+      expect(route.geometry).not.toContainEqual([0.1, 0.002, 100]);
+    });
+
     it('computes everything when the profile changes after an edit', async () => {
       store.addPoint([0.1, 0.002]);
       await settle();

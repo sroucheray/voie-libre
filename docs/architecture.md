@@ -65,6 +65,8 @@ BRouter calcule tous les itinéraires derrière une interface « fournisseur de 
 - Polygone maison : 3 à 4 points autour du départ, reliés par BRouter, avec une graine pour varier les propositions.
 - GraphHopper `round_trip` avec `round_trip.distance` et `seed`, qui demande de désactiver les contraction hierarchies.
 
+**Retouches locales :** ajouter, déplacer ou supprimer un point d'un itinéraire déjà calculé ne recalcule qu'un court tronçon autour du point (au moins 500 m de chaque côté, ou deux fois la distance du point à la route), avec un seul appel de trois points. Le reste de la géométrie, une boucle par exemple, est conservé tel quel. Tout est côté web (`planner/local-edit.ts`), sans changement de l'API : changer de profil ou d'alternatives recalcule tout.
+
 **Alternatives :** OpenRouteService (clé d'API et quotas) et Valhalla (profils vélo moins fins) restent des plans de repli. GraphHopper peut aussi tourner sur Android si le calcul sur appareil devient un objectif.
 
 ## Données

@@ -106,6 +106,10 @@ export class RoutePlanner {
     profile: Profile,
     signal: AbortSignal,
   ): Promise<void> {
+    if (plan.direct) {
+      this.store.applyLocalEdit(plan.window, plan.direct);
+      return;
+    }
     try {
       const { data, error, response } = await this.client.POST('/route', {
         body: {
