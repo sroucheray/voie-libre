@@ -127,6 +127,18 @@
           (input)="loopKm.set(+$any($event.target).value)"
         />
       </label>
+      <label class="loop-length">
+        {{ 'planner.loop.ascentLabel' | transloco }}
+        <input
+          type="number"
+          min="0"
+          [max]="ascentMax"
+          step="100"
+          [placeholder]="'planner.loop.ascentAny' | transloco"
+          [value]="loopAscent()"
+          (input)="loopAscent.set($any($event.target).value)"
+        />
+      </label>
       <button type="button" class="loop-choice" (click)="drawLoopByDistance()">
         <strong>{{ 'planner.loop.draw' | transloco }}</strong>
       </button>
@@ -204,6 +216,18 @@
         step="1"
         [value]="loop.distanceMeters / 1000"
         (change)="setLoopKm($any($event.target).value)"
+      />
+    </label>
+    <label class="loop-length">
+      {{ 'planner.loop.ascent' | transloco }}
+      <input
+        type="number"
+        min="0"
+        [max]="ascentMax"
+        step="100"
+        [placeholder]="'planner.loop.ascentAny' | transloco"
+        [value]="loop.ascentMeters ?? ''"
+        (change)="setLoopAscent($any($event.target).value)"
       />
     </label>
     } } @if (canClose()) {

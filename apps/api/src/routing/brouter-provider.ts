@@ -25,6 +25,13 @@ const ROUND_TRIP_RATIO = 5.5;
 const ROUND_TRIP_TRIES = 3;
 /** Close enough to the asked length: 10%. */
 const ROUND_TRIP_TOLERANCE = 0.1;
+/** Directions tried (45° apart) when a climb is asked for: more candidates to choose from. */
+const ASCENT_DIRECTIONS = 8;
+
+/** Distance from the asked climb, as a fraction of it (of 100 m at least, so 0 can be asked). */
+function ascentError(ascent: number | null, target: number): number {
+  return Math.abs((ascent ?? 0) - target) / Math.max(target, 100);
+}
 
 type FetchLike = (url: string) => Promise<Response>;
 
@@ -114,6 +121,7 @@ export class BRouterProvider implements RoutingProvider {
     avoidZones: AvoidZone[],
     alternatives: number,
     distanceMeters: number,
+    ascentMeters?: number,
   ): Promise<RouteResult[]> {
     const brouterProfile = BROUTER_PROFILES[profile];
     if (!brouterProfile) {
@@ -129,17 +137,30 @@ export class BRouterProvider implements RoutingProvider {
         `alternatives must be an integer between 1 and ${MAX_ALTERNATIVES}`,
       );
     }
-    return Promise.all(
-      Array.from({ length: alternatives }, (_, index) =>
+    // The engine cannot aim at a climb: with a target, loops head in more directions and the ones
+    // whose climb comes closest are kept.
+    const directions =
+      ascentMeters === undefined ? alternatives : ASCENT_DIRECTIONS;
+    const loops = await Promise.all(
+      Array.from({ length: directions }, (_, index) =>
         this.roundTripToward(
           start,
           brouterProfile,
           avoidZones,
-          Math.round((index * 360) / alternatives),
+          Math.round((index * 360) / directions),
           distanceMeters,
         ),
       ),
     );
+    if (ascentMeters === undefined) return loops;
+    return loops
+      .map((route) => ({
+        route,
+        error: ascentError(route.ascentMeters, ascentMeters),
+      }))
+      .sort((a, b) => a.error - b.error)
+      .slice(0, alternatives)
+      .map(({ route }) => route);
   }
 
   private async roundTripToward(

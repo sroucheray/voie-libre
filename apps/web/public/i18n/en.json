@@ -85,7 +85,10 @@
       "cancel": "Cancel",
       "distanceLabel": "Length (km)",
       "draw": "Draw the loop",
-      "length": "Loop length (km)"
+      "length": "Loop length (km)",
+      "ascentLabel": "Climb (m, optional)",
+      "ascent": "Loop climb (m, optional)",
+      "ascentAny": "Any"
     },
     "menu": {
       "label": "Place on the map",

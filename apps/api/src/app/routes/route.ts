@@ -37,6 +37,7 @@ const AvoidZone = Type.Union([
 
 const MIN_LOOP_METERS = 2_000;
 const MAX_LOOP_METERS = 200_000;
+const MAX_LOOP_ASCENT_METERS = 10_000;
 
 const LoopRequest = Type.Union(
   [
@@ -49,11 +50,19 @@ const LoopRequest = Type.Union(
         minimum: MIN_LOOP_METERS,
         maximum: MAX_LOOP_METERS,
       }),
+      ascentMeters: Type.Optional(
+        Type.Number({
+          minimum: 0,
+          maximum: MAX_LOOP_ASCENT_METERS,
+          description:
+            'Climb the loop should come close to. Approached by trying several directions, not guaranteed.',
+        }),
+      ),
     }),
   ],
   {
     description:
-      'Closes the route. `avoid_outbound`: points go out and end on the start, the way back avoids the way out where it can. `distance`: points are the start twice, the engine draws a loop of about this length (alternatives head in different directions).',
+      'Closes the route. `avoid_outbound`: points go out and end on the start, the way back avoids the way out where it can. `distance`: points are the start twice, the engine draws a loop of about this length, and of about `ascentMeters` of climb if given (alternatives head in different directions).',
   },
 );
 

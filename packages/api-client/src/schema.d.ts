@@ -192,7 +192,7 @@ export interface operations {
                 }[];
               }
           )[];
-          /** @description Closes the route. `avoid_outbound`: points go out and end on the start, the way back avoids the way out where it can. `distance`: points are the start twice, the engine draws a loop of about this length (alternatives head in different directions). */
+          /** @description Closes the route. `avoid_outbound`: points go out and end on the start, the way back avoids the way out where it can. `distance`: points are the start twice, the engine draws a loop of about this length, and of about `ascentMeters` of climb if given (alternatives head in different directions). */
           loop?:
             | {
                 /** @enum {string} */
@@ -202,6 +202,8 @@ export interface operations {
                 /** @enum {string} */
                 mode: 'distance';
                 distanceMeters: number;
+                /** @description Climb the loop should come close to. Approached by trying several directions, not guaranteed. */
+                ascentMeters?: number;
               };
           /**
            * @description Number of routes to return; the first is the best.

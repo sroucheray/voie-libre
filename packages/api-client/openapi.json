@@ -258,7 +258,7 @@
                     }
                   },
                   "loop": {
-                    "description": "Closes the route. `avoid_outbound`: points go out and end on the start, the way back avoids the way out where it can. `distance`: points are the start twice, the engine draws a loop of about this length (alternatives head in different directions).",
+                    "description": "Closes the route. `avoid_outbound`: points go out and end on the start, the way back avoids the way out where it can. `distance`: points are the start twice, the engine draws a loop of about this length, and of about `ascentMeters` of climb if given (alternatives head in different directions).",
                     "anyOf": [
                       {
                         "type": "object",
@@ -281,6 +281,12 @@
                           "distanceMeters": {
                             "minimum": 2000,
                             "maximum": 200000,
+                            "type": "number"
+                          },
+                          "ascentMeters": {
+                            "minimum": 0,
+                            "maximum": 10000,
+                            "description": "Climb the loop should come close to. Approached by trying several directions, not guaranteed.",
                             "type": "number"
                           }
                         }

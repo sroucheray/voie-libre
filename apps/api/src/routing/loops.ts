@@ -120,7 +120,8 @@ export async function routeLoop(
   avoidZones: AvoidZone[],
   alternatives: number,
   loop:
-    { mode: 'avoid_outbound' } | { mode: 'distance'; distanceMeters: number },
+    | { mode: 'avoid_outbound' }
+    | { mode: 'distance'; distanceMeters: number; ascentMeters?: number },
 ): Promise<RouteResult[]> {
   if (loop.mode === 'distance') {
     if (points.length !== 2 || !sameSpot(points[0], points[1])) {
@@ -141,6 +142,7 @@ export async function routeLoop(
       avoidZones,
       alternatives,
       loop.distanceMeters,
+      loop.ascentMeters,
     );
   }
 

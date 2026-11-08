@@ -87,7 +87,14 @@ describe('POST /route', () => {
         loop: { mode: 'distance', distanceMeters: 30000 },
       });
       expect(response.statusCode).toBe(200);
-      expect(roundTrip).toHaveBeenCalledWith(A, 'gravel', [], 2, 30000);
+      expect(roundTrip).toHaveBeenCalledWith(
+        A,
+        'gravel',
+        [],
+        2,
+        30000,
+        undefined,
+      );
     });
 
     it.each([

@@ -58,14 +58,17 @@ export function pointRole(index: number, total: number): PointRole {
 /**
  * How a loop is closed, beyond "back to the start" (no mode). Sent to the API with the points:
  * - `avoid_outbound`: the points go out and end on the start; the way back avoids the way out.
- * - `distance`: the points are the start twice; the loop has about this length.
+ * - `distance`: the points are the start twice; the loop has about this length and, if asked,
+ *   about this climb (approached by trying several directions).
  */
 export type LoopMode =
-  { mode: 'avoid_outbound' } | { mode: 'distance'; distanceMeters: number };
+  | { mode: 'avoid_outbound' }
+  | { mode: 'distance'; distanceMeters: number; ascentMeters?: number };
 
 export const LOOP_DISTANCE_MIN_METERS = 2_000;
 export const LOOP_DISTANCE_MAX_METERS = 200_000;
 export const LOOP_DISTANCE_DEFAULT_METERS = 30_000;
+export const LOOP_ASCENT_MAX_METERS = 10_000;
 
 /** A route of two points or more whose end is exactly on its start. */
 export function isLoopOf(points: readonly LngLat[]): boolean {
@@ -270,7 +273,33 @@ export class PlannerStore {
       LOOP_DISTANCE_MAX_METERS,
       Math.max(LOOP_DISTANCE_MIN_METERS, Math.round(distanceMeters)),
     );
-    this.loopState.set({ mode: 'distance', distanceMeters: clamped });
+    const current = this.loopState();
+    this.loopState.set({
+      mode: 'distance',
+      distanceMeters: clamped,
+      ...(current?.mode === 'distance' && current.ascentMeters !== undefined
+        ? { ascentMeters: current.ascentMeters }
+        : {}),
+    });
+  }
+
+  /** Sets the climb a loop by distance should come close to; `null` (or NaN) asks for none. */
+  setLoopAscent(ascentMeters: number | null): void {
+    const current = this.loopState();
+    if (current?.mode !== 'distance') return;
+    const { distanceMeters } = current;
+    if (ascentMeters === null || !Number.isFinite(ascentMeters)) {
+      this.loopState.set({ mode: 'distance', distanceMeters });
+      return;
+    }
+    this.loopState.set({
+      mode: 'distance',
+      distanceMeters,
+      ascentMeters: Math.min(
+        LOOP_ASCENT_MAX_METERS,
+        Math.max(0, Math.round(ascentMeters)),
+      ),
+    });
   }
 
   /** The start and the end of a loop move together, so that it stays closed. */

@@ -85,7 +85,10 @@
       "cancel": "Annuler",
       "distanceLabel": "Longueur (km)",
       "draw": "Tracer la boucle",
-      "length": "Longueur de la boucle (km)"
+      "length": "Longueur de la boucle (km)",
+      "ascentLabel": "Dénivelé (m, facultatif)",
+      "ascent": "Dénivelé de la boucle (m, facultatif)",
+      "ascentAny": "Libre"
     },
     "menu": {
       "label": "Placer sur la carte",

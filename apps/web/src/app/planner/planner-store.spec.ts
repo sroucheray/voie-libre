@@ -128,6 +128,31 @@ describe('PlannerStore', () => {
       expect(store.loop()).toBeNull();
     });
 
+    it('keeps a climb with the loop, within limits, and drops it when emptied', () => {
+      store.addPoint([1, 1]);
+      store.addPoint([2, 2]);
+      store.closeLoop({ mode: 'distance', distanceMeters: 40_000 });
+      store.setLoopAscent(800);
+      expect(store.loop()).toEqual({
+        mode: 'distance',
+        distanceMeters: 40_000,
+        ascentMeters: 800,
+      });
+      store.setLoopDistance(20_000);
+      expect(store.loop()).toEqual({
+        mode: 'distance',
+        distanceMeters: 20_000,
+        ascentMeters: 800,
+      });
+      store.setLoopAscent(99_999);
+      expect(store.loop()).toMatchObject({ ascentMeters: 10_000 });
+      store.setLoopAscent(null);
+      expect(store.loop()).toEqual({
+        mode: 'distance',
+        distanceMeters: 20_000,
+      });
+    });
+
     it('forgets the mode when everything is cleared', () => {
       store.addPoint([1, 1]);
       store.addPoint([2, 2]);

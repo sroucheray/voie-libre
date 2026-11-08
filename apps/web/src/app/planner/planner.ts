@@ -22,6 +22,7 @@ import {
 } from './planner-map-driver';
 import {
   MAX_ALTERNATIVES,
+  LOOP_ASCENT_MAX_METERS,
   LOOP_DISTANCE_DEFAULT_METERS,
   LOOP_DISTANCE_MAX_METERS,
   LOOP_DISTANCE_MIN_METERS,
@@ -100,6 +101,9 @@ export class Planner {
   protected readonly loopDialogOpen = signal(false);
   protected readonly loopStep = signal<'choose' | 'distance'>('choose');
   protected readonly loopKm = signal(LOOP_DISTANCE_DEFAULT_METERS / 1000);
+  /** Climb asked in the dialog, in meters; empty text means none. */
+  protected readonly loopAscent = signal('');
+  protected readonly ascentMax = LOOP_ASCENT_MAX_METERS;
   protected readonly distanceMinKm = LOOP_DISTANCE_MIN_METERS / 1000;
   protected readonly distanceMaxKm = LOOP_DISTANCE_MAX_METERS / 1000;
   protected readonly canClose = computed(
@@ -338,17 +342,30 @@ export class Planner {
     const meters = Number.isFinite(km)
       ? Math.round(km * 1000)
       : LOOP_DISTANCE_DEFAULT_METERS;
+    const ascent = this.loopAscent().trim();
     this.closeLoop({
       mode: 'distance',
       distanceMeters: Math.min(
         LOOP_DISTANCE_MAX_METERS,
         Math.max(LOOP_DISTANCE_MIN_METERS, meters),
       ),
+      ...(ascent !== '' && Number.isFinite(Number(ascent))
+        ? {
+            ascentMeters: Math.min(
+              LOOP_ASCENT_MAX_METERS,
+              Math.max(0, Math.round(Number(ascent))),
+            ),
+          }
+        : {}),
     });
   }
 
   protected setLoopKm(value: string): void {
     this.store.setLoopDistance(Number(value) * 1000);
+  }
+
+  protected setLoopAscent(value: string): void {
+    this.store.setLoopAscent(value.trim() === '' ? null : Number(value));
   }
 
   protected selectProfile(profile: Profile): void {

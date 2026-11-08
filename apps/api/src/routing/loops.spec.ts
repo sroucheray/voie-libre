@@ -158,8 +158,28 @@ describe('routeLoop', () => {
         2,
         { mode: 'distance', distanceMeters: 30_000 },
       );
-      expect(roundTrip).toHaveBeenCalledWith(A, 'gravel', [], 2, 30_000);
+      expect(roundTrip).toHaveBeenCalledWith(
+        A,
+        'gravel',
+        [],
+        2,
+        30_000,
+        undefined,
+      );
       expect(result).toHaveLength(1);
+    });
+
+    it('passes the climb that was asked for', async () => {
+      const roundTrip = jest.fn().mockResolvedValue([leg(A, A)]);
+      await routeLoop(
+        { name: 'fake', route: async () => [], roundTrip },
+        [A, A],
+        'gravel',
+        [],
+        1,
+        { mode: 'distance', distanceMeters: 30_000, ascentMeters: 800 },
+      );
+      expect(roundTrip).toHaveBeenCalledWith(A, 'gravel', [], 1, 30_000, 800);
     });
 
     it('refuses extra points, and an engine without round trips', async () => {

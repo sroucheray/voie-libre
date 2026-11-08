@@ -137,13 +137,13 @@ describe('avoidZoneParams', () => {
 
   describe('roundTrip', () => {
     /** A loop of a given length, as if BRouter had answered. */
-    const loopOf = (meters: number) =>
+    const loopOf = (meters: number, ascent = 100) =>
       JSON.stringify({
         features: [
           {
             properties: {
               'track-length': String(meters),
-              'filtered ascend': '100',
+              'filtered ascend': String(ascent),
               'total-time': '3600',
             },
             geometry: {
@@ -245,6 +245,24 @@ describe('avoidZoneParams', () => {
       // 30 km minus the spur is further than 10% from the target: the radius grew.
       expect(radii.length).toBeGreaterThan(1);
       expect(radii[1]).toBeGreaterThan(radii[0]);
+    });
+
+    it('tries more directions for a climb and keeps the loops that come closest', async () => {
+      const directions: number[] = [];
+      // The climb of the loop in each direction, in the order they are asked.
+      const climbs = [100, 900, 400, 1200, 700, 300, 1000, 600];
+      const provider = new BRouterProvider(
+        'http://brouter:17777',
+        async (url) => {
+          directions.push(Number(/direction=(\d+)/.exec(url)?.[1]));
+          return new Response(
+            loopOf(30_000, climbs[(directions.length - 1) % climbs.length]),
+          );
+        },
+      );
+      const routes = await provider.roundTrip(A, 'road', [], 2, 30_000, 1000);
+      expect(directions).toEqual([0, 45, 90, 135, 180, 225, 270, 315]);
+      expect(routes.map((route) => route.ascentMeters)).toEqual([1000, 900]);
     });
 
     it('rejects an unknown number of alternatives', async () => {
