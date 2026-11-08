@@ -13,7 +13,7 @@ function squaredDistance(
 }
 
 /** Index of the geometry vertex closest to `point`, looking from `from` on. */
-function nearestVertex(
+export function nearestVertex(
   geometry: readonly LngLat3[],
   point: readonly number[],
   from: number,
@@ -32,10 +32,25 @@ function nearestVertex(
 }
 
 /**
+ * The geometry vertex each point of the route sits on. The start is the first vertex and the end
+ * the last, whatever the snapping did to them; each other point is matched going forward, so that
+ * a route which passes twice by a place still gets the right one.
+ */
+export function pointVertices(
+  geometry: readonly LngLat3[],
+  points: readonly LngLat[],
+): number[] {
+  const vertices: number[] = [0];
+  for (let i = 1; i < points.length - 1; i++) {
+    vertices.push(nearestVertex(geometry, points[i], vertices[i - 1]));
+  }
+  vertices.push(geometry.length - 1);
+  return vertices;
+}
+
+/**
  * Where a waypoint added at `hit`, a place on the drawn route, belongs in the list of points: the
- * index it must take, between the start and the end. Each point is matched to a vertex of the
- * geometry going forward, so that a route which passes twice by a place still gets the right
- * segment. `null` when there is nothing to insert into.
+ * index it must take, between the start and the end. `null` when there is nothing to insert into.
  */
 export function insertionIndex(
   geometry: readonly LngLat3[],
@@ -43,12 +58,7 @@ export function insertionIndex(
   hit: LngLat,
 ): number | null {
   if (geometry.length < 2 || points.length < 2) return null;
-  // The start is the first vertex and the end the last, whatever the snapping did to them.
-  const vertices: number[] = [0];
-  for (let i = 1; i < points.length - 1; i++) {
-    vertices.push(nearestVertex(geometry, points[i], vertices[i - 1]));
-  }
-  vertices.push(geometry.length - 1);
+  const vertices = pointVertices(geometry, points);
   // The hit is a vertex too; on a tie, the earliest segment that contains it wins.
   const hitVertex = nearestVertex(geometry, hit, 0);
   for (let i = 1; i < vertices.length; i++) {
