@@ -51,6 +51,11 @@ export type PlannerErrorCode =
 
 export type PointRole = 'start' | 'waypoint' | 'end';
 
+/** How many place names are remembered; the oldest are forgotten first. */
+const MAX_LABELS = 100;
+
+const labelKey = (point: LngLat): string => `${point[0]},${point[1]}`;
+
 /** The first point is the start, the last (when there are two or more) the end. */
 export function pointRole(index: number, total: number): PointRole {
   if (index === 0) return 'start';
@@ -148,6 +153,15 @@ export class PlannerStore {
   readonly removed = this.removedState.asReadonly();
 
   readonly points = this.pointsState.asReadonly();
+
+  /**
+   * Names of places (an address found by search, or by reverse geocoding), by position. Keyed by
+   * coordinates so that a name follows its point through reordering, undo and redo without any
+   * change to those operations; a point with no name is shown by its coordinates. A name is never
+   * part of the route inputs: setting one never recomputes anything.
+   */
+  private readonly labelsState = signal<Readonly<Record<string, string>>>({});
+  readonly labels = this.labelsState.asReadonly();
   readonly profile = this.profileState.asReadonly();
   readonly alternatives = this.alternativesState.asReadonly();
   readonly routes = this.routesState.asReadonly();
@@ -380,6 +394,34 @@ export class PlannerStore {
       from: points[index],
       point,
     });
+  }
+
+  /** Names the place at `point`, e.g. with the address the user picked or one found for a click. */
+  setLabel(point: LngLat, label: string): void {
+    const key = labelKey(point);
+    const { [key]: _old, ...rest } = this.labelsState();
+    const entries = Object.entries({ ...rest, [key]: label });
+    this.labelsState.set(Object.fromEntries(entries.slice(-MAX_LABELS)));
+  }
+
+  /** The name of the place at `point`, if one is known. */
+  labelOf(point: LngLat): string | null {
+    return this.labelsState()[labelKey(point)] ?? null;
+  }
+
+  /**
+   * Swaps the start and the end, as the swap button of a route search does; the stops in between
+   * stay where they are. No-op for a loop or fewer than two points. Several segments change, so
+   * the whole route is computed again.
+   */
+  swapEnds(): void {
+    const points = this.pointsState();
+    if (points.length < 2 || isLoopOf(points)) return;
+    const next = [...points];
+    next[0] = points[points.length - 1];
+    next[points.length - 1] = points[0];
+    this.removedState.set(null);
+    this.setPoints(next);
   }
 
   /** Moves the point at `from` to the place `to` (after the move, it is at index `to`). */

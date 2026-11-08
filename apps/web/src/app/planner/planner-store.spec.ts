@@ -269,6 +269,53 @@ describe('PlannerStore', () => {
       ]);
     });
 
+    it('swaps the start and the end, keeping the stops, and undoes it', () => {
+      store.addPoint([1, 1]);
+      store.addPoint([2, 2]);
+      store.addPoint([3, 3]);
+      store.swapEnds();
+      expect(store.points()).toEqual([
+        [2, 2],
+        [3, 3],
+        [1, 1],
+      ]);
+      store.undo();
+      expect(store.points()).toEqual([
+        [1, 1],
+        [3, 3],
+        [2, 2],
+      ]);
+    });
+
+    it('does not swap a loop or fewer than two points', () => {
+      store.addPoint([1, 1]);
+      store.swapEnds();
+      expect(store.points()).toEqual([[1, 1]]);
+      store.addPoint([2, 2]);
+      store.closeLoop();
+      const before = store.points();
+      store.swapEnds();
+      expect(store.points()).toBe(before);
+    });
+
+    it('names places by position, so a name follows its point', () => {
+      store.addPoint([1, 1]);
+      store.addPoint([2, 2]);
+      store.setLabel([1, 1], 'Gare de Lyon, Paris');
+      expect(store.labelOf([1, 1])).toBe('Gare de Lyon, Paris');
+      expect(store.labelOf([2, 2])).toBeNull();
+      store.swapEnds();
+      expect(store.labelOf(store.points()[1])).toBe('Gare de Lyon, Paris');
+      store.setLabel([1, 1], 'Renamed');
+      expect(store.labelOf([1, 1])).toBe('Renamed');
+    });
+
+    it('forgets the oldest names beyond the limit', () => {
+      for (let i = 0; i < 105; i++) store.setLabel([i, 0], `place ${i}`);
+      expect(store.labelOf([0, 0])).toBeNull();
+      expect(store.labelOf([104, 0])).toBe('place 104');
+    });
+
     it('ignores a move onto itself or outside the list', () => {
       store.addPoint([1, 1]);
       store.addPoint([2, 2]);
