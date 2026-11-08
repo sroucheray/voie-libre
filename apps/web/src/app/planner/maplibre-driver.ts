@@ -445,8 +445,9 @@ export async function createMapLibreDriver(
         ghostElement.style.display = 'none';
         ghostMarker = new maplibre.Marker({
           element: ghostElement,
+          // To the right of the cross-shaped cursor, which would hide it.
           anchor: 'left',
-          offset: [-14, 0],
+          offset: [16, 0],
         })
           .setLngLat([0, 0])
           .addTo(map);

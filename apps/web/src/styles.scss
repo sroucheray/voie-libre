@@ -88,7 +88,7 @@ body {
   align-items: center;
   gap: 0.375rem;
   pointer-events: none;
-  /* The dot sits under the pointer, the text beside it. */
+  /* The dot sits beside the cross of the cursor, the text after it. */
   transform-origin: left center;
 
   &__dot {
