@@ -412,7 +412,10 @@ describe('Saved routes', () => {
       ]);
       expect(view.driver.routes).toEqual([geometry]);
       expect(view.driver.fitted.at(-1)).toEqual(geometry);
-      expect(view.root.querySelector('[role="status"]')).toBeNull();
+      // Nothing is being computed (the profile has a status line of its own).
+      expect(
+        view.root.querySelector('[role="status"]:not(.stretch)'),
+      ).toBeNull();
       expect(view.text()).toContain('Route 1');
       expect(view.alert()).toBeNull();
     });
