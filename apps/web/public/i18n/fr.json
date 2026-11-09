@@ -36,9 +36,18 @@
     },
     "profile": {
       "label": "Profil",
-      "road": "Route",
-      "gravel": "Gravel",
-      "trail": "Trail"
+      "road": {
+        "title": "Route",
+        "description": "Vélo de route : routes revêtues, au plus rapide"
+      },
+      "gravel": {
+        "title": "Gravel",
+        "description": "Vélo gravel : chemins et petites routes"
+      },
+      "trail": {
+        "title": "Trail",
+        "description": "Course à pied : sentiers et chemins d'abord"
+      }
     },
     "alternatives": {
       "label": "Alternatives"

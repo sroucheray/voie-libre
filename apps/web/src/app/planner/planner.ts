@@ -40,6 +40,7 @@ import {
   isLoopOf,
   pointRole,
 } from './planner-store';
+import { ProfileSelect } from './profile-select';
 import { buildProfile, sampleNearest } from './elevation-profile';
 import { insertionIndex } from './insert-point';
 import { RoutePlanner } from './route-planner';
@@ -74,6 +75,7 @@ type DragChange = { kind: 'move' | 'insert'; index: number; point: LngLat };
     SavedRoutes,
     ElevationPanel,
     PlaceField,
+    ProfileSelect,
   ],
   templateUrl: './planner.html',
   styleUrl: './planner.scss',
@@ -722,7 +724,7 @@ export class Planner {
     const target = event.target as Element | null;
     if (
       target?.closest?.(
-        'input:not([type=radio]):not([type=checkbox]):not([type=button]), textarea, select, [contenteditable=""], [contenteditable="true"]',
+        'input:not([type=radio]):not([type=checkbox]):not([type=button]), textarea, select, vl-profile-select, [contenteditable=""], [contenteditable="true"]',
       )
     ) {
       return;

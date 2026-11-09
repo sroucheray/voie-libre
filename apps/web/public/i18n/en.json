@@ -36,9 +36,18 @@
     },
     "profile": {
       "label": "Profile",
-      "road": "Road",
-      "gravel": "Gravel",
-      "trail": "Trail"
+      "road": {
+        "title": "Road",
+        "description": "Road bike: paved roads, the fastest way"
+      },
+      "gravel": {
+        "title": "Gravel",
+        "description": "Gravel bike: tracks and quiet roads"
+      },
+      "trail": {
+        "title": "Trail",
+        "description": "Running: footpaths and tracks first"
+      }
     },
     "alternatives": {
       "label": "Alternatives"

@@ -202,21 +202,11 @@
       </button>
     </div>
 
-    <fieldset class="profiles">
-      <legend>{{ 'planner.profile.label' | transloco }}</legend>
-      @for (profile of profiles; track profile) {
-      <label>
-        <input
-          type="radio"
-          name="profile"
-          [value]="profile"
-          [checked]="store.profile() === profile"
-          (change)="selectProfile(profile)"
-        />
-        {{ 'planner.profile.' + profile | transloco }}
-      </label>
-      }
-    </fieldset>
+    <vl-profile-select
+      [value]="store.profile()"
+      [profiles]="profiles"
+      (changed)="selectProfile($event)"
+    />
 
     <label class="alternatives">
       {{ 'planner.alternatives.label' | transloco }}

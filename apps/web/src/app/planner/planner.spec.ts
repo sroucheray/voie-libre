@@ -644,10 +644,12 @@ describe('Planner', () => {
     view.click(3.087, 45.777);
     view.click(3.249, 45.544);
     await view.settle();
-    const trail = Array.from(
-      view.root.querySelectorAll<HTMLInputElement>('input[type=radio]'),
-    ).find((input) => input.value === 'trail')!;
-    trail.click();
+    const select = view.root.querySelector('vl-profile-select') as HTMLElement;
+    (select.querySelector('button') as HTMLButtonElement).click();
+    view.fixture.detectChanges();
+    const options = select.querySelectorAll<HTMLElement>('[role=option]');
+    expect(options[2].textContent).toContain('Trail');
+    options[2].click();
     await view.settle();
     expect(requests).toHaveLength(2);
     expect(requests[1].profile).toBe('trail');

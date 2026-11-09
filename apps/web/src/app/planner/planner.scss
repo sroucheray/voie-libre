@@ -40,21 +40,6 @@
   }
 }
 
-fieldset.profiles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.75rem;
-  margin: 0 0 0.5rem;
-  padding: 0;
-  border: 0;
-
-  legend {
-    padding: 0;
-    margin-bottom: 0.25rem;
-    font-weight: 600;
-  }
-}
-
 .alternatives {
   display: flex;
   align-items: center;

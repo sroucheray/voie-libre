@@ -1,0 +1,61 @@
+<span class="label" [id]="labelId"
+  >{{ 'planner.profile.label' | transloco }}</span
+>
+<button
+  type="button"
+  class="control"
+  role="combobox"
+  aria-haspopup="listbox"
+  [attr.aria-expanded]="open()"
+  [attr.aria-controls]="listId"
+  [attr.aria-labelledby]="labelId + ' ' + valueId"
+  [attr.aria-activedescendant]="open() ? optionId(active()) : null"
+  (click)="toggle()"
+  (keydown)="onKeydown($event)"
+  (keyup)="onKeyup($event)"
+  (blur)="close()"
+>
+  <span class="text" [id]="valueId">
+    <span class="title"
+      >{{ 'planner.profile.' + value() + '.title' | transloco }}</span
+    >
+    <span class="description"
+      >{{ 'planner.profile.' + value() + '.description' | transloco }}</span
+    >
+  </span>
+  <span class="chevron" aria-hidden="true">▾</span>
+</button>
+@if (open()) {
+<ul
+  class="options"
+  role="listbox"
+  [id]="listId"
+  [attr.aria-labelledby]="labelId"
+>
+  @for (profile of profiles(); track profile; let index = $index) {
+  <!-- The keys are handled on the button, which keeps the focus. -->
+  <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+  <li
+    role="option"
+    [id]="optionId(index)"
+    [class.options__active]="index === active()"
+    [attr.aria-selected]="profile === value()"
+    (mousedown)="$event.preventDefault()"
+    (mousemove)="active.set(index)"
+    (click)="pick(profile)"
+  >
+    <span class="text">
+      <span class="title"
+        >{{ 'planner.profile.' + profile + '.title' | transloco }}</span
+      >
+      <span class="description"
+        >{{ 'planner.profile.' + profile + '.description' | transloco }}</span
+      >
+    </span>
+    @if (profile === value()) {
+    <span class="check" aria-hidden="true">✓</span>
+    }
+  </li>
+  }
+</ul>
+}
