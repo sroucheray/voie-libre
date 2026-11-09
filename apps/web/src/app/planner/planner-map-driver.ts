@@ -58,6 +58,8 @@ export interface PlannerMapDriver {
   setGhost(ghost: GhostSpec | null): void;
   /** Draws a route temporarily (a saved route under the pointer) without moving the view; `null` removes it. */
   setPreview(geometry: LngLat3[] | null): void;
+  /** Highlights a stretch of the route (picked on the profile) over its line; `null` removes it. */
+  setHighlight(geometry: LngLat3[] | null): void;
   /** Shows a dot at this position (the point hovered on the profile), or hides it. */
   setCursor(point: LngLat | null): void;
   /**

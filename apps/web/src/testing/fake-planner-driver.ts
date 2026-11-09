@@ -20,6 +20,7 @@ export class FakePlannerDriver implements PlannerMapDriver {
   ghost: GhostSpec | null = null;
   location: LocationFix | null = null;
   preview: LngLat3[] | null = null;
+  highlight: LngLat3[] | null = null;
   destroyed = false;
 
   constructor(readonly handlers: PlannerMapHandlers) {}
@@ -45,6 +46,9 @@ export class FakePlannerDriver implements PlannerMapDriver {
   }
   setPreview(geometry: LngLat3[] | null) {
     this.preview = geometry;
+  }
+  setHighlight(geometry: LngLat3[] | null) {
+    this.highlight = geometry;
   }
   setLocation(fix: LocationFix | null) {
     this.location = fix;

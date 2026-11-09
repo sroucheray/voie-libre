@@ -227,8 +227,13 @@
     "title": "Elevation profile",
     "show": "Show the elevation profile",
     "hide": "Hide the elevation profile",
-    "chart": "Elevation along the route, from {{min}} to {{max}}. Use the left and right arrow keys to move along it.",
+    "chart": "Elevation along the route, from {{min}} to {{max}}. Use the left and right arrow keys to move along it, with Shift to measure a stretch.",
     "tooltip": "{{distance}} · {{elevation}} · {{grade}}",
+    "legend": "Grade",
+    "band": "{{from}}–{{to}}",
+    "bandLast": "{{from}} and more",
+    "selection": "Selection: {{distance}} · ↑ {{ascent}} · ↓ {{descent}} · {{grade}} on average",
+    "selectHint": "Drag over the chart to measure a stretch.",
     "source": {
       "copernicus": "Elevation: Copernicus DEM GLO-30, provided under COPERNICUS by the European Union and ESA.",
       "srtm": "Elevation: SRTM (NASA, NGA) v4.1 via BRouter."

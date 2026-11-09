@@ -323,6 +323,17 @@ export class Planner {
       driver?.setCursor(point ? [point[0], point[1]] : null);
     });
 
+    // The stretch picked on the profile stands out on the map.
+    effect(() => {
+      const driver = this.driver();
+      const stretch = this.store.stretch();
+      driver?.setHighlight(
+        stretch
+          ? this.store.selectedGeometry().slice(stretch.from, stretch.to + 1)
+          : null,
+      );
+    });
+
     effect(() => {
       this.driver()?.setPreview(this.store.preview());
     });

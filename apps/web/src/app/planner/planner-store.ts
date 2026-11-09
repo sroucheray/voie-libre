@@ -195,6 +195,22 @@ export class PlannerStore {
    * hovering the route on the map. Followed by the dot on the map and the cursor on the profile.
    */
   readonly cursor = signal<number | null>(null);
+  /** The stretch picked on the profile, with the geometry it was picked on. */
+  private readonly stretchState = signal<{
+    geometry: [number, number, number][];
+    from: number;
+    to: number;
+  } | null>(null);
+  /**
+   * Stretch of the selected route picked on the profile (indexes in its geometry, `from` before
+   * `to`), shown on the map. It ends by itself as soon as the route on screen is another one.
+   */
+  readonly stretch = computed<{ from: number; to: number } | null>(() => {
+    const stretch = this.stretchState();
+    return stretch && stretch.geometry === this.selectedGeometry()
+      ? { from: stretch.from, to: stretch.to }
+      : null;
+  });
   /** A saved route shown for a moment on the map (hovered in the list); never part of the plan. */
   readonly preview = signal<[number, number, number][] | null>(null);
 
@@ -241,6 +257,20 @@ export class PlannerStore {
   readonly selectedGeometry = computed(
     () => this.routesState()[this.selectedState()]?.geometry ?? [],
   );
+
+  /** Picks the stretch between two points of the selected route, in either order; `null` clears it. */
+  selectStretch(range: [number, number] | null): void {
+    const geometry = this.selectedGeometry();
+    if (!range || geometry.length < 2) {
+      this.stretchState.set(null);
+      return;
+    }
+    const clamp = (index: number) =>
+      Math.max(0, Math.min(geometry.length - 1, index));
+    const from = clamp(Math.min(range[0], range[1]));
+    const to = clamp(Math.max(range[0], range[1]));
+    this.stretchState.set(from === to ? null : { geometry, from, to });
+  }
 
   private readonly viewState = signal<ViewRequest | null>(null);
   readonly viewRequest = this.viewState.asReadonly();

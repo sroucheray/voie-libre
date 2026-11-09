@@ -124,3 +124,81 @@ export function sampleNearest(
   }
   return best;
 }
+
+/** Elevation changes smaller than this are noise, not climbing (same rule as the GPX import). */
+const CLIMB_THRESHOLD_METERS = 3;
+/**
+ * Lower bounds, in percent, of the grade bands the chart is coloured with. A band is the index of
+ * the last bound the steepness (up or down) reaches.
+ */
+export const GRADE_BANDS = [0, 3, 6, 10, 15] as const;
+
+/** The band of a grade in percent: 0 for nearly flat, `GRADE_BANDS.length - 1` for the steepest. */
+export function gradeBand(grade: number): number {
+  const steepness = Math.abs(grade);
+  let band = 0;
+  for (let i = 1; i < GRADE_BANDS.length; i++) {
+    if (steepness >= GRADE_BANDS[i]) band = i;
+  }
+  return band;
+}
+
+/** Consecutive samples (`from` to `to`, both included) drawn in the colour of one band. */
+export interface GradeRun {
+  band: number;
+  from: number;
+  to: number;
+}
+
+/** The profile cut into runs of one grade band; a run ends on the sample the next one starts at. */
+export function gradeRuns(profile: ElevationProfile): GradeRun[] {
+  const { samples } = profile;
+  const runs: GradeRun[] = [];
+  for (let i = 0; i < samples.length - 1; i++) {
+    const band = gradeBand((samples[i].grade + samples[i + 1].grade) / 2);
+    const last = runs[runs.length - 1];
+    if (last && last.band === band) last.to = i + 1;
+    else runs.push({ band, from: i, to: i + 1 });
+  }
+  return runs;
+}
+
+/** What a stretch of the route adds up to. */
+export interface StretchStats {
+  distance: number;
+  ascent: number;
+  descent: number;
+  /** Average slope in percent, from the first point to the last. */
+  grade: number;
+}
+
+/** Totals between two samples, in either order. Wobbles under 3 m count as neither up nor down. */
+export function stretchStats(
+  profile: ElevationProfile,
+  a: number,
+  b: number,
+): StretchStats {
+  const last = profile.samples.length - 1;
+  const from = Math.max(0, Math.min(a, b, last));
+  const to = Math.min(last, Math.max(a, b, 0));
+  const start = profile.samples[from];
+  const end = profile.samples[to];
+  let reference = start.elevation;
+  let ascent = 0;
+  let descent = 0;
+  for (let i = from + 1; i <= to; i++) {
+    const delta = profile.samples[i].elevation - reference;
+    if (delta >= CLIMB_THRESHOLD_METERS) ascent += delta;
+    else if (-delta >= CLIMB_THRESHOLD_METERS) descent -= delta;
+    else continue;
+    reference = profile.samples[i].elevation;
+  }
+  const distance = end.distance - start.distance;
+  return {
+    distance,
+    ascent,
+    descent,
+    grade:
+      distance > 0 ? ((end.elevation - start.elevation) / distance) * 100 : 0,
+  };
+}

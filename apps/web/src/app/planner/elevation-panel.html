@@ -23,7 +23,10 @@
       role="img"
       tabindex="0"
       [attr.aria-label]="'profile.chart' | transloco : { min: format.elevation(p.minElevation), max: format.elevation(p.maxElevation) }"
+      (pointerdown)="onPointerDown($event)"
       (pointermove)="onPointerMove($event)"
+      (pointerup)="onPointerUp()"
+      (pointercancel)="onPointerCancel()"
       (pointerleave)="onPointerLeave()"
       (keydown)="onKeydown($event)"
     >
@@ -32,10 +35,18 @@
         preserveAspectRatio="none"
         aria-hidden="true"
       >
-        <path class="area" [attr.d]="paths()!.area" />
+        @for (area of paths()!.areas; track $index) {
+        <path [class]="'area area--' + area.band" [attr.d]="area.d" />
+        }
         <path class="line" [attr.d]="paths()!.line" />
       </svg>
-      @if (cursor(); as c) {
+      @if (stretch(); as s) {
+      <div
+        class="selection"
+        [style.left.%]="s.left"
+        [style.width.%]="s.width"
+      ></div>
+      } @if (cursor(); as c) {
       <div class="cursor" [style.left.%]="cursorLeft()"></div>
       <div
         class="tooltip"
@@ -52,6 +63,25 @@
     <div class="distances">
       <span>{{ format.distance(0) }}</span>
       <span>{{ format.distance(p.totalDistance) }}</span>
+    </div>
+    <div class="details">
+      <ul class="legend" [attr.aria-label]="'profile.legend' | transloco">
+        @for (item of legend; track item.band) {
+        <li>
+          <span [class]="'swatch area--' + item.band" aria-hidden="true"></span>
+          @if (item.to !== null) { {{ 'profile.band' | transloco : { from:
+          format.number(item.from), to: percent(item.to) } }} } @else { {{
+          'profile.bandLast' | transloco : { from: percent(item.from) } }} }
+        </li>
+        }
+      </ul>
+      <p class="stretch" role="status">
+        @if (stretch(); as s) { {{ 'profile.selection' | transloco : { distance:
+        format.distance(s.stats.distance), ascent:
+        format.elevation(s.stats.ascent), descent:
+        format.elevation(s.stats.descent), grade: grade(s.stats) } }} } @else {
+        {{ 'profile.selectHint' | transloco }} }
+      </p>
     </div>
     @if (store.elevationSource(); as source) {
     <p class="source">{{ 'profile.source.' + source | transloco }}</p>

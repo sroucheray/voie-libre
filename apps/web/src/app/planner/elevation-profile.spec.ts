@@ -1,7 +1,11 @@
 import {
+  GRADE_BANDS,
   buildProfile,
+  gradeBand,
+  gradeRuns,
   sampleAtDistance,
   sampleNearest,
+  stretchStats,
 } from './elevation-profile';
 import type { LngLat3 } from './planner-map-driver';
 
@@ -69,5 +73,59 @@ describe('sampleNearest', () => {
   it('finds the sample closest to a map position', () => {
     const profile = buildProfile(climb)!;
     expect(sampleNearest(profile, [3.0001, 45.0071]).index).toBe(7);
+  });
+});
+
+describe('grade bands and stretches', () => {
+  // 100 m steps (about 0.0009 degrees of latitude); climbs 0, 4, 4, 12, then drops 20 m.
+  const step = 100 / 111_195;
+  const elevations = [100, 100, 104, 108, 120, 100];
+  const profile = buildProfile(
+    elevations.map((elevation, i) => [3, 45 + i * step, elevation]),
+  )!;
+
+  it('puts a grade in the band of its steepness, up or down', () => {
+    expect(gradeBand(0)).toBe(0);
+    expect(gradeBand(2.9)).toBe(0);
+    expect(gradeBand(3)).toBe(1);
+    expect(gradeBand(-7)).toBe(2);
+    expect(gradeBand(12)).toBe(3);
+    expect(gradeBand(-40)).toBe(GRADE_BANDS.length - 1);
+  });
+
+  it('cuts the profile into runs that follow one another', () => {
+    const runs = gradeRuns(profile);
+    expect(runs[0].from).toBe(0);
+    expect(runs[runs.length - 1].to).toBe(elevations.length - 1);
+    for (let i = 1; i < runs.length; i++) {
+      expect(runs[i].from).toBe(runs[i - 1].to);
+      expect(runs[i].band).not.toBe(runs[i - 1].band);
+    }
+    expect(runs.length).toBeGreaterThan(1);
+  });
+
+  it('adds up a stretch, in either order', () => {
+    const stats = stretchStats(profile, 4, 1);
+    expect(stats.distance).toBeCloseTo(300, 0);
+    expect(stats.ascent).toBe(20);
+    expect(stats.descent).toBe(0);
+    expect(stats.grade).toBeCloseTo(6.67, 1);
+    expect(stretchStats(profile, 1, 4)).toEqual(stats);
+  });
+
+  it('counts the way down and ignores small wobbles', () => {
+    const whole = stretchStats(profile, 0, 5);
+    expect(whole.ascent).toBe(20);
+    expect(whole.descent).toBe(20);
+    expect(whole.grade).toBeCloseTo(0, 5);
+
+    const wobbly = buildProfile(
+      [100, 102, 100, 101, 99].map((elevation, i) => [
+        3,
+        45 + i * step,
+        elevation,
+      ]),
+    )!;
+    expect(stretchStats(wobbly, 0, 4)).toMatchObject({ ascent: 0, descent: 0 });
   });
 });

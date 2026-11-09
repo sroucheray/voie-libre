@@ -34,6 +34,7 @@
   display: grid;
   grid-template-columns: auto 1fr;
   grid-template-rows: 7rem auto;
+  user-select: none;
   column-gap: 0.5rem;
 }
 
@@ -58,7 +59,7 @@
   }
 
   .area {
-    fill: #d1e9ff;
+    stroke: none;
   }
 
   .line {
@@ -67,6 +68,41 @@
     stroke-width: 2;
     vector-effect: non-scaling-stroke;
   }
+}
+
+// One colour per grade band, from nearly flat to very steep (chart and legend).
+.area--0 {
+  fill: #d1e9ff;
+  background: #d1e9ff;
+}
+
+.area--1 {
+  fill: #a6e3b8;
+  background: #a6e3b8;
+}
+
+.area--2 {
+  fill: #fde272;
+  background: #fde272;
+}
+
+.area--3 {
+  fill: #fdb022;
+  background: #fdb022;
+}
+
+.area--4 {
+  fill: #f97066;
+  background: #f97066;
+}
+
+.selection {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgb(16 24 40 / 18%);
+  border-inline: 1px solid #101828;
+  pointer-events: none;
 }
 
 .cursor {
@@ -98,6 +134,42 @@
   grid-column: 2;
   display: flex;
   justify-content: space-between;
+}
+
+.details {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin-top: 0.25rem;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+  }
+}
+
+.swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 0.125rem;
+}
+
+.stretch {
+  margin: 0;
+  color: #101828;
 }
 
 .source {

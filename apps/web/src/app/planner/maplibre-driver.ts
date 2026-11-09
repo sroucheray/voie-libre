@@ -14,6 +14,8 @@ import { routesToGeoJson } from './route-geojson';
 const SOURCE = 'planner-routes';
 const ALTERNATIVE_LAYER = 'planner-routes-alternative';
 const SELECTED_LAYER = 'planner-routes-selected';
+const HIGHLIGHT_SOURCE = 'planner-highlight';
+const HIGHLIGHT_LAYER = 'planner-highlight-line';
 const PREVIEW_SOURCE = 'planner-preview';
 const PREVIEW_LAYER = 'planner-preview-line';
 const ACCURACY_SOURCE = 'planner-location-accuracy';
@@ -66,6 +68,7 @@ export async function createMapLibreDriver(
   let destroyed = false;
   let dragging = false;
   let preview: LngLat3[] | null = null;
+  let highlight: LngLat3[] | null = null;
 
   /** Adds the source and layers. Idempotent: a new style (language change) removes them. */
   const ensureLayers = () => {
@@ -108,6 +111,18 @@ export async function createMapLibreDriver(
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: { 'line-color': '#1570ef', 'line-width': 6 },
     });
+    map.addSource(HIGHLIGHT_SOURCE, {
+      type: 'geojson',
+      data: routesToGeoJson(highlight ? [highlight] : [], 0),
+    });
+    // Over the route, which keeps its colour either side of the stretch.
+    map.addLayer({
+      id: HIGHLIGHT_LAYER,
+      type: 'line',
+      source: HIGHLIGHT_SOURCE,
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#101828', 'line-width': 6 },
+    });
     map.addSource(PREVIEW_SOURCE, {
       type: 'geojson',
       data: routesToGeoJson(preview ? [preview] : [], 0),
@@ -130,6 +145,12 @@ export async function createMapLibreDriver(
     const source = map.getSource(PREVIEW_SOURCE) as
       { setData(data: unknown): void } | undefined;
     source?.setData(routesToGeoJson(preview ? [preview] : [], 0));
+  };
+
+  const pushHighlight = () => {
+    const source = map.getSource(HIGHLIGHT_SOURCE) as
+      { setData(data: unknown): void } | undefined;
+    source?.setData(routesToGeoJson(highlight ? [highlight] : [], 0));
   };
 
   const pushRoutes = () => {
@@ -460,6 +481,10 @@ export async function createMapLibreDriver(
     setPreview(geometry: LngLat3[] | null) {
       preview = geometry;
       pushPreview();
+    },
+    setHighlight(geometry: LngLat3[] | null) {
+      highlight = geometry;
+      pushHighlight();
     },
     fitRoute(geometry: LngLat3[]) {
       if (geometry.length === 0) return;

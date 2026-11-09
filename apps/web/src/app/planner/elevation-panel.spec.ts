@@ -71,6 +71,78 @@ describe('ElevationPanel', () => {
     expect(store.cursor()).toBeNull();
   });
 
+  it('colours the chart by grade and explains the colours', async () => {
+    const { root } = await setup();
+    expect(root.querySelectorAll('path.area').length).toBeGreaterThan(0);
+    // 10 m up every 111 m is about 9 %: the third band.
+    expect(root.querySelector('path.area--2')).not.toBeNull();
+    expect(root.querySelectorAll('.legend li')).toHaveLength(5);
+    expect(root.querySelector('.legend')?.textContent).toContain('3–6 %');
+  });
+
+  it('selects a stretch by dragging and shows what it adds up to', async () => {
+    const { store, fixture, root } = await setup();
+    const plot = root.querySelector<HTMLElement>('.plot')!;
+    plot.getBoundingClientRect = () =>
+      ({ left: 0, width: 200, top: 0, height: 100 }) as DOMRect;
+    const pointer = (type: string, clientX: number) =>
+      plot.dispatchEvent(
+        new PointerEvent(type, { clientX, button: 0, bubbles: true }),
+      );
+
+    pointer('pointerdown', 120);
+    pointer('pointermove', 40);
+    pointer('pointerup', 40);
+    await fixture.whenStable();
+
+    expect(store.stretch()).toEqual({ from: 2, to: 6 });
+    expect(root.querySelector('.selection')).not.toBeNull();
+    const text = root.querySelector('.stretch')!.textContent!;
+    expect(text).toContain('445 m');
+    expect(text).toContain('↑ 40 m');
+    expect(text).toContain('↓ 0 m');
+    expect(text).toContain('9.0 %');
+
+    // Moving without pressing keeps it; a click lets it go.
+    pointer('pointermove', 180);
+    expect(store.stretch()).toEqual({ from: 2, to: 6 });
+    pointer('pointerdown', 180);
+    pointer('pointerup', 180);
+    await fixture.whenStable();
+    expect(store.stretch()).toBeNull();
+    expect(root.querySelector('.selection')).toBeNull();
+  });
+
+  it('selects with Shift and the arrow keys, and Escape clears', async () => {
+    const { store, fixture, root } = await setup();
+    const plot = root.querySelector<HTMLElement>('.plot')!;
+    const key = (name: string, shiftKey = false) =>
+      plot.dispatchEvent(new KeyboardEvent('keydown', { key: name, shiftKey }));
+    key('Home');
+    key('ArrowRight', true);
+    key('ArrowRight', true);
+    expect(store.stretch()).toEqual({ from: 0, to: 2 });
+
+    key('Escape');
+    await fixture.whenStable();
+    expect(store.stretch()).toBeNull();
+  });
+
+  it('drops the stretch when the route changes', async () => {
+    const { store } = await setup();
+    store.selectStretch([1, 4]);
+    expect(store.stretch()).toEqual({ from: 1, to: 4 });
+    store.setRoutes([
+      {
+        geometry: geometry.slice(0, 6),
+        distanceMeters: 555,
+        ascentMeters: 50,
+        durationSeconds: 150,
+      },
+    ]);
+    expect(store.stretch()).toBeNull();
+  });
+
   it('collapses and expands', async () => {
     const { fixture, root } = await setup();
     root.querySelector<HTMLButtonElement>('header button')!.click();

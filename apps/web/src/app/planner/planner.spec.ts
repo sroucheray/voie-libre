@@ -596,6 +596,24 @@ describe('Planner', () => {
     expect(view.text()).toMatch(/41(\.0)? km/);
   });
 
+  it('highlights on the map the stretch picked on the profile', async () => {
+    const view = await render();
+    view.click(3.087, 45.777);
+    view.click(3.249, 45.544);
+    await view.settle();
+    expect(view.driver.highlight).toBeNull();
+
+    const store = TestBed.inject(PlannerStore);
+    const geometry = store.selectedGeometry();
+    store.selectStretch([0, 1]);
+    TestBed.tick();
+    expect(view.driver.highlight).toEqual(geometry.slice(0, 2));
+
+    store.selectStretch(null);
+    TestBed.tick();
+    expect(view.driver.highlight).toBeNull();
+  });
+
   it('links the elevation profile and the map: hovering one moves the dot on the other', async () => {
     const view = await render();
     view.click(3.087, 45.777);

@@ -8,8 +8,12 @@ import {
 import { TranslocoPipe } from '@jsverse/transloco';
 import { FormattingService } from '../core/format/formatting.service';
 import {
+  GRADE_BANDS,
   buildProfile,
+  gradeRuns,
   sampleAtDistance,
+  stretchStats,
+  type ElevationProfile,
   type ProfileSample,
 } from './elevation-profile';
 import { PlannerStore } from './planner-store';
@@ -20,8 +24,10 @@ const HEIGHT = 100;
 const KEY_STEPS = 100;
 
 /**
- * Elevation along the selected route, under the map. Hovering (or arrow keys) moves a cursor that
- * the map follows with a dot; hovering the route on the map moves the cursor back.
+ * Elevation along the selected route, under the map, coloured by how steep it is. Hovering (or
+ * arrow keys) moves a cursor that the map follows with a dot; hovering the route on the map moves
+ * the cursor back. Dragging over the chart picks a stretch: its totals show under the chart and
+ * the map highlights it; a click or Escape lets it go.
  */
 @Component({
   selector: 'vl-elevation-panel',
@@ -50,9 +56,47 @@ export class ElevationPanel {
         HEIGHT - ((sample.elevation - profile.minElevation) / span) * HEIGHT;
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     });
-    const line = `M${points.join('L')}`;
-    return { line, area: `${line}L${WIDTH},${HEIGHT}L0,${HEIGHT}Z` };
+    // One filled shape per run of the same grade band, down to the bottom of the chart.
+    const areas = gradeRuns(profile).map((run) => {
+      const first = points[run.from].split(',')[0];
+      const last = points[run.to].split(',')[0];
+      const top = points.slice(run.from, run.to + 1).join('L');
+      return {
+        band: run.band,
+        d: `M${first},${HEIGHT}L${top}L${last},${HEIGHT}Z`,
+      };
+    });
+    return { line: `M${points.join('L')}`, areas };
   });
+
+  /** The grade bands, for the legend: "3–6 %", then "15 % +" for the last one. */
+  protected readonly legend = GRADE_BANDS.map((from, band) => ({
+    band,
+    from,
+    to: GRADE_BANDS[band + 1] ?? null,
+  }));
+
+  /** The stretch picked by dragging: where it sits on the chart and what it adds up to. */
+  protected readonly stretch = computed(() => {
+    const profile = this.profile();
+    const stretch = this.store.stretch();
+    if (!profile || !stretch) return null;
+    const from = profile.samples[stretch.from];
+    const to = profile.samples[stretch.to];
+    if (!from || !to) return null;
+    return {
+      left: (from.distance / profile.totalDistance) * 100,
+      width: ((to.distance - from.distance) / profile.totalDistance) * 100,
+      stats: stretchStats(profile, stretch.from, stretch.to),
+    };
+  });
+
+  /** Where the pointer went down, while it is down. */
+  private anchor: number | null = null;
+  /** Where a selection made with Shift and the arrow keys started. */
+  private keyAnchor: number | null = null;
+  /** Whether the pointer moved to another point since it went down. */
+  private dragged = false;
 
   protected readonly cursor = computed<ProfileSample | null>(() => {
     const profile = this.profile();
@@ -70,7 +114,7 @@ export class ElevationPanel {
 
   protected readonly viewBox = `0 0 ${WIDTH} ${HEIGHT}`;
 
-  protected grade(sample: ProfileSample): string {
+  protected grade(sample: { grade: number }): string {
     const value = this.format.number(sample.grade, {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
@@ -78,22 +122,63 @@ export class ElevationPanel {
     return `${value} %`;
   }
 
+  protected percent(value: number): string {
+    return `${this.format.number(value)} %`;
+  }
+
+  protected onPointerDown(event: PointerEvent): void {
+    const profile = this.profile();
+    if (!profile || event.button !== 0) return;
+    const index = this.indexAt(profile, event);
+    if (index === null) return;
+    this.anchor = index;
+    this.dragged = false;
+    // The drag goes on when the pointer leaves the chart.
+    const plot = event.currentTarget as HTMLElement;
+    try {
+      plot.setPointerCapture?.(event.pointerId);
+    } catch {
+      // No such pointer (a synthetic event): the drag still works inside the chart.
+    }
+  }
+
   protected onPointerMove(event: PointerEvent): void {
     const profile = this.profile();
     if (!profile) return;
-    const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    if (box.width === 0) return;
-    const ratio = Math.min(
-      1,
-      Math.max(0, (event.clientX - box.left) / box.width),
-    );
-    this.store.cursor.set(
-      sampleAtDistance(profile, ratio * profile.totalDistance).index,
-    );
+    const index = this.indexAt(profile, event);
+    if (index === null) return;
+    this.store.cursor.set(index);
+    if (this.anchor !== null && (this.dragged || index !== this.anchor)) {
+      this.dragged = true;
+      this.store.selectStretch([this.anchor, index]);
+    }
+  }
+
+  protected onPointerUp(): void {
+    // A press that did not move is a click: it lets the stretch go.
+    if (this.anchor !== null && !this.dragged) this.store.selectStretch(null);
+    this.anchor = null;
+  }
+
+  protected onPointerCancel(): void {
+    this.anchor = null;
   }
 
   protected onPointerLeave(): void {
     this.store.cursor.set(null);
+  }
+
+  private indexAt(
+    profile: ElevationProfile,
+    event: PointerEvent,
+  ): number | null {
+    const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    if (box.width === 0) return null;
+    const ratio = Math.min(
+      1,
+      Math.max(0, (event.clientX - box.left) / box.width),
+    );
+    return sampleAtDistance(profile, ratio * profile.totalDistance).index;
   }
 
   protected onKeydown(event: KeyboardEvent): void {
@@ -109,10 +194,21 @@ export class ElevationPanel {
       next = Math.max(0, (current ?? step) - step);
     else if (event.key === 'Home') next = 0;
     else if (event.key === 'End') next = last;
-    else if (event.key === 'Escape') this.store.cursor.set(null);
+    else if (event.key === 'Escape') {
+      this.store.cursor.set(null);
+      this.store.selectStretch(null);
+      this.anchor = null;
+      this.keyAnchor = null;
+    }
     if (next !== null) {
       event.preventDefault();
+      // With Shift, the keys stretch a selection from where the cursor was.
+      if (!event.shiftKey) this.keyAnchor = null;
+      else this.keyAnchor ??= current ?? next;
       this.store.cursor.set(next);
+      if (this.keyAnchor !== null) {
+        this.store.selectStretch([this.keyAnchor, next]);
+      }
     }
   }
 }
