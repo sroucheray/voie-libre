@@ -1,8 +1,12 @@
 <div class="field" [class.field--disabled]="disabled()">
-  <span class="field__marker" aria-hidden="true"
-    >{{ role() === 'start' ? 'A' : 'B' }}</span
+  <span
+    class="field__marker"
+    [class.field__marker--stop]="role() === 'stop'"
+    aria-hidden="true"
+    >{{ marker() }}</span
   >
   <input
+    #field
     type="text"
     role="combobox"
     autocomplete="off"
@@ -12,7 +16,7 @@
     [value]="shown()"
     [disabled]="disabled()"
     [placeholder]="'planner.search.placeholder.' + role() | transloco"
-    [attr.aria-label]="'planner.search.' + role() | transloco"
+    [attr.aria-label]="'planner.search.' + role() | transloco : { n: number() }"
     [attr.aria-expanded]="open()"
     [attr.aria-controls]="listId"
     [attr.aria-activedescendant]="active() >= 0 ? optionId(active()) : null"

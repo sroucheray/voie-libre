@@ -4,11 +4,14 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  Injector,
+  afterNextRender,
   computed,
   effect,
   inject,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -116,6 +119,17 @@ export class Planner {
       .slice(1, -1)
       .map((point, i) => ({ point, index: i + 1 })),
   );
+  /** The empty field of a stop being added: it joins the route once a place is picked. */
+  protected readonly newStopOpen = signal(false);
+  protected readonly canAddStop = computed(() => {
+    const count = this.store.points().length;
+    return count >= 2 && count < MAX_POINTS;
+  });
+  protected readonly addingStop = computed(
+    () => this.newStopOpen() && this.canAddStop(),
+  );
+  private readonly newStopField = viewChild<PlaceField>('newStop');
+  private readonly injector = inject(Injector);
   protected readonly canSwap = computed(
     () => this.store.points().length >= 2 && !this.store.isLoop(),
   );
@@ -355,6 +369,9 @@ export class Planner {
       event.dataTransfer.effectAllowed = 'move';
       // Firefox starts no drag without data.
       event.dataTransfer.setData('text/plain', String(index));
+      // The whole row follows the pointer, not the grip alone.
+      const row = (event.target as Element | null)?.closest?.('li');
+      if (row) event.dataTransfer.setDragImage?.(row, 0, 0);
     }
   }
 
@@ -368,6 +385,8 @@ export class Planner {
 
   protected onPointDrop(event: DragEvent, index: number): void {
     event.preventDefault();
+    // A place dropped as text must not end up in the field of the stop.
+    event.stopPropagation();
     const from = this.dragFrom();
     this.endPointDrag();
     if (from !== null) this.store.reorderPoint(from, index);
@@ -408,6 +427,29 @@ export class Planner {
   protected pickEnd(place: FoundPlace): void {
     if (this.store.points().length === 0) return;
     this.store.setEnd(place.point);
+    this.store.setLabel(place.point, place.label);
+    this.driver()?.centerOn(place.point);
+  }
+
+  /** A place picked in the field of a stop: the stop moves there. */
+  protected pickStop(index: number, place: FoundPlace): void {
+    this.store.movePoint(index, place.point);
+    this.store.setLabel(place.point, place.label);
+    this.driver()?.centerOn(place.point);
+  }
+
+  /** Opens an empty field before the end, for a stop to search. */
+  protected addStop(): void {
+    this.newStopOpen.set(true);
+    afterNextRender(() => this.newStopField()?.focus(), {
+      injector: this.injector,
+    });
+  }
+
+  /** A place picked in the empty field: the new stop goes just before the end. */
+  protected pickNewStop(place: FoundPlace): void {
+    this.newStopOpen.set(false);
+    this.store.insertPoint(this.store.points().length - 1, place.point);
     this.store.setLabel(place.point, place.label);
     this.driver()?.centerOn(place.point);
   }

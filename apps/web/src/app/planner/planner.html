@@ -216,12 +216,79 @@
     </button>
     }
     <div class="route-fields">
-      <vl-place-field
-        role="start"
-        [label]="startLabel()"
-        [near]="endPoint()"
-        (picked)="pickStart($event)"
-      />
+      <div class="route-fields__list">
+        <vl-place-field
+          role="start"
+          [label]="startLabel()"
+          [near]="endPoint()"
+          (picked)="pickStart($event)"
+        />
+        @if (stops().length > 0 || addingStop()) {
+        <ol
+          class="points"
+          [attr.aria-label]="'planner.points.label' | transloco"
+        >
+          @for (stop of stops(); track stop.index) {
+          <li
+            [class.dragging]="dragFrom() === stop.index"
+            [class.drop-target]="dragOver() === stop.index && dragFrom() !== stop.index"
+            (dragover)="onPointDragOver($event, stop.index)"
+            (drop)="onPointDrop($event, stop.index)"
+          >
+            <vl-place-field
+              role="stop"
+              [number]="stop.index"
+              [label]="pointText(stop.point)"
+              [near]="stop.point"
+              (picked)="pickStop(stop.index, $event)"
+            />
+            <!-- Only the grip starts a drag, so that the text of the field can be selected. -->
+            <span
+              class="point-grip"
+              draggable="true"
+              aria-hidden="true"
+              (dragstart)="onPointDragStart($event, stop.index)"
+              (dragend)="endPointDrag()"
+              >⋮⋮</span
+            >
+            <button
+              type="button"
+              class="point-remove"
+              (click)="store.removePoint(stop.index)"
+              [attr.aria-label]="'planner.points.remove' | transloco : { name: pointName(stop.index) }"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </li>
+          } @if (addingStop()) {
+          <li class="points__new">
+            <vl-place-field
+              #newStop
+              role="stop"
+              [number]="stops().length + 1"
+              [near]="startPoint()"
+              (picked)="pickNewStop($event)"
+            />
+            <button
+              type="button"
+              class="point-remove"
+              (click)="newStopOpen.set(false)"
+              [attr.aria-label]="'planner.stops.cancel' | transloco"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </li>
+          }
+        </ol>
+        }
+        <vl-place-field
+          role="end"
+          [label]="endLabel()"
+          [near]="startPoint()"
+          [blocked]="store.points().length === 0"
+          (picked)="pickEnd($event)"
+        />
+      </div>
       <button
         type="button"
         class="swap"
@@ -232,39 +299,11 @@
       >
         <span aria-hidden="true">⇅</span>
       </button>
-      <vl-place-field
-        role="end"
-        [label]="endLabel()"
-        [near]="startPoint()"
-        [blocked]="store.points().length === 0"
-        (picked)="pickEnd($event)"
-      />
     </div>
-    @if (stops().length > 0) {
-    <ol class="points" [attr.aria-label]="'planner.points.label' | transloco">
-      @for (stop of stops(); track stop.index) {
-      <li
-        draggable="true"
-        [class.dragging]="dragFrom() === stop.index"
-        [class.drop-target]="dragOver() === stop.index && dragFrom() !== stop.index"
-        (dragstart)="onPointDragStart($event, stop.index)"
-        (dragover)="onPointDragOver($event, stop.index)"
-        (drop)="onPointDrop($event, stop.index)"
-        (dragend)="endPointDrag()"
-      >
-        <span class="point-grip" aria-hidden="true">⋮⋮</span>
-        <span class="point-name">{{ pointName(stop.index) }}</span>
-        <span class="point-coordinates">{{ pointText(stop.point) }}</span>
-        <button
-          type="button"
-          (click)="store.removePoint(stop.index)"
-          [attr.aria-label]="'planner.points.remove' | transloco : { name: pointName(stop.index) }"
-        >
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </li>
-      }
-    </ol>
+    @if (canAddStop() && !addingStop()) {
+    <button type="button" class="add-stop" (click)="addStop()">
+      + {{ 'planner.stops.add' | transloco }}
+    </button>
     } @if (store.points().length > 0) { @if (store.loop(); as loop) { @if
     (loop.mode === 'distance') {
     <label class="loop-length">

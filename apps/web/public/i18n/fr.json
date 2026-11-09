@@ -52,10 +52,12 @@
     "search": {
       "start": "Départ",
       "end": "Arrivée",
+      "stop": "Étape {{n}}",
       "swap": "Intervertir le départ et l'arrivée",
       "placeholder": {
         "start": "Chercher un départ ou cliquer sur la carte",
-        "end": "Chercher une arrivée"
+        "end": "Chercher une arrivée",
+        "stop": "Chercher une étape"
       },
       "noResults": "Aucun lieu trouvé.",
       "offline": "La recherche de lieux demande une connexion.",
@@ -65,6 +67,10 @@
         "rate_limited": "Trop de recherches. Patientez un instant.",
         "unknown": "La recherche a échoué."
       }
+    },
+    "stops": {
+      "add": "Ajouter une étape",
+      "cancel": "Annuler la nouvelle étape"
     },
     "history": {
       "label": "Historique",

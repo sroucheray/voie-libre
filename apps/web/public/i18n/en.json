@@ -52,10 +52,12 @@
     "search": {
       "start": "Start",
       "end": "Destination",
+      "stop": "Stop {{n}}",
       "swap": "Swap start and end",
       "placeholder": {
         "start": "Search a start or click the map",
-        "end": "Search a destination"
+        "end": "Search a destination",
+        "stop": "Search a stop"
       },
       "noResults": "No place found.",
       "offline": "Place search needs a connection.",
@@ -65,6 +67,10 @@
         "rate_limited": "Too many searches. Wait a moment.",
         "unknown": "The search failed."
       }
+    },
+    "stops": {
+      "add": "Add a stop",
+      "cancel": "Cancel the new stop"
     },
     "history": {
       "label": "History",

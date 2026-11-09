@@ -678,8 +678,11 @@ describe('Planner', () => {
       ]);
       const rows = () => view.root.querySelectorAll('.points li');
       expect(rows()).toHaveLength(2);
-      expect(rows()[0].getAttribute('draggable')).toBe('true');
-      drag(rows()[0], 'dragstart');
+      // Only the grip drags, so that the text of the field can still be selected.
+      const grip = rows()[0].querySelector('.point-grip') as HTMLElement;
+      expect(grip.getAttribute('draggable')).toBe('true');
+      expect(rows()[0].getAttribute('draggable')).toBeNull();
+      drag(grip, 'dragstart');
       view.fixture.detectChanges();
       expect(rows()[0].classList.contains('dragging')).toBe(true);
       expect(drag(rows()[1], 'dragover').defaultPrevented).toBe(true);
@@ -1000,6 +1003,78 @@ describe('Planner', () => {
         gare.label,
         mairie.label,
       ]);
+    });
+
+    it('shows each stop as a field and moves it to the place found', async () => {
+      const view = await render();
+      const store = TestBed.inject(PlannerStore);
+      view.click(3.0, 45.0);
+      view.click(3.2, 45.2);
+      view.click(3.1, 45.1);
+      view.fixture.detectChanges();
+      const stop = () =>
+        view.root.querySelector('.points li input') as HTMLInputElement;
+      expect(stop().getAttribute('aria-label')).toBe('Stop 1');
+      // A stop set on the map has no name: its coordinates stand for it.
+      expect(stop().value).toContain('45.1');
+      await type(view, stop(), 'gare de lyon');
+      options(view.root)[0].click();
+      view.fixture.detectChanges();
+      expect(store.points()).toEqual([
+        [3.0, 45.0],
+        [gare.lon, gare.lat],
+        [3.2, 45.2],
+      ]);
+      expect(stop().value).toBe(gare.label);
+      expect(view.driver.centered).toEqual([[gare.lon, gare.lat]]);
+    });
+
+    it('adds a stop by search, just before the end', async () => {
+      const view = await render();
+      const store = TestBed.inject(PlannerStore);
+      const add = () =>
+        view.root.querySelector('.add-stop') as HTMLButtonElement | null;
+      view.click(3.0, 45.0);
+      view.fixture.detectChanges();
+      expect(add()).toBeNull();
+      view.click(3.2, 45.2);
+      view.fixture.detectChanges();
+      add()?.click();
+      view.fixture.detectChanges();
+      expect(add()).toBeNull();
+      const field = view.root.querySelector(
+        '.points__new input',
+      ) as HTMLInputElement;
+      expect(field.value).toBe('');
+      // Nothing changes until a place is picked.
+      expect(store.points()).toHaveLength(2);
+      await type(view, field, 'lyon');
+      options(view.root)[1].click();
+      view.fixture.detectChanges();
+      expect(store.points()).toEqual([
+        [3.0, 45.0],
+        [mairie.lon, mairie.lat],
+        [3.2, 45.2],
+      ]);
+      expect(store.labelOf([mairie.lon, mairie.lat])).toBe(mairie.label);
+      expect(view.root.querySelector('.points__new')).toBeNull();
+      expect(view.root.querySelectorAll('.points li')).toHaveLength(1);
+      expect(add()).not.toBeNull();
+    });
+
+    it('gives up a new stop', async () => {
+      const view = await render();
+      view.click(3.0, 45.0);
+      view.click(3.2, 45.2);
+      view.fixture.detectChanges();
+      (view.root.querySelector('.add-stop') as HTMLButtonElement).click();
+      view.fixture.detectChanges();
+      (
+        view.root.querySelector('.points__new button') as HTMLButtonElement
+      ).click();
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.points')).toBeNull();
+      expect(TestBed.inject(PlannerStore).points()).toHaveLength(2);
     });
 
     it('swaps the start and the end, names included', async () => {

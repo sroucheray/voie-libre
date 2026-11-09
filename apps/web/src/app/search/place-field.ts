@@ -2,11 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
   computed,
   inject,
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { LngLat } from '../core/map/map-factory';
@@ -26,7 +28,8 @@ let nextId = 0;
 /**
  * A text field that finds a place or an address: suggestions come from the API as the user types
  * and picking one emits it. When not edited it shows `label`. It is disabled offline, where the
- * search cannot work, and while `blocked` (no start yet for the end field).
+ * search cannot work, and while `blocked` (no start yet for the end field). A stop shows its
+ * `number` in place of the letter of the start and the end.
  */
 @Component({
   selector: 'vl-place-field',
@@ -36,13 +39,26 @@ let nextId = 0;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PlaceField {
-  readonly role = input.required<'start' | 'end'>();
+  readonly role = input.required<'start' | 'end' | 'stop'>();
+  /** Which stop this is, counted from 1; unused for the start and the end. */
+  readonly number = input<number | null>(null);
   /** What to show when the user is not typing: the name or coordinates of the point. */
   readonly label = input<string | null>(null);
   /** Favours suggestions close to this position. */
   readonly near = input<LngLat | null>(null);
   readonly blocked = input(false);
   readonly picked = output<FoundPlace>();
+
+  private readonly field =
+    viewChild.required<ElementRef<HTMLInputElement>>('field');
+  protected readonly marker = computed(() => {
+    const role = this.role();
+    return role === 'start'
+      ? 'A'
+      : role === 'end'
+        ? 'B'
+        : `${this.number() ?? ''}`;
+  });
 
   protected readonly network = inject(NetworkStatus);
   private readonly geocoding = inject(GeocodingService);
@@ -69,7 +85,9 @@ export class PlaceField {
 
   /** A translation key telling why there is nothing to pick, if there is something to tell. */
   protected readonly messageKey = computed(() => {
-    if (!this.network.online()) return 'planner.search.offline';
+    // Said once by the start and the end, not by every stop.
+    if (!this.network.online())
+      return this.role() === 'stop' ? null : 'planner.search.offline';
     const error = this.error();
     if (error) return `planner.search.errors.${error}`;
     const query = this.query()?.trim();
@@ -83,6 +101,11 @@ export class PlaceField {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.cancel());
+  }
+
+  /** Puts the keyboard in the field, e.g. when it was just added. */
+  focus(): void {
+    this.field().nativeElement.focus();
   }
 
   protected optionId(index: number): string {
