@@ -876,6 +876,82 @@ describe('PlannerStore', () => {
       expect(store.points()).toHaveLength(2);
     });
 
+    describe('a drag', () => {
+      it('moves the point from where the drag started, in one step of history', () => {
+        computed();
+        const before = store.points();
+        store.startDrag();
+        expect(store.dragging()).toBe(true);
+        store.dragTo({ kind: 'move', index: 1, point: [3.21, 45.21] });
+        store.dragTo({ kind: 'move', index: 1, point: [3.22, 45.22] });
+        expect(store.points()).toEqual([
+          [3, 45],
+          [3.22, 45.22],
+        ]);
+        // Each place is an edit of the route the drag started from, not of the previous place.
+        expect(store.editBehind(store.points())).toMatchObject({
+          kind: 'move',
+          index: 1,
+          previous: before,
+        });
+        expect(store.routeBehind(store.points())).toBe(route);
+        store.endDrag();
+        expect(store.dragging()).toBe(false);
+
+        store.undo();
+        expect(store.points()).toEqual(before);
+        expect(store.routes()).toEqual([route]);
+        expect(store.canUndo()).toBe(true);
+        store.redo();
+        expect(store.points()[1]).toEqual([3.22, 45.22]);
+      });
+
+      it('inserts one waypoint, however long the drag', () => {
+        computed();
+        store.startDrag();
+        store.dragTo({ kind: 'insert', index: 1, point: [3.1, 45.1] });
+        store.dragTo({ kind: 'insert', index: 1, point: [3.11, 45.12] });
+        store.endDrag();
+        expect(store.points()).toEqual([
+          [3, 45],
+          [3.11, 45.12],
+          [3.2, 45.2],
+        ]);
+        store.undo();
+        expect(store.points()).toHaveLength(2);
+      });
+
+      it('puts the points and the route back when it is cancelled', () => {
+        computed();
+        const before = store.points();
+        store.startDrag();
+        store.dragTo({ kind: 'move', index: 0, point: [3.05, 45.05] });
+        store.setRoutes([{ ...route, distanceMeters: 1 }]);
+        store.cancelDrag();
+        expect(store.dragging()).toBe(false);
+        expect(store.points()).toEqual(before);
+        expect(store.routes()).toEqual([route]);
+        expect(store.canRedo()).toBe(false);
+        store.undo();
+        // Nothing of the drag is left in the history.
+        expect(store.points()).toEqual([[3, 45]]);
+      });
+
+      it('leaves no step when the point is dropped where it was', () => {
+        computed();
+        store.startDrag();
+        store.endDrag();
+        store.undo();
+        expect(store.points()).toEqual([[3, 45]]);
+      });
+
+      it('ignores a place outside a drag', () => {
+        computed();
+        store.dragTo({ kind: 'move', index: 1, point: [3.3, 45.3] });
+        expect(store.points()[1]).toEqual([3.2, 45.2]);
+      });
+    });
+
     it('lets the next edit be a local one after an undo', () => {
       computed();
       store.insertPoint(1, [3.1, 45.1]);

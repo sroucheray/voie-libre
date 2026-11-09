@@ -28,6 +28,7 @@
   "planner": {
     "title": "Route planner",
     "hint": {
+      "dragging": "Drop to place the point. Press Escape to put it back.",
       "start": "Click the map to set the start.",
       "end": "Click the map to set the end.",
       "route": "Click to add a stop. Drag a marker to move it, drag the route to add a stop there. Right-click or long-press a marker to remove it.",

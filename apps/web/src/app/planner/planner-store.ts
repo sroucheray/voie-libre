@@ -129,6 +129,32 @@ export type PointEdit = (
  * The state before a change, to come back to. `routes` is what was on screen then, or `null` when
  * it was not up to date with the points (still loading, or in error): going back to it computes.
  */
+/** A change of the points that a stretch of the route can absorb. */
+type EditOf =
+  | { kind: 'insert'; index: number; point: LngLat }
+  | { kind: 'move'; index: number; from: LngLat; point: LngLat }
+  | { kind: 'remove'; index: number; point: LngLat };
+
+/** `points` with point `index` moved; the start and the end of a loop move together. */
+function movedPoints(
+  points: LngLat[],
+  index: number,
+  point: LngLat,
+): { next: LngLat[]; edit?: EditOf } | null {
+  if (index < 0 || index >= points.length) return null;
+  const together =
+    isLoopOf(points) && (index === 0 || index === points.length - 1);
+  const next = points.map((p, i) =>
+    i === index || (together && (i === 0 || i === points.length - 1))
+      ? point
+      : p,
+  );
+  // Both ends of a loop move at once: no single stretch to recompute.
+  return together
+    ? { next }
+    : { next, edit: { kind: 'move', index, from: points[index], point } };
+}
+
 interface Snapshot {
   points: LngLat[];
   profile: Profile;
@@ -221,8 +247,16 @@ export class PlannerStore {
 
   /** The last change to the points that is a {@link PointEdit}, if it still is the latest. */
   private lastEdit: PointEdit | null = null;
-  /** True when the route on screen was that of the points `lastEdit` started from. */
-  private lastEditFromRoute = false;
+  /**
+   * The route `lastEdit` can be applied to: the one that was on screen for the points it started
+   * from. `null` when there was none (still loading, in error, or not the route of those points).
+   */
+  private lastEditRoute: PlannedRoute | null = null;
+  /** The state a drag on the map started from, while it lasts. */
+  private dragBase: Snapshot | null = null;
+  private readonly draggingState = signal(false);
+  /** True while a marker (or the route, to insert a point) is being dragged on the map. */
+  readonly dragging = this.draggingState.asReadonly();
 
   /**
    * The loop mode that applies to the current points, or null (plain route, or plain loop back to
@@ -407,22 +441,71 @@ export class PlannerStore {
 
   /** The start and the end of a loop move together, so that it stays closed. */
   movePoint(index: number, point: LngLat): void {
-    const points = this.pointsState();
-    if (index < 0 || index >= points.length) return;
-    const together =
-      isLoopOf(points) && (index === 0 || index === points.length - 1);
-    const next = points.map((p, i) =>
-      i === index || (together && (i === 0 || i === points.length - 1))
-        ? point
-        : p,
-    );
-    // Both ends of a loop move at once: no single stretch to recompute.
-    this.setPoints(
-      next,
-      together
-        ? undefined
-        : { kind: 'move', index, from: points[index], point },
-    );
+    const moved = movedPoints(this.pointsState(), index, point);
+    if (moved) this.setPoints(moved.next, moved.edit);
+  }
+
+  /**
+   * A drag starts on the map. Until {@link endDrag} or {@link cancelDrag}, {@link dragTo} shows
+   * where the point would go, each time from the state the drag started from: the whole drag is
+   * one change, undone in one step.
+   */
+  startDrag(): void {
+    if (this.dragBase) return;
+    this.dragBase = this.snapshot();
+    this.draggingState.set(true);
+  }
+
+  /** The point being dragged is here now: moves point `index`, or inserts a waypoint at `index`. */
+  dragTo(change: {
+    kind: 'move' | 'insert';
+    index: number;
+    point: LngLat;
+  }): void {
+    const base = this.dragBase;
+    if (!base) return;
+    const { index, point } = change;
+    let next: LngLat[];
+    let edit: EditOf | undefined;
+    if (change.kind === 'move') {
+      const moved = movedPoints(base.points, index, point);
+      if (!moved) return;
+      ({ next, edit } = moved);
+    } else {
+      const points = base.points;
+      if (points.length < 2 || points.length >= MAX_POINTS) return;
+      const at = Math.min(Math.max(index, 1), points.length - 1);
+      next = [...points.slice(0, at), point, ...points.slice(at)];
+      edit = { kind: 'insert', index: at, point };
+    }
+    const current = this.pointsState();
+    if (
+      next.length === current.length &&
+      next.every((p, i) => p[0] === current[i][0] && p[1] === current[i][1])
+    ) {
+      return;
+    }
+    this.lastEditRoute = base.routes?.[base.selected] ?? null;
+    this.lastEdit = edit ? { ...edit, previous: base.points, next } : null;
+    this.pointsState.set(next);
+  }
+
+  /** The drag ends where it is: one step of history, back to where it started. */
+  endDrag(): void {
+    const base = this.dragBase;
+    this.dragBase = null;
+    this.draggingState.set(false);
+    if (!base || base.points === this.pointsState()) return;
+    this.undoStack.update((stack) => [...stack, base].slice(-HISTORY_DEPTH));
+    this.redoStack.set([]);
+  }
+
+  /** The drag is given up: the points and the route are those it started from. */
+  cancelDrag(): void {
+    const base = this.dragBase;
+    this.dragBase = null;
+    this.draggingState.set(false);
+    if (base && base.points !== this.pointsState()) this.restore(base);
   }
 
   /** Sets the start (the first point): the first one if there is none yet. */
@@ -597,19 +680,15 @@ export class PlannerStore {
   }
 
   /** Sets the points, remembering the change when it is one a stretch of the route can absorb. */
-  private setPoints(
-    next: LngLat[],
-    edit?:
-      | { kind: 'insert'; index: number; point: LngLat }
-      | { kind: 'move'; index: number; from: LngLat; point: LngLat }
-      | { kind: 'remove'; index: number; point: LngLat },
-  ): void {
+  private setPoints(next: LngLat[], edit?: EditOf): void {
     this.record();
     // A second edit made before the route of the first is in place starts from a route that is not
     // the one of its points: it cannot be applied to it.
-    this.lastEditFromRoute =
+    this.lastEditRoute =
       this.statusState() === 'ready' &&
-      this.routesFor === this.currentSignature();
+      this.routesFor === this.currentSignature()
+        ? (this.routesState()[this.selectedState()] ?? null)
+        : null;
     this.lastEdit = edit
       ? { ...edit, previous: this.pointsState(), next }
       : null;
@@ -699,18 +778,27 @@ export class PlannerStore {
    * has changed the points since). `null` otherwise: the route must be computed in full.
    */
   editBehind(points: readonly LngLat[]): PointEdit | null {
-    return this.lastEdit?.next === points && this.lastEditFromRoute
+    return this.lastEdit?.next === points && this.lastEditRoute
       ? this.lastEdit
       : null;
   }
 
+  /** The route the edit of {@link editBehind} applies to (the one a drag started from, if any). */
+  routeBehind(points: readonly LngLat[]): PlannedRoute | null {
+    return this.lastEdit?.next === points ? this.lastEditRoute : null;
+  }
+
   /**
-   * Replaces `window` of the selected route with `stretch`, the answer for that stretch alone. Only
-   * the selected alternative is kept, so alternatives go back to 1, and the result counts as
-   * restored: {@link RoutePlanner} must not compute it again.
+   * Replaces `window` of `route` (the selected one unless the edit started from another, see
+   * {@link routeBehind}) with `stretch`, the answer for that stretch alone. Only that alternative
+   * is kept, so alternatives go back to 1, and the result counts as restored: {@link RoutePlanner}
+   * must not compute it again.
    */
-  applyLocalEdit(window: EditWindow, stretch: Stretch): void {
-    const route = this.routesState()[this.selectedState()];
+  applyLocalEdit(
+    window: EditWindow,
+    stretch: Stretch,
+    route: PlannedRoute | undefined = this.routesState()[this.selectedState()],
+  ): void {
     if (!route) return;
     this.restored = this.routesFor = inputsSignature(
       this.pointsState(),

@@ -13,7 +13,7 @@ import { provideTestTransloco } from '../../testing/transloco-testing';
 import { provideInMemoryRouteStore } from '../../testing/in-memory-route-store';
 import { API_CLIENT } from '../core/api/api-client';
 import { LanguageService } from '../core/i18n/language.service';
-import { Planner } from './planner';
+import { LIVE_DRAG_INTERVAL_MS, Planner } from './planner';
 import { PlannerStore } from './planner-store';
 import { ROUTE_DEBOUNCE_MS } from './route-planner';
 import { SEARCH_DEBOUNCE_MS } from '../search/place-field';
@@ -692,6 +692,130 @@ describe('Planner', () => {
     await view.settle();
     expect(requests).toHaveLength(2);
     expect(requests[1].points[1]).toEqual({ lon: 3.3, lat: 45.5 });
+  });
+
+  describe('dragging on the map', () => {
+    async function dragging() {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.click(3.249, 45.544);
+      await view.settle();
+      const store = TestBed.inject(PlannerStore);
+      /** Lets `ms` pass, with the effects and the request that follow. */
+      const pass = async (ms: number) => {
+        TestBed.tick();
+        await vi.advanceTimersByTimeAsync(ms);
+        TestBed.tick();
+        await vi.advanceTimersByTimeAsync(1);
+        TestBed.tick();
+        view.fixture.detectChanges();
+      };
+      return { ...view, store, pass, handlers: view.driver.handlers };
+    }
+
+    it('recomputes the route while a marker moves, at a steady pace', async () => {
+      const view = await dragging();
+      view.handlers.onDragStart();
+      view.fixture.detectChanges();
+      expect(view.text()).toContain('Press Escape to put it back.');
+      for (let i = 1; i <= 20; i++) {
+        view.handlers.onDragPoint(1, [3.249 + i / 1000, 45.544]);
+      }
+      // Nothing is asked at every move of the pointer.
+      expect(requests).toHaveLength(1);
+      await view.pass(LIVE_DRAG_INTERVAL_MS);
+      expect(requests).toHaveLength(2);
+      expect(requests[1].points.at(-1)).toEqual({ lon: 3.269, lat: 45.544 });
+
+      view.handlers.onDragPoint(1, [3.28, 45.544]);
+      view.handlers.onDragPoint(1, [3.29, 45.544]);
+      // The first route came half an interval after the start; the next one waits a whole one.
+      await view.pass(LIVE_DRAG_INTERVAL_MS / 4);
+      expect(requests).toHaveLength(2);
+      await view.pass(LIVE_DRAG_INTERVAL_MS / 2);
+      expect(requests).toHaveLength(3);
+      expect(requests[2].points.at(-1)).toEqual({ lon: 3.29, lat: 45.544 });
+    });
+
+    it('keeps the drop and undoes the whole drag in one step', async () => {
+      const view = await dragging();
+      view.handlers.onDragStart();
+      view.handlers.onDragPoint(1, [3.26, 45.544]);
+      await view.pass(LIVE_DRAG_INTERVAL_MS);
+      view.handlers.onDragPoint(1, [3.27, 45.544]);
+      view.handlers.onMovePoint(1, [3.3, 45.5]);
+      await view.settle();
+      expect(view.store.dragging()).toBe(false);
+      expect(view.store.points()[1]).toEqual([3.3, 45.5]);
+      expect(requests.at(-1)!.points.at(-1)).toEqual({ lon: 3.3, lat: 45.5 });
+      const count = requests.length;
+      // The place the pointer went through before the drop is not asked afterwards.
+      await view.pass(2 * LIVE_DRAG_INTERVAL_MS);
+      expect(requests).toHaveLength(count);
+
+      view.store.undo();
+      expect(view.store.points()[1]).toEqual([3.249, 45.544]);
+      view.store.undo();
+      expect(view.store.points()).toHaveLength(1);
+    });
+
+    it('puts the point and the route back on Escape', async () => {
+      const view = await dragging();
+      const route = view.store.routes();
+      view.handlers.onDragStart();
+      view.handlers.onDragPoint(1, [3.26, 45.544]);
+      await view.pass(LIVE_DRAG_INTERVAL_MS);
+      view.handlers.onDragPoint(1, [3.27, 45.544]);
+      const count = requests.length;
+
+      const escape = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      });
+      document.body.dispatchEvent(escape);
+      expect(escape.defaultPrevented).toBe(true);
+      expect(view.driver.cancelledDrags).toBe(1);
+      expect(view.store.dragging()).toBe(false);
+      expect(view.store.points()[1]).toEqual([3.249, 45.544]);
+      expect(view.store.routes()).toEqual(route);
+      await view.pass(2 * LIVE_DRAG_INTERVAL_MS);
+      expect(requests).toHaveLength(count);
+      expect(view.store.canRedo()).toBe(false);
+    });
+
+    it('does not undo in the middle of a drag', async () => {
+      const view = await dragging();
+      view.handlers.onDragStart();
+      document.body.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'z',
+          ctrlKey: true,
+          bubbles: true,
+        }),
+      );
+      expect(view.store.points()).toHaveLength(2);
+    });
+
+    it('inserts a waypoint dragged from the route, in the segment it was taken from', async () => {
+      const view = await dragging();
+      const [lon, lat] = view.store.selectedGeometry()[1];
+      view.handlers.onDragStart();
+      view.handlers.onDragInsert([lon, lat], [3.2, 45.7]);
+      await view.pass(LIVE_DRAG_INTERVAL_MS);
+      expect(view.store.points()).toHaveLength(3);
+      expect(view.store.points()[1]).toEqual([3.2, 45.7]);
+      view.handlers.onDragInsert([lon, lat], [3.21, 45.71]);
+      view.handlers.onInsertPoint([lon, lat], [3.22, 45.72]);
+      await view.settle();
+      expect(view.store.points()).toEqual([
+        [3.087, 45.777],
+        [3.22, 45.72],
+        [3.249, 45.544],
+      ]);
+      view.store.undo();
+      expect(view.store.points()).toHaveLength(2);
+    });
   });
 
   it('removes a stop from the panel or with the map handler', async () => {

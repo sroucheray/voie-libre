@@ -27,6 +27,8 @@ export class PointNamer {
     effect((onCleanup) => {
       const points = this.store.points();
       const labels = this.store.labels();
+      // A point being dragged has no place yet: its address is asked once it is dropped.
+      if (this.store.dragging()) return;
       if (!this.network.online() || points.length === 0) return;
       const ends = [points[0], points[points.length - 1]];
       const missing = ends.filter(

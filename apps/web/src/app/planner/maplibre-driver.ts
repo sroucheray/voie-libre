@@ -67,6 +67,11 @@ export async function createMapLibreDriver(
     typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches;
   let destroyed = false;
   let dragging = false;
+  /** A marker is being dragged: MapLibre moves it, so the markers are not drawn again meanwhile. */
+  let markerDrag = false;
+  let specs: MarkerSpec[] = [];
+  /** Markers asked for during a drag, drawn when it ends. */
+  let deferred = false;
   let preview: LngLat3[] | null = null;
   let highlight: LngLat3[] | null = null;
 
@@ -263,10 +268,11 @@ export async function createMapLibreDriver(
   } | null = null;
   let suppressClick = false;
 
-  const endRouteDrag = () => {
+  /** Stops following the pointer; gives back the drag that was in progress, if any. */
+  const releaseRouteDrag = () => {
     const drag = routeDrag;
     routeDrag = null;
-    if (!drag) return;
+    if (!drag) return null;
     map.off('mousemove', moveRouteDrag);
     map.off('touchmove', moveRouteDrag);
     map.off('mouseup', endRouteDrag);
@@ -277,8 +283,15 @@ export async function createMapLibreDriver(
       // The click that follows the drop must not add a point on top of the inserted one.
       suppressClick = true;
       setTimeout(() => (suppressClick = false), 50);
-      handlers.onInsertPoint(drag.from, drag.last);
     }
+    return drag;
+  };
+
+  const endRouteDrag = () => {
+    const drag = releaseRouteDrag();
+    if (!drag?.marker) return;
+    handlers.onInsertPoint(drag.from, drag.last);
+    queueMicrotask(drawDeferred);
   };
 
   const moveRouteDrag = (event: {
@@ -299,8 +312,10 @@ export async function createMapLibreDriver(
         .setLngLat(drag.last)
         .addTo(map);
       hideGhost();
+      handlers.onDragStart();
     }
     drag.marker.setLngLat(drag.last);
+    handlers.onDragInsert(drag.from, drag.last);
   };
 
   const startRouteDrag = (event: {
@@ -404,74 +419,106 @@ export async function createMapLibreDriver(
     markers = [];
   };
 
-  return {
-    setMarkers(specs: MarkerSpec[]) {
-      clearMarkers();
-      markers = specs.map((spec, index) => {
-        const element = document.createElement('div');
-        element.className = `planner-marker planner-marker--${spec.role}${spec.loop ? ' planner-marker--loop' : ''}`;
-        element.textContent = spec.label;
-        if (spec.closable) {
-          // The start marker invites to close the loop: it grows under the pointer (the magnet).
-          element.classList.add('planner-marker--closable');
-          element.dataset['hint'] = spec.closable;
-          element.setAttribute('role', 'button');
-          element.setAttribute(
-            'aria-label',
-            `${spec.ariaLabel}: ${spec.closable}`,
-          );
-          element.addEventListener('click', (event) => {
-            event.stopPropagation();
-            if (!dragging) handlers.onCloseLoop();
-          });
-        } else {
-          element.setAttribute('role', 'img');
-          element.setAttribute('aria-label', spec.ariaLabel);
-        }
-        // Right click removes the point (the panel offers a button too).
-        element.addEventListener('contextmenu', (event) => {
-          event.preventDefault();
-          requestRemove(index);
-        });
-        // Long press removes it on a touch screen (see the map's own long press above).
-        let markerPress: ReturnType<typeof setTimeout> | undefined;
-        const stopPress = () => {
-          clearTimeout(markerPress);
-          markerPress = undefined;
-        };
-        element.addEventListener(
-          'touchstart',
-          () => {
-            stopPress();
-            markerPress = setTimeout(() => {
-              markerPress = undefined;
-              if (!dragging) requestRemove(index);
-            }, LONG_PRESS_MS);
-          },
-          { passive: true },
+  /** Draws the markers asked for while a drag was in progress. */
+  const drawDeferred = () => {
+    if (!deferred || destroyed) return;
+    deferred = false;
+    drawMarkers();
+  };
+
+  const drawMarkers = () => {
+    clearMarkers();
+    markers = specs.map((spec, index) => {
+      const element = document.createElement('div');
+      element.className = `planner-marker planner-marker--${spec.role}${spec.loop ? ' planner-marker--loop' : ''}`;
+      element.textContent = spec.label;
+      if (spec.closable) {
+        // The start marker invites to close the loop: it grows under the pointer (the magnet).
+        element.classList.add('planner-marker--closable');
+        element.dataset['hint'] = spec.closable;
+        element.setAttribute('role', 'button');
+        element.setAttribute(
+          'aria-label',
+          `${spec.ariaLabel}: ${spec.closable}`,
         );
-        element.addEventListener('touchmove', stopPress, { passive: true });
-        element.addEventListener('touchend', stopPress);
-        element.addEventListener('touchcancel', stopPress);
-        const marker = new maplibre.Marker({
-          element,
-          draggable: true,
-          clickTolerance: 5,
-        })
-          .setLngLat(spec.lngLat)
-          .addTo(map);
-        marker.on('dragstart', () => {
-          dragging = true;
-          hideGhost();
+        element.addEventListener('click', (event) => {
+          event.stopPropagation();
+          if (!dragging) handlers.onCloseLoop();
         });
-        marker.on('dragend', () => {
-          // The click that ends a drag must not count as a click on the marker.
-          setTimeout(() => (dragging = false), 0);
-          const { lng, lat } = marker.getLngLat();
-          handlers.onMovePoint(index, [lng, lat] as LngLat);
-        });
-        return marker;
+      } else {
+        element.setAttribute('role', 'img');
+        element.setAttribute('aria-label', spec.ariaLabel);
+      }
+      // Right click removes the point (the panel offers a button too).
+      element.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        requestRemove(index);
       });
+      // Long press removes it on a touch screen (see the map's own long press above).
+      let markerPress: ReturnType<typeof setTimeout> | undefined;
+      const stopPress = () => {
+        clearTimeout(markerPress);
+        markerPress = undefined;
+      };
+      element.addEventListener(
+        'touchstart',
+        () => {
+          stopPress();
+          markerPress = setTimeout(() => {
+            markerPress = undefined;
+            if (!dragging) requestRemove(index);
+          }, LONG_PRESS_MS);
+        },
+        { passive: true },
+      );
+      element.addEventListener('touchmove', stopPress, { passive: true });
+      element.addEventListener('touchend', stopPress);
+      element.addEventListener('touchcancel', stopPress);
+      const marker = new maplibre.Marker({
+        element,
+        draggable: true,
+        clickTolerance: 5,
+      })
+        .setLngLat(spec.lngLat)
+        .addTo(map);
+      marker.on('dragstart', () => {
+        dragging = true;
+        markerDrag = true;
+        hideGhost();
+        handlers.onDragStart();
+      });
+      marker.on('drag', () => {
+        const { lng, lat } = marker.getLngLat();
+        handlers.onDragPoint(index, [lng, lat] as LngLat);
+      });
+      marker.on('dragend', () => {
+        // The click that ends a drag must not count as a click on the marker.
+        setTimeout(() => (dragging = false), 0);
+        markerDrag = false;
+        const { lng, lat } = marker.getLngLat();
+        handlers.onMovePoint(index, [lng, lat] as LngLat);
+        queueMicrotask(drawDeferred);
+      });
+      return marker;
+    });
+  };
+
+  return {
+    setMarkers(next: MarkerSpec[]) {
+      specs = next;
+      // The route changes under a drag: drawing the markers again would end it.
+      if (markerDrag || routeDrag?.marker) deferred = true;
+      else drawMarkers();
+    },
+    cancelDrag() {
+      releaseRouteDrag();
+      if (markerDrag) {
+        markerDrag = false;
+        setTimeout(() => (dragging = false), 0);
+      }
+      // Removing the marker being dragged is what makes MapLibre let go of it.
+      deferred = false;
+      drawMarkers();
     },
     setRoutes(next: LngLat3[][], nextSelected: number) {
       routes = next;
@@ -618,6 +665,7 @@ export async function createMapLibreDriver(
       map.off('click', onClick);
       for (const id of [
         PREVIEW_LAYER,
+        HIGHLIGHT_LAYER,
         SELECTED_LAYER,
         ALTERNATIVE_LAYER,
         ACCURACY_LINE_LAYER,
@@ -625,7 +673,12 @@ export async function createMapLibreDriver(
       ]) {
         if (map.getLayer(id)) map.removeLayer(id);
       }
-      for (const id of [SOURCE, PREVIEW_SOURCE, ACCURACY_SOURCE]) {
+      for (const id of [
+        SOURCE,
+        HIGHLIGHT_SOURCE,
+        PREVIEW_SOURCE,
+        ACCURACY_SOURCE,
+      ]) {
         if (map.getSource(id)) map.removeSource(id);
       }
     },

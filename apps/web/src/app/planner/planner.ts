@@ -59,6 +59,12 @@ const UNDO_MS = 6000;
 /** Where "My position" was asked: the start, the end, the stop at an index, or the new stop. */
 type PositionTarget = 'start' | 'end' | 'new' | number;
 
+/** Least time between two routes asked for during a drag: under the API's limit for `POST /route`. */
+export const LIVE_DRAG_INTERVAL_MS = 600;
+
+/** Where a drag in progress puts its point. */
+type DragChange = { kind: 'move' | 'insert'; index: number; point: LngLat };
+
 @Component({
   selector: 'vl-planner',
   imports: [MapView, TranslocoPipe, SavedRoutes, ElevationPanel, PlaceField],
@@ -79,6 +85,7 @@ export class Planner {
   /** What the help bar says: it depends on how far the route is. */
   protected readonly helpKey = computed(() => {
     const count = this.store.points().length;
+    if (this.store.dragging()) return 'planner.hint.dragging';
     if (count === 0) return 'planner.hint.start';
     if (count === 1) return 'planner.hint.end';
     return this.store.isLoop() ? 'planner.hint.loop' : 'planner.hint.route';
@@ -338,6 +345,12 @@ export class Planner {
       this.driver()?.setPreview(this.store.preview());
     });
 
+    // The route of a drag arrived: the place the pointer reached meanwhile is next.
+    effect(() => {
+      this.store.status();
+      untracked(() => this.flushDrag());
+    });
+
     effect(() => {
       const driver = this.driver();
       const routes = this.store.routes();
@@ -358,7 +371,11 @@ export class Planner {
         onInsertPoint: (hit, to) => this.insertOnRoute(hit, to),
         onContextMenu: (point, screen) =>
           this.menu.set({ point, x: screen.x, y: screen.y }),
-        onMovePoint: (index, point) => this.store.movePoint(index, point),
+        onMovePoint: (index, point) => this.dropPoint(index, point),
+        onDragStart: () => this.startDrag(),
+        onDragPoint: (index, point) =>
+          this.dragTo({ kind: 'move', index, point }),
+        onDragInsert: (hit, to) => this.dragInsert(hit, to),
         onRemovePoint: (index) => this.store.removePoint(index),
         onHoverRoute: (point) => this.hoverRoute(point),
       });
@@ -374,12 +391,105 @@ export class Planner {
 
   /** A waypoint dropped from the route goes in the segment it was dragged from. */
   private insertOnRoute(hit: LngLat, to: LngLat): void {
+    if (this.store.dragging()) {
+      const index = this.insertAt;
+      this.stopLiveDrag();
+      if (index === null || index === undefined) {
+        this.store.cancelDrag();
+      } else {
+        this.store.dragTo({ kind: 'insert', index, point: to });
+        this.store.endDrag();
+      }
+      return;
+    }
     const index = insertionIndex(
       this.store.selectedGeometry(),
       this.store.points(),
       hit,
     );
     if (index !== null) this.store.insertPoint(index, to);
+  }
+
+  /** Where the drag in progress goes next, kept until the route can be asked again. */
+  private pendingDrag: DragChange | null = null;
+  private dragTimer: ReturnType<typeof setTimeout> | undefined;
+  private dragSentAt = 0;
+  /** Where the route being dragged gets its new waypoint; `null` when it has no place for one. */
+  private insertAt: number | null | undefined;
+
+  private startDrag(): void {
+    this.stopLiveDrag();
+    this.store.startDrag();
+    // The first moves of a drag are too short to be worth a route.
+    this.dragSentAt = Date.now() - LIVE_DRAG_INTERVAL_MS / 2;
+  }
+
+  /** The route is dragged from `hit`: the segment is found once, on the route the drag started from. */
+  private dragInsert(hit: LngLat, to: LngLat): void {
+    if (!this.store.dragging()) return;
+    if (this.insertAt === undefined) {
+      this.insertAt = insertionIndex(
+        this.store.selectedGeometry(),
+        this.store.points(),
+        hit,
+      );
+    }
+    if (this.insertAt !== null) {
+      this.dragTo({ kind: 'insert', index: this.insertAt, point: to });
+    }
+  }
+
+  /**
+   * The point being dragged moved. The route follows, but not at every move: the latest place
+   * waits for the previous answer and for {@link LIVE_DRAG_INTERVAL_MS} since the last request.
+   */
+  private dragTo(change: DragChange): void {
+    if (!this.store.dragging()) return;
+    this.pendingDrag = change;
+    this.flushDrag();
+  }
+
+  private flushDrag(): void {
+    const change = this.pendingDrag;
+    if (!change || !this.store.dragging()) return;
+    // The answer on its way is shown first: the status effect comes back here.
+    if (this.store.status() === 'loading') return;
+    const wait = this.dragSentAt + LIVE_DRAG_INTERVAL_MS - Date.now();
+    if (wait > 0) {
+      this.dragTimer ??= setTimeout(() => {
+        this.dragTimer = undefined;
+        this.flushDrag();
+      }, wait);
+      return;
+    }
+    this.pendingDrag = null;
+    this.dragSentAt = Date.now();
+    this.store.dragTo(change);
+  }
+
+  private stopLiveDrag(): void {
+    clearTimeout(this.dragTimer);
+    this.dragTimer = undefined;
+    this.pendingDrag = null;
+    this.insertAt = undefined;
+  }
+
+  /** A marker was dropped: the end of a drag, in one step of history. */
+  private dropPoint(index: number, point: LngLat): void {
+    if (!this.store.dragging()) {
+      this.store.movePoint(index, point);
+      return;
+    }
+    this.stopLiveDrag();
+    this.store.dragTo({ kind: 'move', index, point });
+    this.store.endDrag();
+  }
+
+  /** Escape during a drag puts the point and the route back. */
+  private cancelDrag(): void {
+    this.stopLiveDrag();
+    this.driver()?.cancelDrag();
+    this.store.cancelDrag();
   }
 
   /** Hovering the route on the map moves the profile's cursor to the nearest point. */
@@ -578,6 +688,14 @@ export class Planner {
 
   /** `Ctrl/Cmd+Z` undo, `Ctrl/Cmd+Shift+Z` and `Ctrl+Y` redo. A field keeps its own undo. */
   private onHistoryKey(event: KeyboardEvent): void {
+    if (this.store.dragging()) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        this.cancelDrag();
+      }
+      // Nothing is undone or redone in the middle of a drag.
+      return;
+    }
     if (event.defaultPrevented || event.altKey) return;
     if (!(event.ctrlKey || event.metaKey) || this.loopDialogOpen()) return;
     const target = event.target as Element | null;

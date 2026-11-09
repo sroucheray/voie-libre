@@ -64,7 +64,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     routeRateLimitMax: integer(
       'ROUTE_RATE_LIMIT_MAX',
       env['ROUTE_RATE_LIMIT_MAX'],
-      20,
+      120,
     ),
     elevationRateLimitMax: integer(
       'ELEVATION_RATE_LIMIT_MAX',

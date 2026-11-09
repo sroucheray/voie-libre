@@ -21,6 +21,7 @@ export class FakePlannerDriver implements PlannerMapDriver {
   location: LocationFix | null = null;
   preview: LngLat3[] | null = null;
   highlight: LngLat3[] | null = null;
+  cancelledDrags = 0;
   destroyed = false;
 
   constructor(readonly handlers: PlannerMapHandlers) {}
@@ -52,6 +53,9 @@ export class FakePlannerDriver implements PlannerMapDriver {
   }
   setLocation(fix: LocationFix | null) {
     this.location = fix;
+  }
+  cancelDrag() {
+    this.cancelledDrags++;
   }
   destroy() {
     this.destroyed = true;

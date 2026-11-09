@@ -15,6 +15,12 @@ import type { LngLat3 } from './planner-map-driver';
 /** Wait for the user to stop editing before calling the API. */
 export const ROUTE_DEBOUNCE_MS = 300;
 
+/** A stretch to recompute, and the route it is cut from. */
+interface LocalWork {
+  plan: LocalEditPlan;
+  route: PlannedRoute;
+}
+
 const API_ERROR_CODES: readonly PlannerErrorCode[] = [
   'invalid_request',
   'no_route',
@@ -69,6 +75,10 @@ export class RoutePlanner {
       const local = untracked(() => this.localPlan(points));
       untracked(() => this.store.startLoading());
       const controller = new AbortController();
+      // A drag on the map paces its own changes (see `Planner`): no need to wait for it to stop.
+      const delay = untracked(() => this.store.dragging())
+        ? 0
+        : ROUTE_DEBOUNCE_MS;
       const timer = setTimeout(
         () =>
           void (local
@@ -80,7 +90,7 @@ export class RoutePlanner {
                 loop,
                 controller.signal,
               )),
-        ROUTE_DEBOUNCE_MS,
+        delay,
       );
       onCleanup(() => {
         clearTimeout(timer);
@@ -91,23 +101,26 @@ export class RoutePlanner {
 
   /**
    * The stretch to recompute when `points` come from a single edit of a route that is up to date
-   * with the previous points, else `null`. Must be called before the status changes to loading.
+   * with the previous points (during a drag: with the points the drag started from), else `null`.
    */
-  private localPlan(points: LngLat[]): LocalEditPlan | null {
+  private localPlan(points: LngLat[]): LocalWork | null {
     const changed = points !== this.seenPoints;
     this.seenPoints = points;
-    if (!changed || this.store.status() !== 'ready') return null;
+    if (!changed) return null;
     const edit = this.store.editBehind(points);
-    return edit ? planLocalEdit(this.store.selectedGeometry(), edit) : null;
+    const route = this.store.routeBehind(points);
+    if (!edit || !route) return null;
+    const plan = planLocalEdit(route.geometry, edit);
+    return plan ? { plan, route } : null;
   }
 
   private async computeLocal(
-    plan: LocalEditPlan,
+    { plan, route }: LocalWork,
     profile: Profile,
     signal: AbortSignal,
   ): Promise<void> {
     if (plan.direct) {
-      this.store.applyLocalEdit(plan.window, plan.direct);
+      this.store.applyLocalEdit(plan.window, plan.direct, route);
       return;
     }
     try {
@@ -122,12 +135,16 @@ export class RoutePlanner {
       if (signal.aborted) return;
       const stretch = data?.routes[0];
       if (stretch) {
-        this.store.applyLocalEdit(plan.window, {
-          geometry: stretch.geometry as LngLat3[],
-          distanceMeters: stretch.distanceMeters,
-          ascentMeters: stretch.ascentMeters,
-          durationSeconds: stretch.durationSeconds,
-        });
+        this.store.applyLocalEdit(
+          plan.window,
+          {
+            geometry: stretch.geometry as LngLat3[],
+            distanceMeters: stretch.distanceMeters,
+            ascentMeters: stretch.ascentMeters,
+            durationSeconds: stretch.durationSeconds,
+          },
+          route,
+        );
       } else {
         this.store.setLocalEditError(errorCodeFrom(response.status, error));
       }

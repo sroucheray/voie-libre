@@ -316,6 +316,41 @@ describe('RoutePlanner', () => {
       expect(route.geometry).not.toContainEqual([0.1, 0.002, 100]);
     });
 
+    it('recomputes each place of a drag as a stretch of the route the drag started from', async () => {
+      store.addPoint([0.1, 0.002]);
+      await settle();
+      const before = store.routes()[0];
+      store.startDrag();
+      store.dragTo({ kind: 'move', index: 1, point: [0.1, 0.003] });
+      // No waiting for the user to stop: the pace is set by whoever reports the drag.
+      TestBed.tick();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(requests).toHaveLength(3);
+      store.dragTo({ kind: 'move', index: 1, point: [0.1, 0.004] });
+      TestBed.tick();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(requests).toHaveLength(4);
+      const body = requests[3].body as {
+        points: { lon: number; lat: number }[];
+      };
+      expect(body.points).toHaveLength(3);
+      expect(body.points[1]).toEqual({ lon: 0.1, lat: 0.004 });
+      // Both ends are on the route as it was before the drag.
+      expect(before.geometry).toContainEqual([
+        body.points[0].lon,
+        body.points[0].lat,
+        100,
+      ]);
+      expect(store.routes()[0].geometry.slice(0, 50)).toEqual(
+        line.slice(0, 50),
+      );
+
+      store.cancelDrag();
+      await settle();
+      expect(requests).toHaveLength(4);
+      expect(store.routes()[0]).toBe(before);
+    });
+
     it('computes everything when the profile changes after an edit', async () => {
       store.addPoint([0.1, 0.002]);
       await settle();

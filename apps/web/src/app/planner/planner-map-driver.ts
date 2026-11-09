@@ -39,7 +39,14 @@ export interface PlannerMapHandlers {
   onInsertPoint(hit: LngLat, to: LngLat): void;
   /** A right click or a long press on the map, at `point` (`screen`: pixels in the map). */
   onContextMenu(point: LngLat, screen: { x: number; y: number }): void;
+  /** Marker `index` was dragged and dropped at `point`. */
   onMovePoint(index: number, point: LngLat): void;
+  /** A marker, or the route (to insert a point), starts being dragged. */
+  onDragStart(): void;
+  /** Marker `index` is being dragged and is at `point` for now. */
+  onDragPoint(index: number, point: LngLat): void;
+  /** The route is being dragged from `hit` and the pointer is at `to` for now. */
+  onDragInsert(hit: LngLat, to: LngLat): void;
   onRemovePoint(index: number): void;
   /** The pointer is over the selected route (`point`), or left it (`null`). */
   onHoverRoute(point: LngLat | null): void;
@@ -67,6 +74,8 @@ export interface PlannerMapDriver {
    * first fix after `null` also moves the view there. `null` hides everything.
    */
   setLocation(fix: LocationFix | null): void;
+  /** Gives up the drag in progress: nothing is reported for it, the markers are drawn again. */
+  cancelDrag(): void;
   destroy(): void;
 }
 
