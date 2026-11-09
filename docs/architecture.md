@@ -67,6 +67,8 @@ BRouter calcule tous les itinéraires derrière une interface « fournisseur de 
 
 **Retouches locales :** ajouter, déplacer ou supprimer un point d'un itinéraire déjà calculé ne recalcule qu'un court tronçon autour du point (au moins 500 m de chaque côté, ou deux fois la distance du point à la route), avec un seul appel de trois points. Le reste de la géométrie, une boucle par exemple, est conservé tel quel. Tout est côté web (`planner/local-edit.ts`), sans changement de l'API : changer de profil ou d'alternatives recalcule tout.
 
+**Recalcul pendant le glisser :** tant qu'un point (ou la trace, pour en tirer une étape) est glissé sur la carte, le tracé suit le pointeur. Chaque position est une retouche locale du tracé d'avant le glisser, envoyée au plus toutes les 600 ms et jamais avant la réponse précédente (soit 100 appels par minute au plus, sous la limite de 120 de `POST /route`). `Échap` pendant le glisser remet le point et le tracé en place ; une fois le point déposé, le glisser compte pour une seule étape d'annulation.
+
 **Annuler et rétablir :** le store web garde les 20 derniers états (points, profil, alternatives, mode de boucle, et le tracé affiché à ce moment-là). `Ctrl+Z` et deux boutons du panneau reviennent à l'état précédent sans aucun appel à l'API ; `Ctrl+Maj+Z` ou `Ctrl+Y` le rétablissent. Ouvrir un parcours enregistré ou importer un GPX repart d'un historique vide.
 
 **Alternatives :** OpenRouteService (clé d'API et quotas) et Valhalla (profils vélo moins fins) restent des plans de repli. GraphHopper peut aussi tourner sur Android si le calcul sur appareil devient un objectif.
@@ -167,7 +169,7 @@ L'API est petite : elle calcule, enregistre, partage et signale. Les endpoints c
 
 **État de la phase 1 (écart avec la proposition) :** le partage de la phase 1 se fait sans compte : parcours immuables, jeton de suppression dont seul l'empreinte SHA-256 est stockée, ouverture dans l'application sur `/p/:id`. `PUT /p/{id}` ne met donc pas à jour (la synchronisation de la phase 2 reste à concevoir) et le QR code n'est pas encore fait. `POST /loops` et les endpoints de signalement ne sont pas implémentés.
 
-**Protections :** limitation de débit par adresse sur `/route` et `/loops`, taille maximale des requêtes, et mise en cache des itinéraires identiques.
+**Protections :** limitation de débit par adresse sur `/route` et `/loops`, taille maximale des requêtes, et mise en cache des itinéraires identiques. Les appels à BRouter passent par une file d'attente dans l'API (`BROUTER_MAX_CONCURRENT`) : au-delà de son nombre de fils, BRouter interrompt un calcul en cours.
 
 **Documentation :** la spécification OpenAPI est générée depuis les schémas de validation de Fastify et publiée par le serveur (fichier de spécification et interface de consultation). Le client TypeScript d'Angular en est généré, pour que le front et l'API ne divergent pas.
 
