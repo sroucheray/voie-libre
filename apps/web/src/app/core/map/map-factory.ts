@@ -4,6 +4,7 @@ import {
   OfflineFirstSource,
   type OfflineTilesReader,
 } from '../offline/tiles-source';
+import { retryFailedTiles } from './failed-tiles';
 
 /** `[longitude, latitude]`. */
 export type LngLat = [number, number];
@@ -87,7 +88,7 @@ export const createMapLibreMap: MapFactory = async ({
     );
     pmtilesRegistered = true;
   }
-  return new maplibre.Map({
+  const map = new maplibre.Map({
     container,
     style,
     center,
@@ -96,6 +97,8 @@ export const createMapLibreMap: MapFactory = async ({
     // Controls and attribution are Angular elements, so they follow the UI language.
     attributionControl: false,
   });
+  retryFailedTiles(map);
+  return map;
 };
 
 export const MAP_FACTORY = new InjectionToken<MapFactory>('MAP_FACTORY', {
