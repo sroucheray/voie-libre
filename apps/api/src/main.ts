@@ -33,7 +33,11 @@ async function main() {
   const server = await buildApp({
     config,
     db,
-    routing: new BRouterProvider(config.brouterUrl),
+    routing: new BRouterProvider(
+      config.brouterUrl,
+      undefined,
+      config.brouterMaxConcurrent,
+    ),
     elevation: new CopernicusElevationProvider(
       resolveDirectory(config.reliefDir),
     ),

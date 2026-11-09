@@ -52,6 +52,41 @@ describe('BRouterProvider', () => {
     );
   });
 
+  it('never sends BRouter more calls at once than it has threads', async () => {
+    let running = 0;
+    let most = 0;
+    const provider = new BRouterProvider(
+      'http://b',
+      async () => {
+        most = Math.max(most, ++running);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        running--;
+        return new Response(recorded);
+      },
+      2,
+    );
+    const [three, one] = await Promise.all([
+      provider.route([A, B], 'road', [], 3),
+      provider.route([A, B], 'road', [], 1),
+    ]);
+    expect(three).toHaveLength(3);
+    expect(one).toHaveLength(1);
+    expect(most).toBe(2);
+  });
+
+  it('leaves out an alternative the engine cannot find, but not the best route', async () => {
+    const failing = (index: number) =>
+      new BRouterProvider('http://b', async (url) =>
+        url.includes(`alternativeidx=${index}`)
+          ? new Response('no track found', { status: 400 })
+          : new Response(recorded),
+      );
+    expect(await failing(2).route([A, B], 'road', [], 3)).toHaveLength(2);
+    await expect(failing(0).route([A, B], 'road', [], 3)).rejects.toMatchObject(
+      { code: 'no_route' },
+    );
+  });
+
   it('passes avoid zones to BRouter', async () => {
     let requested = '';
     const provider = new BRouterProvider(

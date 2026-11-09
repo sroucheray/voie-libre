@@ -35,6 +35,33 @@ function ascentError(ascent: number | null, target: number): number {
 
 type FetchLike = (url: string) => Promise<Response>;
 
+/**
+ * BRouter serves `MAXTHREADS` requests at once (2 in docker-compose.yml). One more does not wait:
+ * after 2 s BRouter kills a running request, which then answers 400. So calls queue here.
+ */
+export const DEFAULT_MAX_CONCURRENT = 2;
+
+/** Runs at most `limit` tasks at once, the others wait in order. */
+function limiter(limit: number) {
+  let running = 0;
+  const waiting: (() => void)[] = [];
+  return async <T>(task: () => Promise<T>): Promise<T> => {
+    if (running >= limit) {
+      await new Promise<void>((resolve) => waiting.push(resolve));
+    } else {
+      running++;
+    }
+    try {
+      return await task();
+    } finally {
+      const next = waiting.shift();
+      // The slot goes straight to the next in line, so `running` stays as it is.
+      if (next) next();
+      else running--;
+    }
+  };
+}
+
 const coordinates = (points: Position[]) =>
   points.map((p) => `${p.lon},${p.lat}`).join(',');
 
@@ -65,12 +92,15 @@ export function avoidZoneParams(zones: AvoidZone[]): string {
 export class BRouterProvider implements RoutingProvider {
   readonly name = 'brouter';
   private readonly baseUrl: string;
+  private readonly limited: <T>(task: () => Promise<T>) => Promise<T>;
 
   constructor(
     baseUrl: string,
     private readonly fetchImpl: FetchLike = (url) => fetch(url),
+    maxConcurrent = DEFAULT_MAX_CONCURRENT,
   ) {
     this.baseUrl = baseUrl.replace(/\/+$/, '');
+    this.limited = limiter(maxConcurrent);
   }
 
   async route(
@@ -104,7 +134,24 @@ export class BRouterProvider implements RoutingProvider {
     const urls = Array.from({ length: alternatives }, (_, index) =>
       this.url(points, brouterProfile, avoidZones, index),
     );
-    return Promise.all(urls.map((url) => this.fetchRoute(url)));
+    const [best, ...others] = await Promise.all(
+      urls.map((url, index) =>
+        this.fetchRoute(url).catch((error: unknown) => {
+          // The best route must exist; an alternative the engine cannot find is left out.
+          if (
+            index > 0 &&
+            error instanceof RoutingError &&
+            error.code === 'no_route'
+          ) {
+            return null;
+          }
+          throw error;
+        }),
+      ),
+    );
+    return [best, ...others].filter(
+      (route): route is RouteResult => route !== null,
+    );
   }
 
   /**
@@ -225,7 +272,7 @@ export class BRouterProvider implements RoutingProvider {
   private async fetchRoute(url: string): Promise<RouteResult> {
     let response: Response;
     try {
-      response = await this.fetchImpl(url);
+      response = await this.limited(() => this.fetchImpl(url));
     } catch (cause) {
       throw new RoutingError('unavailable', 'BRouter is not reachable', {
         cause,

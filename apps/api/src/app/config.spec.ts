@@ -6,6 +6,7 @@ describe('loadConfig', () => {
     expect(config.port).toBe(3000);
     expect(config.corsOrigins).toEqual(['http://localhost:4200']);
     expect(config.brouterUrl).toBe('http://localhost:17777');
+    expect(config.brouterMaxConcurrent).toBe(2);
     expect(config.geocoderUrl).toBe('https://photon.komoot.io');
   });
 

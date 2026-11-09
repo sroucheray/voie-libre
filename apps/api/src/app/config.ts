@@ -22,6 +22,8 @@ export interface Config {
   /** Largest accepted body for PUT /p/{id}, in bytes. */
   shareBodyLimitBytes: number;
   brouterUrl: string;
+  /** Calls sent to BRouter at once: its `MAXTHREADS`, beyond which it kills running requests. */
+  brouterMaxConcurrent: number;
   /** Directory of the Copernicus GLO-30 tiles (see scripts/download-relief.sh). */
   reliefDir: string;
   logLevel: string;
@@ -91,6 +93,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       1_000_000,
     ),
     brouterUrl: env['BROUTER_URL'] || 'http://localhost:17777',
+    brouterMaxConcurrent: integer(
+      'BROUTER_MAX_CONCURRENT',
+      env['BROUTER_MAX_CONCURRENT'],
+      2,
+    ),
     reliefDir: env['RELIEF_DIR'] || 'data/relief',
     logLevel: env['LOG_LEVEL'] || 'info',
   };
