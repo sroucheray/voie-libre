@@ -1,4 +1,4 @@
-import { DOCUMENT } from '@angular/common';
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -67,7 +67,14 @@ type DragChange = { kind: 'move' | 'insert'; index: number; point: LngLat };
 
 @Component({
   selector: 'vl-planner',
-  imports: [MapView, TranslocoPipe, SavedRoutes, ElevationPanel, PlaceField],
+  imports: [
+    MapView,
+    NgTemplateOutlet,
+    TranslocoPipe,
+    SavedRoutes,
+    ElevationPanel,
+    PlaceField,
+  ],
   templateUrl: './planner.html',
   styleUrl: './planner.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -131,15 +138,20 @@ export class Planner {
       .slice(1, -1)
       .map((point, i) => ({ point, index: i + 1 })),
   );
-  /** The empty field of a stop being added: it joins the route once a place is picked. */
-  protected readonly newStopOpen = signal(false);
+  /**
+   * The empty field of a stop being added, by the place it will take in the points: it joins the
+   * route once a place is picked.
+   */
+  protected readonly newStopAt = signal<number | null>(null);
   protected readonly canAddStop = computed(() => {
     const count = this.store.points().length;
     return count >= 2 && count < MAX_POINTS;
   });
-  protected readonly addingStop = computed(
-    () => this.newStopOpen() && this.canAddStop(),
-  );
+  protected readonly addingAt = computed(() => {
+    const at = this.newStopAt();
+    if (at === null || !this.canAddStop()) return null;
+    return at >= 1 && at < this.store.points().length ? at : null;
+  });
   private readonly newStopField = viewChild<PlaceField>('newStop');
   /** The field waiting for the user's position, until the device gives it or fails. */
   private readonly positionTarget = signal<PositionTarget | null>(null);
@@ -206,6 +218,12 @@ export class Planner {
         this.positionTarget.set(null);
         if (fix) this.placeAtPosition(target, fix.position);
       });
+    });
+
+    // The empty field of a new stop does not outlive a change of the points: its place is gone.
+    effect(() => {
+      this.store.points();
+      untracked(() => this.newStopAt.set(null));
     });
 
     // Ctrl+Z undoes and Ctrl+Shift+Z (or Ctrl+Y) redoes, wherever the focus is but in a field.
@@ -589,9 +607,10 @@ export class Planner {
     if (target === 'start') this.store.setStart(point);
     else if (target === 'end') this.store.setEnd(point);
     else if (target === 'new') {
-      this.newStopOpen.set(false);
-      if (count < 2 || count >= MAX_POINTS) return;
-      this.store.insertPoint(count - 1, point);
+      const at = this.addingAt();
+      this.newStopAt.set(null);
+      if (at === null) return;
+      this.store.insertPoint(at, point);
     } else if (target > 0 && target < count - 1)
       this.store.movePoint(target, point);
     else return;
@@ -605,18 +624,20 @@ export class Planner {
     this.driver()?.centerOn(place.point);
   }
 
-  /** Opens an empty field before the end, for a stop to search. */
-  protected addStop(): void {
-    this.newStopOpen.set(true);
+  /** Opens an empty field before the point at this place, for a stop to search. */
+  protected addStop(at: number): void {
+    this.newStopAt.set(at);
     afterNextRender(() => this.newStopField()?.focus(), {
       injector: this.injector,
     });
   }
 
-  /** A place picked in the empty field: the new stop goes just before the end. */
+  /** A place picked in the empty field: the new stop goes where the field was opened. */
   protected pickNewStop(place: FoundPlace): void {
-    this.newStopOpen.set(false);
-    this.store.insertPoint(this.store.points().length - 1, place.point);
+    const at = this.addingAt();
+    this.newStopAt.set(null);
+    if (at === null) return;
+    this.store.insertPoint(at, place.point);
     this.store.setLabel(place.point, place.label);
     this.driver()?.centerOn(place.point);
   }

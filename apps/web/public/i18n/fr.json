@@ -72,6 +72,7 @@
     },
     "stops": {
       "add": "Ajouter une étape",
+      "addHere": "Ajouter une étape entre {{before}} et {{after}}",
       "cancel": "Annuler la nouvelle étape"
     },
     "history": {

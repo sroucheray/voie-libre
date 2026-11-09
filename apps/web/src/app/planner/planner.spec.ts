@@ -824,14 +824,14 @@ describe('Planner', () => {
     view.click(3.15, 45.65);
     view.click(3.249, 45.544);
     // The start and the end have their fields: only the stops are listed.
-    expect(view.root.querySelectorAll('.points li')).toHaveLength(1);
+    expect(view.root.querySelectorAll('.points__stop')).toHaveLength(1);
     const remove = view.root.querySelector(
-      '.points li button',
+      '.points__stop button',
     ) as HTMLButtonElement;
     expect(remove.getAttribute('aria-label')).toBe('Remove Waypoint 1');
     remove.click();
     view.fixture.detectChanges();
-    expect(view.root.querySelector('.points')).toBeNull();
+    expect(view.root.querySelector('.points__stop')).toBeNull();
     expect(TestBed.inject(PlannerStore).points()).toHaveLength(2);
     view.driver.handlers.onRemovePoint(0);
     view.fixture.detectChanges();
@@ -848,7 +848,7 @@ describe('Planner', () => {
     await view.settle();
     expect(view.driver.markers).toEqual([]);
     expect(view.driver.routes).toEqual([]);
-    expect(view.root.querySelector('.points')).toBeNull();
+    expect(view.root.querySelector('.points__stop')).toBeNull();
     expect(view.text()).toContain('Click the map to set the start.');
   });
 
@@ -873,7 +873,7 @@ describe('Planner', () => {
         [3.3, 45.3],
         [3.1, 45.1],
       ]);
-      const rows = () => view.root.querySelectorAll('.points li');
+      const rows = () => view.root.querySelectorAll('.points__stop');
       expect(rows()).toHaveLength(2);
       // Only the grip drags, so that the text of the field can still be selected.
       const grip = rows()[0].querySelector('.point-grip') as HTMLElement;
@@ -902,7 +902,7 @@ describe('Planner', () => {
       const view = await render();
       view.click(3.087, 45.777);
       view.click(3.249, 45.544);
-      expect(view.root.querySelector('.points')).toBeNull();
+      expect(view.root.querySelector('.points__stop')).toBeNull();
     });
   });
 
@@ -1098,6 +1098,9 @@ describe('Planner', () => {
 
     const options = (root: HTMLElement) =>
       Array.from(root.querySelectorAll<HTMLElement>('[role=option]'));
+    /** The "+" buttons between the fields. */
+    const adds = (root: HTMLElement) =>
+      Array.from(root.querySelectorAll<HTMLButtonElement>('.add-stop'));
 
     beforeEach(() => {
       geocode = (url) =>
@@ -1210,7 +1213,7 @@ describe('Planner', () => {
       view.click(3.1, 45.1);
       view.fixture.detectChanges();
       const stop = () =>
-        view.root.querySelector('.points li input') as HTMLInputElement;
+        view.root.querySelector('.points__stop input') as HTMLInputElement;
       expect(stop().getAttribute('aria-label')).toBe('Stop 1');
       // A stop set on the map has no name: its coordinates stand for it.
       expect(stop().value).toContain('45.1');
@@ -1229,16 +1232,18 @@ describe('Planner', () => {
     it('adds a stop by search, just before the end', async () => {
       const view = await render();
       const store = TestBed.inject(PlannerStore);
-      const add = () =>
-        view.root.querySelector('.add-stop') as HTMLButtonElement | null;
       view.click(3.0, 45.0);
       view.fixture.detectChanges();
-      expect(add()).toBeNull();
+      expect(adds(view.root)).toHaveLength(0);
       view.click(3.2, 45.2);
       view.fixture.detectChanges();
-      add()?.click();
+      expect(adds(view.root)).toHaveLength(1);
+      expect(adds(view.root)[0].getAttribute('aria-label')).toBe(
+        'Add a stop between Start and End',
+      );
+      adds(view.root)[0].click();
       view.fixture.detectChanges();
-      expect(add()).toBeNull();
+      expect(adds(view.root)).toHaveLength(0);
       const field = view.root.querySelector(
         '.points__new input',
       ) as HTMLInputElement;
@@ -1255,8 +1260,77 @@ describe('Planner', () => {
       ]);
       expect(store.labelOf([mairie.lon, mairie.lat])).toBe(mairie.label);
       expect(view.root.querySelector('.points__new')).toBeNull();
-      expect(view.root.querySelectorAll('.points li')).toHaveLength(1);
-      expect(add()).not.toBeNull();
+      expect(view.root.querySelectorAll('.points__stop')).toHaveLength(1);
+      // One "+" on each side of the stop, and no other button to add one.
+      expect(adds(view.root)).toHaveLength(2);
+    });
+
+    it('adds a stop by search between any two points', async () => {
+      const view = await render();
+      const store = TestBed.inject(PlannerStore);
+      view.click(3.0, 45.0);
+      view.click(3.1, 45.1);
+      view.click(3.2, 45.2);
+      view.click(3.3, 45.3);
+      view.fixture.detectChanges();
+      const before = store.points();
+      expect(adds(view.root)).toHaveLength(3);
+      // Between the start and the first stop.
+      adds(view.root)[0].click();
+      view.fixture.detectChanges();
+      const rows = [...view.root.querySelectorAll('.points > li')];
+      expect(rows[0].classList.contains('points__new')).toBe(true);
+      // Another "+" moves the empty field: here between the two stops.
+      adds(view.root)[0].click();
+      view.fixture.detectChanges();
+      expect(view.root.querySelectorAll('.points__new')).toHaveLength(1);
+      expect(
+        [...view.root.querySelectorAll('.points > li')].findIndex((row) =>
+          row.classList.contains('points__new'),
+        ),
+      ).toBe(2);
+      await type(
+        view,
+        view.root.querySelector('.points__new input') as HTMLInputElement,
+        'lyon',
+      );
+      options(view.root)[1].click();
+      view.fixture.detectChanges();
+      expect(store.points()).toEqual([
+        before[0],
+        before[1],
+        [mairie.lon, mairie.lat],
+        before[2],
+        before[3],
+      ]);
+
+      adds(view.root)[0].click();
+      view.fixture.detectChanges();
+      await type(
+        view,
+        view.root.querySelector('.points__new input') as HTMLInputElement,
+        'gare de lyon',
+      );
+      options(view.root)[0].click();
+      view.fixture.detectChanges();
+      expect(store.points()[1]).toEqual([gare.lon, gare.lat]);
+      expect(store.points()).toHaveLength(6);
+    });
+
+    it('closes the empty field of a new stop when the points change', async () => {
+      const view = await render();
+      const store = TestBed.inject(PlannerStore);
+      view.click(3.0, 45.0);
+      view.click(3.2, 45.2);
+      view.fixture.detectChanges();
+      adds(view.root)[0].click();
+      view.fixture.detectChanges();
+      store.undo();
+      view.fixture.detectChanges();
+      store.redo();
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.points__new')).toBeNull();
+      expect(adds(view.root)).toHaveLength(1);
     });
 
     it('gives up a new stop', async () => {
@@ -1264,13 +1338,14 @@ describe('Planner', () => {
       view.click(3.0, 45.0);
       view.click(3.2, 45.2);
       view.fixture.detectChanges();
-      (view.root.querySelector('.add-stop') as HTMLButtonElement).click();
+      adds(view.root)[0].click();
       view.fixture.detectChanges();
       (
         view.root.querySelector('.points__new button') as HTMLButtonElement
       ).click();
       view.fixture.detectChanges();
-      expect(view.root.querySelector('.points')).toBeNull();
+      expect(view.root.querySelector('.points__new')).toBeNull();
+      expect(adds(view.root)).toHaveLength(1);
       expect(TestBed.inject(PlannerStore).points()).toHaveLength(2);
     });
 
@@ -1330,7 +1405,7 @@ describe('Planner', () => {
         ]);
 
         geolocation.emit({ position: [3.1, 45.1] });
-        (view.root.querySelector('.add-stop') as HTMLButtonElement).click();
+        adds(view.root)[0].click();
         view.fixture.detectChanges();
         const added = view.root.querySelector(
           '.points__new input',
@@ -1347,7 +1422,7 @@ describe('Planner', () => {
         // A field that shows a point offers nothing.
         focus(
           view,
-          view.root.querySelector('.points li input') as HTMLInputElement,
+          view.root.querySelector('.points__stop input') as HTMLInputElement,
         );
         expect(position(view.root)).toBeNull();
       });

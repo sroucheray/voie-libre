@@ -72,6 +72,7 @@
     },
     "stops": {
       "add": "Add a stop",
+      "addHere": "Add a stop between {{before}} and {{after}}",
       "cancel": "Cancel the new stop"
     },
     "history": {

@@ -90,10 +90,6 @@ fieldset.profiles {
   gap: 0.25rem;
 }
 
-.add-stop {
-  margin-top: 0.25rem;
-}
-
 .points,
 .routes {
   list-style: none;
@@ -106,6 +102,41 @@ fieldset.profiles {
   flex-direction: column;
   gap: 0.25rem;
   margin: 0;
+}
+
+.points .points__gap {
+  // Tightens the rows around it, so that the "+" sits on the line between two fields.
+  margin: -0.125rem 0;
+  gap: 0.5rem;
+
+  .add-stop {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    font: inherit;
+    font-weight: 700;
+    line-height: 1;
+    color: #475467;
+    background: #fff;
+    border: 1px solid #c9cdd3;
+    border-radius: 50%;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      color: #175cd3;
+      border-color: #175cd3;
+    }
+  }
+
+  &::after {
+    content: '';
+    flex: 1;
+    border-top: 1px dashed #d0d5dd;
+  }
 }
 
 .points li {

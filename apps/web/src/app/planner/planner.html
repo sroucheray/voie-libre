@@ -243,13 +243,18 @@
           (picked)="pickStart($event)"
           (position)="usePosition('start')"
         />
-        @if (stops().length > 0 || addingStop()) {
+        @if (stops().length > 0 || canAddStop()) {
         <ol
           class="points"
           [attr.aria-label]="'planner.points.label' | transloco"
         >
           @for (stop of stops(); track stop.index) {
+          <ng-container
+            [ngTemplateOutlet]="gap"
+            [ngTemplateOutletContext]="{ $implicit: stop.index }"
+          />
           <li
+            class="points__stop"
             [class.dragging]="dragFrom() === stop.index"
             [class.drop-target]="dragOver() === stop.index && dragFrom() !== stop.index"
             (dragover)="onPointDragOver($event, stop.index)"
@@ -281,28 +286,48 @@
               <span aria-hidden="true">&times;</span>
             </button>
           </li>
-          } @if (addingStop()) {
+          }
+          <ng-container
+            [ngTemplateOutlet]="gap"
+            [ngTemplateOutletContext]="{ $implicit: stops().length + 1 }"
+          />
+        </ol>
+        }
+        <!-- Between two fields: a "+" that opens an empty field there, for a stop to search. -->
+        <ng-template #gap let-at>
+          @if (addingAt() === at) {
           <li class="points__new">
             <vl-place-field
               #newStop
               role="stop"
-              [number]="stops().length + 1"
-              [near]="startPoint()"
+              [number]="at"
+              [near]="store.points()[at - 1]"
               (picked)="pickNewStop($event)"
               (position)="usePosition('new')"
             />
             <button
               type="button"
               class="point-remove"
-              (click)="newStopOpen.set(false)"
+              (click)="newStopAt.set(null)"
               [attr.aria-label]="'planner.stops.cancel' | transloco"
             >
               <span aria-hidden="true">&times;</span>
             </button>
           </li>
+          } @else if (canAddStop()) {
+          <li class="points__gap">
+            <button
+              type="button"
+              class="add-stop"
+              (click)="addStop(at)"
+              [title]="'planner.stops.add' | transloco"
+              [attr.aria-label]="'planner.stops.addHere' | transloco : { before: pointName(at - 1), after: pointName(at) }"
+            >
+              <span aria-hidden="true">+</span>
+            </button>
+          </li>
           }
-        </ol>
-        }
+        </ng-template>
         <vl-place-field
           role="end"
           [label]="endLabel()"
@@ -323,11 +348,7 @@
         <span aria-hidden="true">⇅</span>
       </button>
     </div>
-    @if (canAddStop() && !addingStop()) {
-    <button type="button" class="add-stop" (click)="addStop()">
-      + {{ 'planner.stops.add' | transloco }}
-    </button>
-    } @if (store.points().length > 0) { @if (store.loop(); as loop) { @if
+    @if (store.points().length > 0) { @if (store.loop(); as loop) { @if
     (loop.mode === 'distance') {
     <label class="loop-length">
       {{ 'planner.loop.length' | transloco }}
