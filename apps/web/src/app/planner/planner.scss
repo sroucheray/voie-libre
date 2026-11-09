@@ -104,6 +104,13 @@ fieldset.profiles {
   margin: 0;
 }
 
+// The handle of a stop hangs 1rem to the left of the markers, which stay in one column.
+.route-fields__list > vl-place-field,
+.points .points__new,
+.points .points__gap {
+  margin-left: 1rem;
+}
+
 .points .points__gap {
   // Tightens the rows around it, so that the "+" sits on the line between two fields.
   margin: -0.125rem 0;
@@ -149,12 +156,45 @@ fieldset.profiles {
     min-width: 0;
   }
 
+  // The reorder handle: the grip dots and the number of the stop, large enough for a finger.
   .point-grip {
-    padding: 0 0.125rem;
-    color: #98a2b3;
-    letter-spacing: -0.2em;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+    width: 2.5rem;
+    min-height: 2rem;
+    margin-right: 0.25rem;
+    padding-left: 0.125rem;
+    border-radius: 1rem;
     user-select: none;
     cursor: grab;
+
+    &:hover {
+      background: #f2f4f7;
+    }
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  .point-grip__dots {
+    color: #98a2b3;
+    letter-spacing: -0.2em;
+  }
+
+  .point-grip__number {
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: #475467;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
   }
 
   .point-remove {

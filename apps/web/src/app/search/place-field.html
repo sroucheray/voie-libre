@@ -1,10 +1,12 @@
 <div class="field" [class.field--disabled]="disabled()">
+  @if (!bareMarker()) {
   <span
     class="field__marker"
     [class.field__marker--stop]="role() === 'stop'"
     aria-hidden="true"
     >{{ marker() }}</span
   >
+  }
   <input
     #field
     type="text"

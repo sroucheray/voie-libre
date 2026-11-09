@@ -39,6 +39,7 @@ let nextId = 0;
   templateUrl: './place-field.html',
   styleUrl: './place-field.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.bare]': 'bareMarker()' },
 })
 export class PlaceField {
   readonly role = input.required<'start' | 'end' | 'stop'>();
@@ -49,6 +50,8 @@ export class PlaceField {
   /** Favours suggestions close to this position. */
   readonly near = input<LngLat | null>(null);
   readonly blocked = input(false);
+  /** Leaves the marker out: the row around the field shows it (a stop's reorder handle). */
+  readonly bareMarker = input(false);
   readonly picked = output<FoundPlace>();
   /** The user asked for their own position here; the field itself never reads it. */
   readonly position = output<void>();

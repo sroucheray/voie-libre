@@ -260,23 +260,28 @@
             (dragover)="onPointDragOver($event, stop.index)"
             (drop)="onPointDrop($event, stop.index)"
           >
-            <vl-place-field
-              role="stop"
-              [number]="stop.index"
-              [label]="pointText(stop.point)"
-              [near]="stop.point"
-              (picked)="pickStop(stop.index, $event)"
-              (position)="usePosition(stop.index)"
-            />
-            <!-- Only the grip starts a drag, so that the text of the field can be selected. -->
+            <!-- Only the handle starts a drag, so that the text of the field can be selected. -->
             <span
               class="point-grip"
               draggable="true"
               aria-hidden="true"
               (dragstart)="onPointDragStart($event, stop.index)"
               (dragend)="endPointDrag()"
-              >⋮⋮</span
             >
+              <span class="point-grip__dots">⋮⋮</span>
+              <span class="point-grip__number"
+                >{{ format.number(stop.index) }}</span
+              >
+            </span>
+            <vl-place-field
+              role="stop"
+              [bareMarker]="true"
+              [number]="stop.index"
+              [label]="pointText(stop.point)"
+              [near]="stop.point"
+              (picked)="pickStop(stop.index, $event)"
+              (position)="usePosition(stop.index)"
+            />
             <button
               type="button"
               class="point-remove"

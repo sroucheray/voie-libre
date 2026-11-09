@@ -878,6 +878,10 @@ describe('Planner', () => {
       // Only the grip drags, so that the text of the field can still be selected.
       const grip = rows()[0].querySelector('.point-grip') as HTMLElement;
       expect(grip.getAttribute('draggable')).toBe('true');
+      // It sits before the field and holds the number of the stop, which the field leaves out.
+      expect(rows()[0].firstElementChild).toBe(grip);
+      expect(grip.textContent).toContain('1');
+      expect(rows()[0].querySelector('.field__marker')).toBeNull();
       expect(rows()[0].getAttribute('draggable')).toBeNull();
       drag(grip, 'dragstart');
       view.fixture.detectChanges();
