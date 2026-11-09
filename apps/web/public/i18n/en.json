@@ -66,7 +66,8 @@
         "unavailable": "Place search is not available. Try again in a moment.",
         "rate_limited": "Too many searches. Wait a moment.",
         "unknown": "The search failed."
-      }
+      },
+      "myPosition": "My position"
     },
     "stops": {
       "add": "Add a stop",

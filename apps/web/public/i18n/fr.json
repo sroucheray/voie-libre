@@ -66,7 +66,8 @@
         "unavailable": "La recherche de lieux n'est pas disponible. Réessayez dans un instant.",
         "rate_limited": "Trop de recherches. Patientez un instant.",
         "unknown": "La recherche a échoué."
-      }
+      },
+      "myPosition": "Ma position"
     },
     "stops": {
       "add": "Ajouter une étape",

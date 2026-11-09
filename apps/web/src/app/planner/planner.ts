@@ -54,6 +54,9 @@ import { PointNamer } from '../search/point-namer';
 /** How long a removed point can be put back. */
 const UNDO_MS = 6000;
 
+/** Where "My position" was asked: the start, the end, the stop at an index, or the new stop. */
+type PositionTarget = 'start' | 'end' | 'new' | number;
+
 @Component({
   selector: 'vl-planner',
   imports: [MapView, TranslocoPipe, SavedRoutes, ElevationPanel, PlaceField],
@@ -129,6 +132,8 @@ export class Planner {
     () => this.newStopOpen() && this.canAddStop(),
   );
   private readonly newStopField = viewChild<PlaceField>('newStop');
+  /** The field waiting for the user's position, until the device gives it or fails. */
+  private readonly positionTarget = signal<PositionTarget | null>(null);
   private readonly injector = inject(Injector);
   protected readonly canSwap = computed(
     () => this.store.points().length >= 2 && !this.store.isLoop(),
@@ -177,6 +182,19 @@ export class Planner {
     inject(RoutePlanner);
     // Finds the address of the start and the end when they were not searched.
     inject(PointNamer);
+
+    // "My position" asked in a field waits for the device, and gives up when it fails.
+    effect(() => {
+      const target = this.positionTarget();
+      if (target === null) return;
+      const fix = this.location.fix();
+      const watching = this.location.watching();
+      untracked(() => {
+        if (!fix && watching) return;
+        this.positionTarget.set(null);
+        if (fix) this.placeAtPosition(target, fix.position);
+      });
+    });
 
     // Ctrl+Z undoes and Ctrl+Shift+Z (or Ctrl+Y) redoes, wherever the focus is but in a field.
     const document = inject(DOCUMENT);
@@ -429,6 +447,29 @@ export class Planner {
     this.store.setEnd(place.point);
     this.store.setLabel(place.point, place.label);
     this.driver()?.centerOn(place.point);
+  }
+
+  /**
+   * "My position" picked in a field: the point goes to the position, at once when it is known,
+   * else as soon as the device gives it (the user may have to allow it first).
+   */
+  protected usePosition(target: PositionTarget): void {
+    this.location.start();
+    this.positionTarget.set(target);
+  }
+
+  private placeAtPosition(target: PositionTarget, point: LngLat): void {
+    const count = this.store.points().length;
+    if (target === 'start') this.store.setStart(point);
+    else if (target === 'end') this.store.setEnd(point);
+    else if (target === 'new') {
+      this.newStopOpen.set(false);
+      if (count < 2 || count >= MAX_POINTS) return;
+      this.store.insertPoint(count - 1, point);
+    } else if (target > 0 && target < count - 1)
+      this.store.movePoint(target, point);
+    else return;
+    this.driver()?.centerOn(point);
   }
 
   /** A place picked in the field of a stop: the stop moves there. */

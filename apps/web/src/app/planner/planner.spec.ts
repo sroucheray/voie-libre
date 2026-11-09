@@ -17,6 +17,7 @@ import { Planner } from './planner';
 import { PlannerStore } from './planner-store';
 import { ROUTE_DEBOUNCE_MS } from './route-planner';
 import { SEARCH_DEBOUNCE_MS } from '../search/place-field';
+import { LocationStore } from '../location/location-store';
 import { NAME_DEBOUNCE_MS } from '../search/point-namer';
 
 const line = (offset: number) => [
@@ -1075,6 +1076,105 @@ describe('Planner', () => {
       view.fixture.detectChanges();
       expect(view.root.querySelector('.points')).toBeNull();
       expect(TestBed.inject(PlannerStore).points()).toHaveLength(2);
+    });
+
+    describe('my position in the fields', () => {
+      const focus = (
+        view: { fixture: { detectChanges(): void } },
+        input: HTMLInputElement,
+      ) => {
+        input.dispatchEvent(new FocusEvent('focus'));
+        view.fixture.detectChanges();
+      };
+      const position = (root: HTMLElement) =>
+        root.querySelector<HTMLElement>('.suggestions__position');
+
+      it('offers it in an empty field and waits for the device', async () => {
+        const view = await render();
+        const store = TestBed.inject(PlannerStore);
+        const [start] = inputs(view.root);
+        expect(position(view.root)).toBeNull();
+        focus(view, start);
+        expect(position(view.root)?.textContent).toContain('My position');
+        position(view.root)?.click();
+        view.fixture.detectChanges();
+        // The device was asked, and nothing moves before it answers.
+        expect(geolocation.starts).toBe(1);
+        expect(store.points()).toEqual([]);
+        expect(position(view.root)).toBeNull();
+        geolocation.emit({ position: [3.1, 45.7] });
+        view.fixture.detectChanges();
+        expect(store.points()).toEqual([[3.1, 45.7]]);
+        expect(view.driver.centered).toEqual([[3.1, 45.7]]);
+        // Later positions move nothing.
+        geolocation.emit({ position: [3.5, 45.9] });
+        view.fixture.detectChanges();
+        expect(store.points()).toEqual([[3.1, 45.7]]);
+      });
+
+      it('sets the end, a stop and a new stop from a known position', async () => {
+        const view = await render();
+        const store = TestBed.inject(PlannerStore);
+        view.click(3.0, 45.0);
+        TestBed.inject(LocationStore).start();
+        geolocation.emit({ position: [3.2, 45.2] });
+        view.fixture.detectChanges();
+        focus(view, inputs(view.root)[1]);
+        const key = new KeyboardEvent('keydown', {
+          key: 'Enter',
+          bubbles: true,
+          cancelable: true,
+        });
+        inputs(view.root)[1].dispatchEvent(key);
+        view.fixture.detectChanges();
+        expect(key.defaultPrevented).toBe(true);
+        expect(store.points()).toEqual([
+          [3.0, 45.0],
+          [3.2, 45.2],
+        ]);
+
+        geolocation.emit({ position: [3.1, 45.1] });
+        (view.root.querySelector('.add-stop') as HTMLButtonElement).click();
+        view.fixture.detectChanges();
+        const added = view.root.querySelector(
+          '.points__new input',
+        ) as HTMLInputElement;
+        focus(view, added);
+        position(view.root)?.click();
+        view.fixture.detectChanges();
+        expect(store.points()).toEqual([
+          [3.0, 45.0],
+          [3.1, 45.1],
+          [3.2, 45.2],
+        ]);
+        expect(view.root.querySelector('.points__new')).toBeNull();
+        // A field that shows a point offers nothing.
+        focus(
+          view,
+          view.root.querySelector('.points li input') as HTMLInputElement,
+        );
+        expect(position(view.root)).toBeNull();
+      });
+
+      it('offers nothing without a device', async () => {
+        geolocation.supported = 'insecure';
+        const view = await render();
+        focus(view, inputs(view.root)[0]);
+        expect(position(view.root)).toBeNull();
+      });
+
+      it('gives up when the position is refused', async () => {
+        const view = await render();
+        const store = TestBed.inject(PlannerStore);
+        focus(view, inputs(view.root)[0]);
+        position(view.root)?.click();
+        geolocation.fail('denied');
+        view.fixture.detectChanges();
+        TestBed.inject(LocationStore).start();
+        geolocation.emit({ position: [3.1, 45.7] });
+        view.fixture.detectChanges();
+        expect(store.points()).toEqual([]);
+      });
     });
 
     it('swaps the start and the end, names included', async () => {

@@ -41,6 +41,11 @@
   background: #475467;
 }
 
+.suggestions__position::before {
+  content: '◎ ';
+  color: #1d4ed8;
+}
+
 .suggestions {
   position: absolute;
   z-index: 2;

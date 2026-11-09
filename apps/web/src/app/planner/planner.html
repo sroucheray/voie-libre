@@ -222,6 +222,7 @@
           [label]="startLabel()"
           [near]="endPoint()"
           (picked)="pickStart($event)"
+          (position)="usePosition('start')"
         />
         @if (stops().length > 0 || addingStop()) {
         <ol
@@ -241,6 +242,7 @@
               [label]="pointText(stop.point)"
               [near]="stop.point"
               (picked)="pickStop(stop.index, $event)"
+              (position)="usePosition(stop.index)"
             />
             <!-- Only the grip starts a drag, so that the text of the field can be selected. -->
             <span
@@ -268,6 +270,7 @@
               [number]="stops().length + 1"
               [near]="startPoint()"
               (picked)="pickNewStop($event)"
+              (position)="usePosition('new')"
             />
             <button
               type="button"
@@ -287,6 +290,7 @@
           [near]="startPoint()"
           [blocked]="store.points().length === 0"
           (picked)="pickEnd($event)"
+          (position)="usePosition('end')"
         />
       </div>
       <button

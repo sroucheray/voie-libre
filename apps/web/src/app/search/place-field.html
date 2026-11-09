@@ -23,11 +23,24 @@
     (focus)="onFocus($event)"
     (input)="onInput($event)"
     (keydown)="onKeydown($event)"
-    (blur)="reset()"
+    (blur)="onBlur()"
   />
   @if (open()) {
   <ul class="suggestions" role="listbox" [id]="listId">
-    @for (place of results(); track $index; let i = $index) {
+    @if (offersPosition()) {
+    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+    <li
+      role="option"
+      class="suggestions__position"
+      [id]="optionId(0)"
+      [class.suggestions__active]="active() === 0"
+      [attr.aria-selected]="active() === 0"
+      (mousedown)="$event.preventDefault()"
+      (click)="pickPosition()"
+    >
+      {{ 'planner.search.myPosition' | transloco }}
+    </li>
+    } @for (place of results(); track $index; let i = $index) {
     <!-- The focus stays in the input (aria-activedescendant), keys are handled there. -->
     <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
     <li
