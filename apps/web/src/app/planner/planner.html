@@ -140,6 +140,25 @@
           (input)="loopAscent.set($any($event.target).value)"
         />
       </label>
+      <label class="loop-length">
+        {{ 'planner.loop.directionLabel' | transloco }}
+        <select
+          class="loop-direction"
+          (change)="loopDirection.set($any($event.target).value)"
+        >
+          <option value="" [selected]="loopDirection() === ''">
+            {{ 'planner.loop.directions.any' | transloco }}
+          </option>
+          @for (direction of directions; track direction) {
+          <option
+            [value]="direction"
+            [selected]="loopDirection() === direction"
+          >
+            {{ 'planner.loop.directions.' + direction | transloco }}
+          </option>
+          }
+        </select>
+      </label>
       <button type="button" class="loop-choice" (click)="drawLoopByDistance()">
         <strong>{{ 'planner.loop.draw' | transloco }}</strong>
       </button>
@@ -332,6 +351,22 @@
         [value]="loop.ascentMeters ?? ''"
         (change)="setLoopAscent($any($event.target).value)"
       />
+    </label>
+    <label class="loop-length">
+      {{ 'planner.loop.direction' | transloco }}
+      <select
+        class="loop-direction"
+        (change)="setLoopDirection($any($event.target).value)"
+      >
+        <option value="" [selected]="!loop.direction">
+          {{ 'planner.loop.directions.any' | transloco }}
+        </option>
+        @for (direction of directions; track direction) {
+        <option [value]="direction" [selected]="loop.direction === direction">
+          {{ 'planner.loop.directions.' + direction | transloco }}
+        </option>
+        }
+      </select>
     </label>
     } } @if (canClose()) {
     <button type="button" class="loop" (click)="openLoopDialog()">

@@ -165,6 +165,7 @@ describe('routeLoop', () => {
         2,
         30_000,
         undefined,
+        undefined,
       );
       expect(result).toHaveLength(1);
     });
@@ -179,7 +180,36 @@ describe('routeLoop', () => {
         1,
         { mode: 'distance', distanceMeters: 30_000, ascentMeters: 800 },
       );
-      expect(roundTrip).toHaveBeenCalledWith(A, 'gravel', [], 1, 30_000, 800);
+      expect(roundTrip).toHaveBeenCalledWith(
+        A,
+        'gravel',
+        [],
+        1,
+        30_000,
+        800,
+        undefined,
+      );
+    });
+
+    it('turns the direction that was asked for into a heading', async () => {
+      const roundTrip = jest.fn().mockResolvedValue([leg(A, A)]);
+      await routeLoop(
+        { name: 'fake', route: async () => [], roundTrip },
+        [A, A],
+        'gravel',
+        [],
+        1,
+        { mode: 'distance', distanceMeters: 30_000, direction: 'sw' },
+      );
+      expect(roundTrip).toHaveBeenCalledWith(
+        A,
+        'gravel',
+        [],
+        1,
+        30_000,
+        undefined,
+        225,
+      );
     });
 
     it('refuses extra points, and an engine without round trips', async () => {

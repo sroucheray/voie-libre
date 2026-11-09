@@ -27,6 +27,27 @@ const ROUND_TRIP_TRIES = 3;
 const ROUND_TRIP_TOLERANCE = 0.1;
 /** Directions tried (45° apart) when a climb is asked for: more candidates to choose from. */
 const ASCENT_DIRECTIONS = 8;
+/** Around a preferred heading, loops spread by this step, on one side then the other. */
+const HEADING_SPREAD_DEGREES = 25;
+/** Headings tried around a preferred one when a climb is asked for too. */
+const ASCENT_HEADINGS = 5;
+
+/**
+ * The headings to try. Without a preference they are spread evenly around the compass; with one
+ * they stay close to it: the heading itself, then steps on its right and on its left.
+ */
+export function loopHeadings(count: number, preferred?: number): number[] {
+  if (preferred === undefined) {
+    return Array.from({ length: count }, (_, index) =>
+      Math.round((index * 360) / count),
+    );
+  }
+  return Array.from({ length: count }, (_, index) => {
+    const step = Math.ceil(index / 2) * HEADING_SPREAD_DEGREES;
+    const heading = preferred + (index % 2 === 1 ? step : -step);
+    return Math.round(((heading % 360) + 360) % 360);
+  });
+}
 
 /** Distance from the asked climb, as a fraction of it (of 100 m at least, so 0 can be asked). */
 function ascentError(ascent: number | null, target: number): number {
@@ -160,7 +181,8 @@ export class BRouterProvider implements RoutingProvider {
    * corrected from what comes back, up to {@link ROUND_TRIP_TRIES} calls. BRouter sometimes goes
    * to a far point and back by the same road: those spurs are cut out of each answer (so the
    * radius is corrected on the length that is left), and the loop closest to the target with the
-   * least road driven twice wins. Alternatives head in evenly spaced directions.
+   * least road driven twice wins. Alternatives head in evenly spaced directions, or close to
+   * `headingDegrees` when one is preferred.
    */
   async roundTrip(
     start: Position,
@@ -169,6 +191,7 @@ export class BRouterProvider implements RoutingProvider {
     alternatives: number,
     distanceMeters: number,
     ascentMeters?: number,
+    headingDegrees?: number,
   ): Promise<RouteResult[]> {
     const brouterProfile = BROUTER_PROFILES[profile];
     if (!brouterProfile) {
@@ -186,15 +209,19 @@ export class BRouterProvider implements RoutingProvider {
     }
     // The engine cannot aim at a climb: with a target, loops head in more directions and the ones
     // whose climb comes closest are kept.
-    const directions =
-      ascentMeters === undefined ? alternatives : ASCENT_DIRECTIONS;
+    const tries =
+      ascentMeters === undefined
+        ? alternatives
+        : headingDegrees === undefined
+          ? ASCENT_DIRECTIONS
+          : Math.max(alternatives, ASCENT_HEADINGS);
     const loops = await Promise.all(
-      Array.from({ length: directions }, (_, index) =>
+      loopHeadings(tries, headingDegrees).map((heading) =>
         this.roundTripToward(
           start,
           brouterProfile,
           avoidZones,
-          Math.round((index * 360) / directions),
+          heading,
           distanceMeters,
         ),
       ),

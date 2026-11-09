@@ -119,7 +119,20 @@
       "length": "Loop length (km)",
       "ascentLabel": "Climb (m, optional)",
       "ascent": "Loop climb (m, optional)",
-      "ascentAny": "Any"
+      "ascentAny": "Any",
+      "directionLabel": "Direction (optional)",
+      "direction": "Loop direction",
+      "directions": {
+        "any": "Any",
+        "n": "North",
+        "ne": "North-east",
+        "e": "East",
+        "se": "South-east",
+        "s": "South",
+        "sw": "South-west",
+        "w": "West",
+        "nw": "North-west"
+      }
     },
     "menu": {
       "label": "Place on the map",

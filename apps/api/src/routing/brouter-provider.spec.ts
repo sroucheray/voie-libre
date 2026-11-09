@@ -300,6 +300,54 @@ describe('avoidZoneParams', () => {
       expect(routes.map((route) => route.ascentMeters)).toEqual([1000, 900]);
     });
 
+    it('keeps the loops close to a preferred heading', async () => {
+      const directions: number[] = [];
+      const provider = new BRouterProvider(
+        'http://brouter:17777',
+        async (url) => {
+          directions.push(Number(/direction=(\d+)/.exec(url)?.[1]));
+          return new Response(loopOf(30_000, 500));
+        },
+      );
+      const routes = await provider.roundTrip(
+        A,
+        'road',
+        [],
+        3,
+        30_000,
+        undefined,
+        0,
+      );
+      // North, then a step on each side of it.
+      expect(directions).toEqual([0, 25, 335]);
+      expect(routes).toHaveLength(3);
+    });
+
+    it('looks for a climb around the preferred heading only', async () => {
+      const directions: number[] = [];
+      const climbs = [100, 900, 400, 1200, 700];
+      const provider = new BRouterProvider(
+        'http://brouter:17777',
+        async (url) => {
+          directions.push(Number(/direction=(\d+)/.exec(url)?.[1]));
+          return new Response(
+            loopOf(30_000, climbs[(directions.length - 1) % climbs.length]),
+          );
+        },
+      );
+      const routes = await provider.roundTrip(
+        A,
+        'road',
+        [],
+        1,
+        30_000,
+        1000,
+        180,
+      );
+      expect(directions).toEqual([180, 205, 155, 230, 130]);
+      expect(routes.map((route) => route.ascentMeters)).toEqual([900]);
+    });
+
     it('rejects an unknown number of alternatives', async () => {
       const provider = new BRouterProvider(
         'http://brouter:17777',

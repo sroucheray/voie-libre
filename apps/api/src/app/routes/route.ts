@@ -7,6 +7,7 @@ import {
   RoutingError,
   type RoutingErrorCode,
   type RoutingProvider,
+  LOOP_DIRECTIONS,
 } from '../../routing/routing-provider';
 import { routeLoop } from '../../routing/loops';
 
@@ -57,6 +58,15 @@ const LoopRequest = Type.Union(
           description:
             'Climb the loop should come close to. Approached by trying several directions, not guaranteed.',
         }),
+      ),
+      direction: Type.Optional(
+        Type.Union(
+          LOOP_DIRECTIONS.map((direction) => Type.Literal(direction)),
+          {
+            description:
+              'Compass point the loop should head to from the start. Without it, alternatives spread around the compass.',
+          },
+        ),
       ),
     }),
   ],

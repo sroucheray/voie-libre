@@ -282,6 +282,60 @@ describe('Planner', () => {
       });
     });
 
+    it('heads a loop by distance the way that was asked', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      (view.root.querySelector('.loop') as HTMLButtonElement).click();
+      view.fixture.detectChanges();
+      const pick = (select: HTMLSelectElement, value: string) => {
+        select.value = value;
+        select.dispatchEvent(new Event('change'));
+        view.fixture.detectChanges();
+      };
+      const asked = view.root.querySelector(
+        '.loop-dialog .loop-direction',
+      ) as HTMLSelectElement;
+      expect(
+        Array.from(asked.options).map((o) => o.textContent?.trim()),
+      ).toEqual([
+        'Any',
+        'North',
+        'North-east',
+        'East',
+        'South-east',
+        'South',
+        'South-west',
+        'West',
+        'North-west',
+      ]);
+      pick(asked, 'ne');
+      view.root
+        .querySelector<HTMLButtonElement>('.loop-dialog .loop-choice')
+        ?.click();
+      view.fixture.detectChanges();
+      await view.settle();
+      expect(requests[requests.length - 1].loop).toEqual({
+        mode: 'distance',
+        distanceMeters: 30000,
+        direction: 'ne',
+      });
+      // The direction can be changed, or left to the engine, from the panel.
+      const panel = () =>
+        view.root.querySelector('.panel .loop-direction') as HTMLSelectElement;
+      expect(panel().value).toBe('ne');
+      pick(panel(), 's');
+      await view.settle();
+      expect(requests[requests.length - 1].loop).toMatchObject({
+        direction: 's',
+      });
+      pick(panel(), '');
+      await view.settle();
+      expect(requests[requests.length - 1].loop).toEqual({
+        mode: 'distance',
+        distanceMeters: 30000,
+      });
+    });
+
     it('opens the same dialog from a click on the start marker, and can be cancelled', async () => {
       const view = await render();
       view.click(3.087, 45.777);

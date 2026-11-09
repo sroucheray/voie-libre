@@ -66,11 +66,30 @@ export function pointRole(index: number, total: number): PointRole {
  * How a loop is closed, beyond "back to the start" (no mode). Sent to the API with the points:
  * - `avoid_outbound`: the points go out and end on the start; the way back avoids the way out.
  * - `distance`: the points are the start twice; the loop has about this length and, if asked,
- *   about this climb (approached by trying several directions).
+ *   about this climb (approached by trying several directions). With a `direction` it heads
+ *   that way from the start; without, the alternatives spread around the compass.
  */
 export type LoopMode =
   | { mode: 'avoid_outbound' }
-  | { mode: 'distance'; distanceMeters: number; ascentMeters?: number };
+  | {
+      mode: 'distance';
+      distanceMeters: number;
+      ascentMeters?: number;
+      direction?: LoopDirection;
+    };
+
+/** The compass points a loop by distance can head to, clockwise from north. */
+export const LOOP_DIRECTIONS = [
+  'n',
+  'ne',
+  'e',
+  'se',
+  's',
+  'sw',
+  'w',
+  'nw',
+] as const;
+export type LoopDirection = (typeof LOOP_DIRECTIONS)[number];
 
 export const LOOP_DISTANCE_MIN_METERS = 2_000;
 export const LOOP_DISTANCE_MAX_METERS = 200_000;
@@ -321,21 +340,15 @@ export class PlannerStore {
     if (current?.mode === 'distance' && current.distanceMeters === clamped) {
       return;
     }
+    if (current?.mode !== 'distance') return;
     this.record();
-    this.loopState.set({
-      mode: 'distance',
-      distanceMeters: clamped,
-      ...(current?.mode === 'distance' && current.ascentMeters !== undefined
-        ? { ascentMeters: current.ascentMeters }
-        : {}),
-    });
+    this.loopState.set({ ...current, distanceMeters: clamped });
   }
 
   /** Sets the climb a loop by distance should come close to; `null` (or NaN) asks for none. */
   setLoopAscent(ascentMeters: number | null): void {
     const current = this.loopState();
     if (current?.mode !== 'distance') return;
-    const { distanceMeters } = current;
     const next =
       ascentMeters === null || !Number.isFinite(ascentMeters)
         ? undefined
@@ -345,11 +358,21 @@ export class PlannerStore {
           );
     if (next === current.ascentMeters) return;
     this.record();
+    const { ascentMeters: _dropped, ...rest } = current;
     this.loopState.set({
-      mode: 'distance',
-      distanceMeters,
+      ...rest,
       ...(next === undefined ? {} : { ascentMeters: next }),
     });
+  }
+
+  /** Sets the way a loop by distance heads from the start; `null` leaves it to the engine. */
+  setLoopDirection(direction: LoopDirection | null): void {
+    const current = this.loopState();
+    if (current?.mode !== 'distance') return;
+    if ((direction ?? undefined) === current.direction) return;
+    this.record();
+    const { direction: _dropped, ...rest } = current;
+    this.loopState.set({ ...rest, ...(direction ? { direction } : {}) });
   }
 
   /** The start and the end of a loop move together, so that it stays closed. */

@@ -288,6 +288,43 @@
                             "maximum": 10000,
                             "description": "Climb the loop should come close to. Approached by trying several directions, not guaranteed.",
                             "type": "number"
+                          },
+                          "direction": {
+                            "description": "Compass point the loop should head to from the start. Without it, alternatives spread around the compass.",
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": ["n"]
+                              },
+                              {
+                                "type": "string",
+                                "enum": ["ne"]
+                              },
+                              {
+                                "type": "string",
+                                "enum": ["e"]
+                              },
+                              {
+                                "type": "string",
+                                "enum": ["se"]
+                              },
+                              {
+                                "type": "string",
+                                "enum": ["s"]
+                              },
+                              {
+                                "type": "string",
+                                "enum": ["sw"]
+                              },
+                              {
+                                "type": "string",
+                                "enum": ["w"]
+                              },
+                              {
+                                "type": "string",
+                                "enum": ["nw"]
+                              }
+                            ]
                           }
                         }
                       }

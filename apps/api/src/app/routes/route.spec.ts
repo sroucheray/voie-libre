@@ -94,6 +94,7 @@ describe('POST /route', () => {
         2,
         30000,
         undefined,
+        undefined,
       );
     });
 
@@ -101,6 +102,10 @@ describe('POST /route', () => {
       ['an unknown mode', { mode: 'spiral' }],
       ['a loop that is too short', { mode: 'distance', distanceMeters: 500 }],
       ['a loop that is too long', { mode: 'distance', distanceMeters: 900000 }],
+      [
+        'an unknown direction',
+        { mode: 'distance', distanceMeters: 30000, direction: 'up' },
+      ],
     ])('rejects %s with a stable code', async (_name, loop) => {
       await start();
       const response = await post({ points: [A, A], profile: 'road', loop });

@@ -154,6 +154,38 @@ describe('PlannerStore', () => {
       });
     });
 
+    it('keeps a direction with the loop, through its other settings and undo', () => {
+      store.addPoint([1, 1]);
+      store.closeLoop({ mode: 'distance', distanceMeters: 40_000 });
+      store.setLoopDirection('sw');
+      expect(store.loop()).toEqual({
+        mode: 'distance',
+        distanceMeters: 40_000,
+        direction: 'sw',
+      });
+      store.setLoopDistance(20_000);
+      store.setLoopAscent(500);
+      expect(store.loop()).toEqual({
+        mode: 'distance',
+        distanceMeters: 20_000,
+        ascentMeters: 500,
+        direction: 'sw',
+      });
+      store.setLoopDirection(null);
+      expect(store.loop()).toEqual({
+        mode: 'distance',
+        distanceMeters: 20_000,
+        ascentMeters: 500,
+      });
+      store.undo();
+      expect(store.loop()).toMatchObject({ direction: 'sw' });
+      // Asking for the same direction again is not a change.
+      store.setLoopDirection('sw');
+      store.undo();
+      expect(store.loop()).toMatchObject({ direction: 'sw' });
+      expect(store.loop()).not.toHaveProperty('ascentMeters');
+    });
+
     it('forgets the mode when everything is cleared', () => {
       store.addPoint([1, 1]);
       store.addPoint([2, 2]);

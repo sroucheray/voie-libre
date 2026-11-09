@@ -69,7 +69,8 @@ export interface RoutingProvider {
   /**
    * Draws loops from `start` of about `distanceMeters`, one per alternative, each one heading
    * a different way. With `ascentMeters` the loops closest to that climb are kept (approached, not
-   * guaranteed: the engine cannot aim at a climb). Optional: an engine without it answers "loop by
+   * guaranteed: the engine cannot aim at a climb). With `headingDegrees` (clockwise from north)
+   * every loop heads about that way instead. Optional: an engine without it answers "loop by
    * distance" with an error.
    */
   roundTrip?(
@@ -79,7 +80,26 @@ export interface RoutingProvider {
     alternatives: number,
     distanceMeters: number,
     ascentMeters?: number,
+    headingDegrees?: number,
   ): Promise<RouteResult[]>;
+}
+
+/** The ways a loop by distance can be asked to head, clockwise from north. */
+export const LOOP_DIRECTIONS = [
+  'n',
+  'ne',
+  'e',
+  'se',
+  's',
+  'sw',
+  'w',
+  'nw',
+] as const;
+export type LoopDirection = (typeof LOOP_DIRECTIONS)[number];
+
+/** The heading of a direction, in degrees clockwise from north. */
+export function headingOf(direction: LoopDirection): number {
+  return LOOP_DIRECTIONS.indexOf(direction) * (360 / LOOP_DIRECTIONS.length);
 }
 
 /** How a closed route is built (see {@link RoutingProvider.roundTrip} and `routeLoop`). */
@@ -87,6 +107,11 @@ export type LoopRequest =
   /** `points` end where they start; the way back avoids the way out where it can. */
   | { mode: 'avoid_outbound' }
   /** `points` are the start twice; the engine draws a loop of about this length. */
-  | { mode: 'distance'; distanceMeters: number; ascentMeters?: number };
+  | {
+      mode: 'distance';
+      distanceMeters: number;
+      ascentMeters?: number;
+      direction?: LoopDirection;
+    };
 
 export const MAX_ALTERNATIVES = 4;

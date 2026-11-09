@@ -30,6 +30,8 @@ import {
   LOOP_DISTANCE_DEFAULT_METERS,
   LOOP_DISTANCE_MAX_METERS,
   LOOP_DISTANCE_MIN_METERS,
+  LOOP_DIRECTIONS,
+  type LoopDirection,
   type LoopMode,
   MAX_POINTS,
   PROFILES,
@@ -152,6 +154,9 @@ export class Planner {
   protected readonly loopKm = signal(LOOP_DISTANCE_DEFAULT_METERS / 1000);
   /** Climb asked in the dialog, in meters; empty text means none. */
   protected readonly loopAscent = signal('');
+  /** The direction asked in the dialog; empty leaves it to the engine. */
+  protected readonly loopDirection = signal<LoopDirection | ''>('');
+  protected readonly directions = LOOP_DIRECTIONS;
   protected readonly ascentMax = LOOP_ASCENT_MAX_METERS;
   protected readonly distanceMinKm = LOOP_DISTANCE_MIN_METERS / 1000;
   protected readonly distanceMaxKm = LOOP_DISTANCE_MAX_METERS / 1000;
@@ -529,6 +534,7 @@ export class Planner {
       ? Math.round(km * 1000)
       : LOOP_DISTANCE_DEFAULT_METERS;
     const ascent = this.loopAscent().trim();
+    const direction = this.loopDirection();
     this.closeLoop({
       mode: 'distance',
       distanceMeters: Math.min(
@@ -543,7 +549,16 @@ export class Planner {
             ),
           }
         : {}),
+      ...(direction ? { direction } : {}),
     });
+  }
+
+  protected setLoopDirection(value: string): void {
+    this.store.setLoopDirection(
+      (LOOP_DIRECTIONS as readonly string[]).includes(value)
+        ? (value as LoopDirection)
+        : null,
+    );
   }
 
   protected setLoopKm(value: string): void {

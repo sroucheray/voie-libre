@@ -119,7 +119,20 @@
       "length": "Longueur de la boucle (km)",
       "ascentLabel": "Dénivelé (m, facultatif)",
       "ascent": "Dénivelé de la boucle (m, facultatif)",
-      "ascentAny": "Libre"
+      "ascentAny": "Libre",
+      "directionLabel": "Direction (facultatif)",
+      "direction": "Direction de la boucle",
+      "directions": {
+        "any": "Libre",
+        "n": "Nord",
+        "ne": "Nord-est",
+        "e": "Est",
+        "se": "Sud-est",
+        "s": "Sud",
+        "sw": "Sud-ouest",
+        "w": "Ouest",
+        "nw": "Nord-ouest"
+      }
     },
     "menu": {
       "label": "Placer sur la carte",

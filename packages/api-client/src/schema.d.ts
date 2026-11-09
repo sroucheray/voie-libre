@@ -238,6 +238,8 @@ export interface operations {
                 distanceMeters: number;
                 /** @description Climb the loop should come close to. Approached by trying several directions, not guaranteed. */
                 ascentMeters?: number;
+                /** @description Compass point the loop should head to from the start. Without it, alternatives spread around the compass. */
+                direction?: 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
               };
           /**
            * @description Number of routes to return; the first is the best.
