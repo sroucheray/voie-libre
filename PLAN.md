@@ -38,7 +38,11 @@ Brief: `BRIEF-backlog.md`. One commit per item. Decisions taken: stops are searc
 
 Checked in a browser against the local stack: the three alternatives on the Clermont-Ferrand to Pavezin trip, the tiles after a failed load, the profile selection and its highlight, the live drag (marker and route line, Escape, drop, Ctrl+Z). Not checked: touch screens (a drag cannot be cancelled there other than by the undo button), Cmd+Z on macOS.
 
-Seen on the way, left as they are:
+## Asked 2026-11-10 (not started)
+
+Brief: `BRIEF-reverse-fit-snap.md`, plan: `PLAN-reverse-fit-snap.md`. Reverse the whole route, removal recomputed between the two neighbours, FIT export, points on ways for Road and Gravel, map layer proposals (document only).
+
+Seen on the way, left as they are (backlog of 2026-11-08):
 
 - The basemap extract covers longitude 2.6 to 3.7 and latitude 45.3 to 46.1 only: the map is grey beyond (the end of the Pavezin trip, for instance), while BRouter routes there.
 - Three alternatives on that long trip take about 27 s to compute, now that the calls are queued.
