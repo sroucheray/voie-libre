@@ -15,6 +15,7 @@ import { API_CLIENT } from '../core/api/api-client';
 import { LanguageService } from '../core/i18n/language.service';
 import { LIVE_DRAG_INTERVAL_MS, Planner } from './planner';
 import { PlannerStore } from './planner-store';
+import { WAY_TILES, type Way, type WayTileReader } from '../core/map/way-tiles';
 import { ROUTE_DEBOUNCE_MS } from './route-planner';
 import { SEARCH_DEBOUNCE_MS } from '../search/place-field';
 import { LocationStore } from '../location/location-store';
@@ -49,6 +50,8 @@ const flush = () => vi.advanceTimersByTimeAsync(0);
 
 describe('Planner', () => {
   let drivers: FakePlannerDriver[];
+  /** The reader of the basemap's ways; `null` (no snapping) unless a test sets one. */
+  let wayTiles: WayTileReader | null = null;
   let geolocation: FakeGeolocation;
   let requests: {
     points: unknown[];
@@ -94,6 +97,7 @@ describe('Planner', () => {
         provideFakeGeolocation(geolocation),
         provideInMemoryRouteStore(),
         { provide: API_CLIENT, useValue: client },
+        { provide: WAY_TILES, useValue: () => wayTiles },
       ],
     }).compileComponents();
     TestBed.inject(LanguageService).init();
@@ -101,6 +105,7 @@ describe('Planner', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    wayTiles = null;
   });
 
   async function render() {
@@ -1540,6 +1545,171 @@ describe('Planner', () => {
       expect(view.text()).toContain('Place search needs a connection.');
       expect(geocoded).toHaveLength(0);
       vi.restoreAllMocks();
+    });
+  });
+
+  describe('points on ways', () => {
+    // A road along latitude 45, whatever the tile asked for; 0.0001° of latitude is about 11 m.
+    const road: Way = {
+      kind: 'minor_road',
+      detail: 'residential',
+      line: [
+        [3, 45],
+        [3.02, 45],
+      ],
+    };
+    let tilesRead: number;
+
+    async function renderWithWays(ways: Way[] | null = [road]) {
+      tilesRead = 0;
+      wayTiles = async () => {
+        tilesRead++;
+        return ways;
+      };
+      const view = await render();
+      return {
+        ...view,
+        store: TestBed.inject(PlannerStore),
+        /** A click, then the time for the tile of ways to be read. */
+        async place(lon: number, lat: number) {
+          view.click(lon, lat);
+          await flush();
+          view.fixture.detectChanges();
+        },
+        alert: () =>
+          view.root.querySelector('.refused-toast')?.textContent?.trim() ??
+          null,
+      };
+    }
+
+    it('puts a point clicked beside a road on the road', async () => {
+      const view = await renderWithWays();
+      await view.place(3.005, 45.0003);
+      const [start] = view.store.points();
+      expect(start[0]).toBeCloseTo(3.005, 6);
+      expect(start[1]).toBeCloseTo(45, 6);
+      expect(view.alert()).toBeNull();
+    });
+
+    it('refuses a point with no road close, says so, then forgets it', async () => {
+      const view = await renderWithWays();
+      await view.place(3.005, 45.003);
+      expect(view.store.points()).toEqual([]);
+      expect(view.alert()).toBe(
+        'No road close to this place for this profile.',
+      );
+      await vi.advanceTimersByTimeAsync(4100);
+      view.fixture.detectChanges();
+      expect(view.alert()).toBeNull();
+    });
+
+    it('reads the ways of a place once, then places points at once', async () => {
+      const view = await renderWithWays();
+      await view.place(3.005, 45.0003);
+      const read = tilesRead;
+      expect(read).toBeGreaterThan(0);
+      // No waiting: the ways around are known.
+      view.click(3.006, 45.0003);
+      expect(view.store.points()).toHaveLength(2);
+      expect(view.store.points()[1][1]).toBeCloseTo(45, 6);
+      expect(tilesRead).toBe(read);
+    });
+
+    it('never moves a point farther than 24 px on screen', async () => {
+      const view = await renderWithWays();
+      // 2 m per pixel: 24 px are 48 m, and the road is about 78 m away.
+      view.driver.scale = 2;
+      await view.place(3.005, 45.0007);
+      expect(view.store.points()).toEqual([]);
+      view.driver.scale = 10;
+      await view.place(3.005, 45.0007);
+      expect(view.store.points()).toHaveLength(1);
+    });
+
+    it('leaves the points of a trail run where they are placed', async () => {
+      const view = await renderWithWays();
+      view.store.setProfile('trail');
+      view.click(3.005, 45.003);
+      expect(view.store.points()).toEqual([[3.005, 45.003]]);
+      expect(tilesRead).toBe(0);
+    });
+
+    it('leaves a point where it is placed when the basemap has no tile there', async () => {
+      const view = await renderWithWays(null);
+      await view.place(3.005, 45.003);
+      expect(view.store.points()).toEqual([[3.005, 45.003]]);
+      expect(view.alert()).toBeNull();
+    });
+
+    it('snaps the place picked in the map menu', async () => {
+      const view = await renderWithWays();
+      view.driver.handlers.onContextMenu([3.005, 45.0003], { x: 10, y: 10 });
+      view.fixture.detectChanges();
+      view.root.querySelector<HTMLButtonElement>('.map-menu button')?.click();
+      await flush();
+      expect(view.store.points()[0][1]).toBeCloseTo(45, 6);
+    });
+
+    it('puts a marker dropped away from any road back where it was', async () => {
+      const view = await renderWithWays();
+      await view.place(3.005, 45.0003);
+      await view.place(3.015, 45.0003);
+      await view.settle();
+      const before = view.store.points();
+      view.driver.handlers.onDragStart();
+      view.driver.handlers.onMovePoint(1, [3.015, 45.004]);
+      await flush();
+      view.fixture.detectChanges();
+      expect(view.store.dragging()).toBe(false);
+      expect(view.store.points()).toEqual(before);
+      expect(view.driver.cancelledDrags).toBe(1);
+      expect(view.alert()).not.toBeNull();
+
+      view.driver.handlers.onDragStart();
+      view.driver.handlers.onMovePoint(1, [3.012, 45.0004]);
+      await flush();
+      expect(view.store.dragging()).toBe(false);
+      expect(view.store.points()[1][0]).toBeCloseTo(3.012, 6);
+      expect(view.store.points()[1][1]).toBeCloseTo(45, 6);
+    });
+
+    it('keeps the route on the last place with a road while a marker is dragged', async () => {
+      const view = await renderWithWays();
+      await view.place(3.005, 45.0003);
+      await view.place(3.015, 45.0003);
+      await view.settle();
+      const count = requests.length;
+      view.driver.handlers.onDragStart();
+      view.driver.handlers.onDragPoint(1, [3.016, 45.004]);
+      await vi.advanceTimersByTimeAsync(LIVE_DRAG_INTERVAL_MS + 10);
+      // Away from the road: nothing is asked.
+      expect(requests).toHaveLength(count);
+      view.driver.handlers.onDragPoint(1, [3.016, 45.0002]);
+      await vi.advanceTimersByTimeAsync(LIVE_DRAG_INTERVAL_MS + 10);
+      expect(requests).toHaveLength(count + 1);
+      const last = requests.at(-1)!.points.at(-1) as {
+        lon: number;
+        lat: number;
+      };
+      expect(last.lon).toBeCloseTo(3.016, 6);
+      expect(last.lat).toBeCloseTo(45, 6);
+    });
+
+    it('shows the ghost of the next point where it will land', async () => {
+      const view = await renderWithWays();
+      // The ways are not read yet: the ghost stays under the pointer, and they get read.
+      expect(view.driver.handlers.ghostAt([3.005, 45.0003])).toEqual({
+        point: [3.005, 45.0003],
+        refused: false,
+      });
+      await flush();
+      const near = view.driver.handlers.ghostAt([3.005, 45.0003]);
+      expect(near.refused).toBe(false);
+      expect(near.point[1]).toBeCloseTo(45, 6);
+      expect(view.driver.handlers.ghostAt([3.005, 45.003])).toEqual({
+        point: [3.005, 45.003],
+        refused: true,
+      });
     });
   });
 

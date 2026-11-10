@@ -1,13 +1,5 @@
 import type { LngLat } from '../core/map/map-factory';
-
-/** A way of the basemap: a road, a track or a path, as the map tiles describe it. */
-export interface Way {
-  /** Class of the way in the Protomaps tiles: `major_road`, `minor_road`, `path`, `highway`... */
-  kind: string;
-  /** The OpenStreetMap value behind it: `residential`, `track`, `cycleway`, `footway`... */
-  detail: string;
-  line: readonly LngLat[];
-}
+import type { Way } from '../core/map/way-tiles';
 
 /** A point snaps to a way no farther than this on the ground... */
 export const SNAP_MAX_METERS = 100;

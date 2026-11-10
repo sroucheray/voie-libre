@@ -389,6 +389,11 @@
   }
 }
 
+/* Above the undo toast, when both show. */
+.refused-toast {
+  bottom: 7rem;
+}
+
 .undo-toast {
   position: absolute;
   bottom: 4.5rem;

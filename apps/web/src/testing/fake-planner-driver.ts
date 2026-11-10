@@ -22,6 +22,8 @@ export class FakePlannerDriver implements PlannerMapDriver {
   preview: LngLat3[] | null = null;
   highlight: LngLat3[] | null = null;
   cancelledDrags = 0;
+  /** Ground meters per pixel reported to the planner (about zoom 13 by default). */
+  scale = 10;
   destroyed = false;
 
   constructor(readonly handlers: PlannerMapHandlers) {}
@@ -53,6 +55,9 @@ export class FakePlannerDriver implements PlannerMapDriver {
   }
   setLocation(fix: LocationFix | null) {
     this.location = fix;
+  }
+  metersPerPixel() {
+    return this.scale;
   }
   cancelDrag() {
     this.cancelledDrags++;

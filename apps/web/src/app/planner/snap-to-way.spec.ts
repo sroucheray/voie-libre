@@ -4,8 +4,8 @@ import {
   snapsToWays,
   snapToWay,
   usableBy,
-  type Way,
 } from './snap-to-way';
+import type { Way } from '../core/map/way-tiles';
 
 const way = (kind: string, detail: string, line: [number, number][]): Way => ({
   kind,

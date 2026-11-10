@@ -96,6 +96,16 @@ body {
     cursor: inherit;
   }
 
+  /* No point can be placed here (no way close enough for the profile). */
+  &--refused &__dot {
+    opacity: 0.2;
+  }
+
+  &--refused &__text {
+    opacity: 0.5;
+    text-decoration: line-through;
+  }
+
   &__text {
     padding: 0.125rem 0.5rem;
     border-radius: 0.25rem;

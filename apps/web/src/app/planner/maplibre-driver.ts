@@ -247,7 +247,10 @@ export async function createMapLibreDriver(
     }
     ghostElement.style.display = '';
     setAiming(true);
-    ghostMarker.setLngLat([event.lngLat.lng, event.lngLat.lat]);
+    // The ghost sits where the point will land: on the nearest way, for a profile that needs one.
+    const landing = handlers.ghostAt([event.lngLat.lng, event.lngLat.lat]);
+    ghostElement.classList.toggle('planner-ghost--refused', landing.refused);
+    ghostMarker.setLngLat(landing.point);
   };
   const container = map.getCanvasContainer();
   container.addEventListener('mouseleave', hideGhost);
@@ -509,6 +512,13 @@ export async function createMapLibreDriver(
       // The route changes under a drag: drawing the markers again would end it.
       if (markerDrag || routeDrag?.marker) deferred = true;
       else drawMarkers();
+    },
+    metersPerPixel(at: LngLat) {
+      // MapLibre draws the world on 512 px at zoom 0.
+      return (
+        (40_075_016.686 * Math.cos((at[1] * Math.PI) / 180)) /
+        (512 * 2 ** map.getZoom())
+      );
     },
     cancelDrag() {
       releaseRouteDrag();

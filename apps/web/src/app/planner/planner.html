@@ -76,6 +76,10 @@
       {{ 'planner.removed.undo' | transloco }}
     </button>
   </p>
+  } @if (refused()) {
+  <p class="undo-toast refused-toast" role="alert">
+    {{ 'planner.snap.refused' | transloco }}
+  </p>
   } @if (loopDialogOpen()) {
   <div class="loop-dialog">
     <button

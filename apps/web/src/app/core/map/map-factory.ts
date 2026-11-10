@@ -50,6 +50,24 @@ export const BASEMAP_URL = new InjectionToken<string>('BASEMAP_URL', {
 
 let pmtilesRegistered = false;
 
+/** Reads a tile of a PMTiles archive, once the map registered the protocol. */
+type TileReader = (
+  archiveUrl: string,
+  z: number,
+  x: number,
+  y: number,
+) => Promise<Uint8Array>;
+let tileReader: TileReader | null = null;
+
+/**
+ * The reader of the basemap's tiles, the same the map uses (offline copy first), or `null` while
+ * no map was created: other parts of the app read tiles through it (see `way-tiles.ts`). A tile
+ * the archive does not hold comes back empty.
+ */
+export function basemapTileReader(): TileReader | null {
+  return tileReader;
+}
+
 /**
  * Creates the real MapLibre map. MapLibre and PMTiles are imported on demand: they are large and
  * stay out of the initial bundle. The `pmtiles://` protocol is registered once per page.
@@ -81,6 +99,13 @@ export const createMapLibreMap: MapFactory = async ({
       );
     }
     maplibre.addProtocol('pmtiles', protocol.tile);
+    tileReader = async (archiveUrl, z, x, y) => {
+      const { data } = await protocol.tile(
+        { url: `pmtiles://${archiveUrl}/${z}/${x}/${y}`, type: 'arrayBuffer' },
+        new AbortController(),
+      );
+      return new Uint8Array(data as ArrayBuffer);
+    };
     // The worker is an asset of the app (see project.json): the bundler cannot locate it beside the
     // library, which breaks the dev server and hashed production builds alike.
     maplibre.setWorkerUrl(

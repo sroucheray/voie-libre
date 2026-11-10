@@ -50,6 +50,11 @@ export interface PlannerMapHandlers {
   onRemovePoint(index: number): void;
   /** The pointer is over the selected route (`point`), or left it (`null`). */
   onHoverRoute(point: LngLat | null): void;
+  /**
+   * Where a point placed at `point` would land (on the nearest way, for the profiles that need
+   * one), for the ghost to show it; `refused` when no point can be placed there.
+   */
+  ghostAt(point: LngLat): { point: LngLat; refused: boolean };
 }
 
 /** The planner's view of the map: draws markers and routes, reports clicks and drags. */
@@ -74,6 +79,8 @@ export interface PlannerMapDriver {
    * first fix after `null` also moves the view there. `null` hides everything.
    */
   setLocation(fix: LocationFix | null): void;
+  /** Meters on the ground for one pixel on screen, around `at`. */
+  metersPerPixel(at: LngLat): number;
   /** Gives up the drag in progress: nothing is reported for it, the markers are drawn again. */
   cancelDrag(): void;
   destroy(): void;

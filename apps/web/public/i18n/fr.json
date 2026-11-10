@@ -155,6 +155,9 @@
     "removed": {
       "message": "Point supprimé.",
       "undo": "Annuler"
+    },
+    "snap": {
+      "refused": "Pas de route près de cet endroit pour ce profil."
     }
   },
   "saved": {

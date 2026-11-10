@@ -43,6 +43,8 @@ import {
 import { ProfileSelect } from './profile-select';
 import { buildProfile, sampleNearest } from './elevation-profile';
 import { insertionIndex } from './insert-point';
+import { SNAP_MAX_METERS, SNAP_MAX_PIXELS } from './snap-to-way';
+import { WaySnapper } from './way-snapper';
 import { RoutePlanner } from './route-planner';
 import { ElevationPanel } from './elevation-panel';
 import { SavedRoutes } from '../saved-routes/saved-routes';
@@ -56,6 +58,8 @@ import { PointNamer } from '../search/point-namer';
  */
 /** How long a removed point can be put back. */
 const UNDO_MS = 6000;
+/** How long the message of a refused point stays. */
+const REFUSED_MS = 4000;
 
 /** Where "My position" was asked: the start, the end, the stop at an index, or the new stop. */
 type PositionTarget = 'start' | 'end' | 'new' | number;
@@ -195,6 +199,9 @@ export class Planner {
     ),
     { initialValue: null },
   );
+  private readonly snapper = inject(WaySnapper);
+  /** True for a few seconds after a point was refused: no way close enough for the profile. */
+  protected readonly refused = signal(false);
   private readonly createDriver = inject(PLANNER_MAP_DRIVER);
   private readonly driver = signal<PlannerMapDriver | null>(null);
   private destroyed = false;
@@ -279,6 +286,13 @@ export class Planner {
     effect((onCleanup) => {
       if (!this.store.removed()) return;
       const timer = setTimeout(() => this.store.forgetRemoved(), UNDO_MS);
+      onCleanup(() => clearTimeout(timer));
+    });
+
+    // The message of a refused point goes away by itself.
+    effect((onCleanup) => {
+      if (!this.refused()) return;
+      const timer = setTimeout(() => this.refused.set(false), REFUSED_MS);
       onCleanup(() => clearTimeout(timer));
     });
 
@@ -381,7 +395,8 @@ export class Planner {
   protected async onMapReady(map: MapLike): Promise<void> {
     try {
       const driver = await this.createDriver(map, {
-        onClick: (point) => this.store.addPoint(point),
+        onClick: (point) =>
+          this.placeOnWay(point, (place) => this.store.addPoint(place)),
         onSelectRoute: (index) => this.store.selectRoute(index),
         onCloseLoop: () => this.openLoopDialog(),
         onInsertPoint: (hit, to) => this.insertOnRoute(hit, to),
@@ -394,6 +409,7 @@ export class Planner {
         onDragInsert: (hit, to) => this.dragInsert(hit, to),
         onRemovePoint: (index) => this.store.removePoint(index),
         onHoverRoute: (point) => this.hoverRoute(point),
+        ghostAt: (point) => this.ghostAt(point),
       });
       if (this.destroyed) {
         driver.destroy();
@@ -405,6 +421,69 @@ export class Planner {
     }
   }
 
+  /**
+   * The farthest a point may be from a way to snap to it, around `point`: {@link SNAP_MAX_METERS}
+   * on the ground, and no more than {@link SNAP_MAX_PIXELS} on screen.
+   */
+  private snapLimit(point: LngLat): number {
+    const scale = this.driver()?.metersPerPixel(point) ?? Infinity;
+    return Math.min(SNAP_MAX_METERS, SNAP_MAX_PIXELS * scale);
+  }
+
+  /** Where a point placed at `point` lands, if the ways around are known already. */
+  private landing(point: LngLat): LngLat | null | undefined {
+    return this.snapper.peek(
+      point,
+      this.store.profile(),
+      this.snapLimit(point),
+    );
+  }
+
+  /**
+   * Places a point given on the map: `apply` gets where it lands (on the nearest way, for the
+   * profiles that need one). With no way close enough the point is refused: a message says so and
+   * `refuse` runs. At once when the ways around are known, else after their tile is read.
+   */
+  private placeOnWay(
+    point: LngLat,
+    apply: (place: LngLat) => void,
+    refuse?: () => void,
+  ): void {
+    const finish = (place: LngLat | null) => {
+      if (place) {
+        this.refused.set(false);
+        apply(place);
+      } else {
+        this.refused.set(true);
+        refuse?.();
+      }
+    };
+    const known = this.landing(point);
+    if (known !== undefined) {
+      finish(known);
+      return;
+    }
+    void this.snapper
+      .snap(point, this.store.profile(), this.snapLimit(point))
+      .then((place) => {
+        if (!this.destroyed) finish(place);
+      });
+  }
+
+  /** Where the ghost of the next point shows: the landing place, as far as it is known. */
+  private ghostAt(point: LngLat): { point: LngLat; refused: boolean } {
+    const known = this.landing(point);
+    if (known === undefined) {
+      // Read the ways around for the next move of the pointer.
+      void this.snapper.snap(
+        point,
+        this.store.profile(),
+        this.snapLimit(point),
+      );
+    }
+    return { point: known ?? point, refused: known === null };
+  }
+
   /** A waypoint dropped from the route goes in the segment it was dragged from. */
   private insertOnRoute(hit: LngLat, to: LngLat): void {
     if (this.store.dragging()) {
@@ -412,10 +491,17 @@ export class Planner {
       this.stopLiveDrag();
       if (index === null || index === undefined) {
         this.store.cancelDrag();
-      } else {
-        this.store.dragTo({ kind: 'insert', index, point: to });
-        this.store.endDrag();
+        return;
       }
+      this.placeOnWay(
+        to,
+        (place) => {
+          if (!this.store.dragging()) return;
+          this.store.dragTo({ kind: 'insert', index, point: place });
+          this.store.endDrag();
+        },
+        () => this.cancelDrag(),
+      );
       return;
     }
     const index = insertionIndex(
@@ -423,7 +509,9 @@ export class Planner {
       this.store.points(),
       hit,
     );
-    if (index !== null) this.store.insertPoint(index, to);
+    if (index !== null) {
+      this.placeOnWay(to, (place) => this.store.insertPoint(index, place));
+    }
   }
 
   /** Where the drag in progress goes next, kept until the route can be asked again. */
@@ -478,9 +566,21 @@ export class Planner {
       }, wait);
       return;
     }
+    const place = this.landing(change.point);
+    if (place === undefined) {
+      // The ways around are being read: this place is tried again once they are known.
+      void this.snapper
+        .snap(change.point, this.store.profile(), this.snapLimit(change.point))
+        .then(() => {
+          if (this.pendingDrag === change) this.flushDrag();
+        });
+      return;
+    }
     this.pendingDrag = null;
+    // No way close enough: the route stays on the last place that had one.
+    if (!place) return;
     this.dragSentAt = Date.now();
-    this.store.dragTo(change);
+    this.store.dragTo({ ...change, point: place });
   }
 
   private stopLiveDrag(): void {
@@ -493,12 +593,24 @@ export class Planner {
   /** A marker was dropped: the end of a drag, in one step of history. */
   private dropPoint(index: number, point: LngLat): void {
     if (!this.store.dragging()) {
-      this.store.movePoint(index, point);
+      this.placeOnWay(
+        point,
+        (place) => this.store.movePoint(index, place),
+        // The marker goes back where its point is.
+        () => this.driver()?.cancelDrag(),
+      );
       return;
     }
     this.stopLiveDrag();
-    this.store.dragTo({ kind: 'move', index, point });
-    this.store.endDrag();
+    this.placeOnWay(
+      point,
+      (place) => {
+        if (!this.store.dragging()) return;
+        this.store.dragTo({ kind: 'move', index, point: place });
+        this.store.endDrag();
+      },
+      () => this.cancelDrag(),
+    );
   }
 
   /** Escape during a drag puts the point and the route back. */
@@ -645,9 +757,11 @@ export class Planner {
     const menu = this.menu();
     this.menu.set(null);
     if (!menu) return;
-    if (choice === 'start') this.store.setStart(menu.point);
-    else if (choice === 'end') this.store.setEnd(menu.point);
-    else this.store.addPoint(menu.point);
+    this.placeOnWay(menu.point, (place) => {
+      if (choice === 'start') this.store.setStart(place);
+      else if (choice === 'end') this.store.setEnd(place);
+      else this.store.addPoint(place);
+    });
   }
 
   /** Puts a point on the user, the way a click on the map would (start, stop or end). */
