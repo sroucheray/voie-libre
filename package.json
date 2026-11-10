@@ -8,6 +8,7 @@
     "test": "nx run-many -t test",
     "lint": "nx run-many -t lint",
     "generate-client": "tsx --tsconfig tsconfig.base.json scripts/generate-client.ts",
+    "build-relief": "tsx --tsconfig tsconfig.base.json scripts/build-relief-tiles.ts",
     "db:migrate": "tsx scripts/migrate.ts up",
     "db:migrate:down": "tsx scripts/migrate.ts down",
     "serve:prod": "nx build web && node scripts/serve-static.mjs dist/apps/web/browser 4300"
