@@ -1,3 +1,4 @@
+import { RELIEF_PROBE } from '../app/core/map/map-layers';
 import {
   MAP_FACTORY,
   MapCreateOptions,
@@ -64,12 +65,21 @@ export class FakeMap {
   }
 }
 
-/** Provides a factory that creates FakeMaps, kept in `maps` so tests can reach them. */
-export function provideFakeMap(maps: FakeMap[] = []) {
+/**
+ * Provides a factory that creates FakeMaps, kept in `maps` so tests can reach them. There is no
+ * tiles server: the relief file exists only when `relief` says so.
+ */
+export function provideFakeMap(
+  maps: FakeMap[] = [],
+  { relief = false }: { relief?: boolean } = {},
+) {
   const factory: MapFactory = async (options) => {
     const map = new FakeMap(options);
     maps.push(map);
     return map as unknown as MapLike;
   };
-  return { provide: MAP_FACTORY, useValue: factory };
+  return [
+    { provide: MAP_FACTORY, useValue: factory },
+    { provide: RELIEF_PROBE, useValue: async () => relief },
+  ];
 }

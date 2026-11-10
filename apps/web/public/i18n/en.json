@@ -19,9 +19,16 @@
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "resetBearing": "Reset the map to north",
+    "layers": {
+      "button": "Map layers",
+      "title": "Layers",
+      "relief": "Relief",
+      "reliefUnavailable": "Not available: the relief file is missing or cannot be reached."
+    },
     "attribution": {
       "label": "Map data attribution",
-      "contributors": "contributors"
+      "contributors": "contributors",
+      "relief": "Relief: Copernicus"
     },
     "unavailable": "The map could not be displayed. Your browser may not support WebGL2."
   },

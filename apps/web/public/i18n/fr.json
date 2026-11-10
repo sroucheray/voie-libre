@@ -19,9 +19,16 @@
     "zoomIn": "Zoom avant",
     "zoomOut": "Zoom arrière",
     "resetBearing": "Remettre le nord en haut",
+    "layers": {
+      "button": "Couches de la carte",
+      "title": "Couches",
+      "relief": "Relief",
+      "reliefUnavailable": "Indisponible : le fichier du relief est absent ou inaccessible."
+    },
     "attribution": {
       "label": "Source des données cartographiques",
-      "contributors": "contributeurs"
+      "contributors": "contributeurs",
+      "relief": "Relief : Copernicus"
     },
     "unavailable": "La carte n'a pas pu être affichée. Votre navigateur ne gère peut-être pas WebGL2."
   },

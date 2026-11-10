@@ -43,6 +43,53 @@
     </svg>
   </button>
   }
+  <div class="map-layers">
+    <button
+      type="button"
+      class="layers-button"
+      aria-controls="map-layers-panel"
+      [attr.aria-expanded]="layersOpen()"
+      [attr.aria-label]="'map.layers.button' | transloco"
+      [title]="'map.layers.button' | transloco"
+      (click)="toggleLayers()"
+    >
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path
+          d="M12 3 2.5 8 12 13l9.5-5zM2.5 12 12 17l9.5-5M2.5 16 12 21l9.5-5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linejoin="round"
+          stroke-linecap="round"
+        />
+      </svg>
+    </button>
+    @if (layersOpen()) {
+    <div
+      id="map-layers-panel"
+      class="layers-panel"
+      role="group"
+      [attr.aria-label]="'map.layers.title' | transloco"
+    >
+      <p class="layers-title">{{ 'map.layers.title' | transloco }}</p>
+      <label>
+        <input
+          type="checkbox"
+          [checked]="reliefShown()"
+          [disabled]="!reliefAvailable()"
+          [attr.aria-describedby]="reliefAvailable() ? null : 'map-layers-relief-note'"
+          (change)="setRelief($event)"
+        />
+        {{ 'map.layers.relief' | transloco }}
+      </label>
+      @if (!reliefAvailable()) {
+      <p id="map-layers-relief-note" class="layers-note">
+        {{ 'map.layers.reliefUnavailable' | transloco }}
+      </p>
+      }
+    </div>
+    }
+  </div>
 </div>
 
 <p
@@ -60,4 +107,5 @@
   <a href="https://protomaps.com" target="_blank" rel="noopener noreferrer"
     >Protomaps</a
   >
+  @if (reliefShown()) { &middot; {{ 'map.attribution.relief' | transloco }} }
 </p>

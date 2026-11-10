@@ -4,6 +4,7 @@ import { provideTestTransloco } from '../../../testing/transloco-testing';
 import { FakeMap, provideFakeMap } from '../../../testing/fake-map';
 import { LanguageService } from '../i18n/language.service';
 import { BASEMAP_URL, LngLat, MAP_FACTORY } from './map-factory';
+import { MAP_LAYERS_KEY } from './map-layers';
 import { MapView } from './map-view';
 
 /** The factory and MapLibre events are asynchronous and not tracked by whenStable. */
@@ -111,7 +112,11 @@ describe('MapView', () => {
 
   it('shows the compass only when the map is rotated, and resets north', async () => {
     const fixture = await render();
-    expect(buttons(fixture)).toHaveLength(2);
+    // Zoom in, zoom out and the layers.
+    expect(buttons(fixture)).toHaveLength(3);
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.compass'),
+    ).toBeNull();
     maps[0].bearing = 40;
     maps[0].emit('rotate');
     fixture.detectChanges();
@@ -129,6 +134,132 @@ describe('MapView', () => {
     await flush();
     expect(maps[0].calls).toContain('setStyle');
     expect(JSON.stringify(maps[0].style)).toContain('name:fr');
+  });
+
+  describe('layers', () => {
+    /** Configures the tests again, with or without the file of relief tiles on the server. */
+    async function renderWith(relief: boolean) {
+      TestBed.resetTestingModule();
+      maps = [];
+      await TestBed.configureTestingModule({
+        imports: [MapView],
+        providers: [
+          provideTestTransloco(),
+          provideFakeMap(maps, { relief }),
+          { provide: BASEMAP_URL, useValue: 'http://tiles.test' },
+        ],
+      }).compileComponents();
+      TestBed.inject(LanguageService).init();
+      const fixture = await render();
+      await flush();
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+      const button = root.querySelector<HTMLButtonElement>('.layers-button')!;
+      return {
+        fixture,
+        root,
+        button,
+        open() {
+          button.click();
+          fixture.detectChanges();
+        },
+        checkbox: () =>
+          root.querySelector<HTMLInputElement>('.layers-panel input'),
+        sources: () =>
+          Object.keys(
+            (maps[0].style as { sources: object } | undefined)?.sources ??
+              maps[0].options.style.sources,
+          ),
+      };
+    }
+
+    it('shows the relief by default once its tiles are known to exist', async () => {
+      const view = await renderWith(true);
+      // The map does not wait for the relief: it is created without, then restyled.
+      expect(Object.keys(maps[0].options.style.sources)).toEqual(['protomaps']);
+      expect(view.sources()).toEqual(['protomaps', 'relief']);
+      expect(
+        view.root.querySelector('.map-attribution')?.textContent,
+      ).toContain('Relief: Copernicus');
+    });
+
+    it('opens a panel where the relief is turned off and on, and keeps the choice', async () => {
+      const view = await renderWith(true);
+      expect(view.button.getAttribute('aria-expanded')).toBe('false');
+      expect(view.checkbox()).toBeNull();
+      view.open();
+      expect(view.button.getAttribute('aria-expanded')).toBe('true');
+      expect(view.checkbox()?.checked).toBe(true);
+
+      view.checkbox()!.click();
+      await flush();
+      view.fixture.detectChanges();
+      expect(view.sources()).toEqual(['protomaps']);
+      expect(
+        view.root.querySelector('.map-attribution')?.textContent,
+      ).not.toContain('Copernicus');
+      expect(JSON.parse(localStorage.getItem(MAP_LAYERS_KEY)!)).toEqual({
+        relief: false,
+      });
+
+      view.checkbox()!.click();
+      await flush();
+      expect(view.sources()).toEqual(['protomaps', 'relief']);
+    });
+
+    it('starts without relief when the user turned it off before', async () => {
+      localStorage.setItem(MAP_LAYERS_KEY, JSON.stringify({ relief: false }));
+      const view = await renderWith(true);
+      expect(maps[0].calls).not.toContain('setStyle');
+      view.open();
+      expect(view.checkbox()?.checked).toBe(false);
+      expect(view.checkbox()?.disabled).toBe(false);
+    });
+
+    it('leaves the map as it is without the relief file, and says why', async () => {
+      const view = await renderWith(false);
+      expect(maps[0].calls).not.toContain('setStyle');
+      view.open();
+      expect(view.checkbox()?.disabled).toBe(true);
+      expect(view.checkbox()?.checked).toBe(false);
+      expect(view.root.querySelector('.layers-note')?.textContent).toContain(
+        'Not available',
+      );
+    });
+
+    it('closes the panel on Escape, giving the focus back, and on a press outside', async () => {
+      const view = await renderWith(true);
+      document.body.append(view.root);
+      view.open();
+      view.checkbox()!.focus();
+      view
+        .checkbox()!
+        .dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+        );
+      view.fixture.detectChanges();
+      expect(view.checkbox()).toBeNull();
+      expect(document.activeElement).toBe(view.button);
+
+      view.open();
+      view
+        .checkbox()!
+        .dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      view.fixture.detectChanges();
+      expect(view.checkbox()).not.toBeNull();
+      document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      view.fixture.detectChanges();
+      expect(view.checkbox()).toBeNull();
+      view.root.remove();
+    });
+
+    it('keeps the relief when the language changes', async () => {
+      const view = await renderWith(true);
+      TestBed.inject(LanguageService).use('fr');
+      await flush();
+      expect(JSON.stringify(maps[0].style)).toContain('name:fr');
+      expect(view.sources()).toEqual(['protomaps', 'relief']);
+    });
   });
 
   it('tells the user when the map cannot be created, instead of failing silently', async () => {

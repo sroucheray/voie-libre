@@ -1,4 +1,10 @@
-import { BASEMAP_SOURCE, buildBasemapStyle } from './basemap-style';
+import {
+  BASEMAP_SOURCE,
+  buildBasemapStyle,
+  RELIEF_LAYER,
+  RELIEF_SOURCE,
+  reliefTilesUrl,
+} from './basemap-style';
 
 describe('buildBasemapStyle', () => {
   const style = buildBasemapStyle('http://tiles.test:8081/', 'en');
@@ -70,5 +76,47 @@ describe('buildBasemapStyle', () => {
     );
     expect(missing).toEqual([]);
     expect(fonts.has('Noto Sans Regular')).toBe(true);
+  });
+
+  describe('with relief', () => {
+    const shaded = buildBasemapStyle('http://tiles.test:8081/', 'en', {
+      relief: true,
+    });
+
+    it('has no relief unless asked', () => {
+      expect(style.sources[RELIEF_SOURCE]).toBeUndefined();
+      expect(style.layers.some((l) => l.id === RELIEF_LAYER)).toBe(false);
+    });
+
+    it('reads elevation tiles from the local archive, in the terrarium encoding', () => {
+      expect(shaded.sources[RELIEF_SOURCE]).toEqual({
+        type: 'raster-dem',
+        url: 'pmtiles://http://tiles.test:8081/relief.pmtiles',
+        encoding: 'terrarium',
+        tileSize: 512,
+        minzoom: 6,
+        maxzoom: 11,
+      });
+      expect(reliefTilesUrl('http://tiles.test:8081/')).toBe(
+        'http://tiles.test:8081/relief.pmtiles',
+      );
+    });
+
+    it('draws the hillshade above the land and under water, roads and labels', () => {
+      const ids = shaded.layers.map((l) => l.id);
+      const at = ids.indexOf(RELIEF_LAYER);
+      expect(shaded.layers[at].type).toBe('hillshade');
+      expect(at).toBeGreaterThan(ids.indexOf('landcover'));
+      expect(at).toBe(ids.indexOf('water') - 1);
+      expect(at).toBeLessThan(ids.indexOf('roads_minor'));
+      expect(shaded.layers).toHaveLength(style.layers.length + 1);
+    });
+
+    it('still contains no URL outside the base URL', () => {
+      const urls = JSON.stringify(shaded).match(/https?:\/\/[^"'\s]+/g) ?? [];
+      expect(
+        urls.filter((url) => !url.startsWith('http://tiles.test:8081')),
+      ).toEqual([]);
+    });
   });
 });

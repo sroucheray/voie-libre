@@ -15,7 +15,12 @@ import {
 import { TranslocoPipe } from '@jsverse/transloco';
 import { LanguageService } from '../i18n/language.service';
 import { OfflineBasemap } from '../offline/offline-basemap';
-import { basemapTilesUrl, buildBasemapStyle } from './basemap-style';
+import {
+  basemapTilesUrl,
+  buildBasemapStyle,
+  reliefTilesUrl,
+} from './basemap-style';
+import { MapLayers, RELIEF_PROBE } from './map-layers';
 import { BASEMAP_URL, LngLat, MAP_FACTORY, MapLike } from './map-factory';
 
 /** Clermont-Ferrand, the test region. */
@@ -35,6 +40,10 @@ const ZOOM_EPSILON = 1e-3;
   templateUrl: './map-view.html',
   styleUrl: './map-view.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '(document:pointerdown)': 'onOutside($event)',
+    '(keydown.escape)': 'closeLayers()',
+  },
 })
 export class MapView {
   readonly center = model<LngLat>(CLERMONT_CENTER);
@@ -57,6 +66,16 @@ export class MapView {
   private readonly language = inject(LanguageService);
   private readonly offline = inject(OfflineBasemap);
   private readonly map = signal<MapLike | null>(null);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly probeRelief = inject(RELIEF_PROBE);
+  protected readonly layers = inject(MapLayers);
+  /** True once the archive of elevation tiles is known to exist. */
+  protected readonly reliefAvailable = signal(false);
+  /** The hillshade is drawn: the user wants it and its tiles exist. */
+  protected readonly reliefShown = computed(
+    () => this.reliefAvailable() && this.layers.relief(),
+  );
+  protected readonly layersOpen = signal(false);
 
   constructor() {
     let destroyed = false;
@@ -71,6 +90,7 @@ export class MapView {
       try {
         map = await this.createMap({
           container: this.container().nativeElement,
+          // The relief comes once its file is known to exist: the map does not wait for it.
           style: buildBasemapStyle(this.basemapUrl, this.language.current()),
           center: this.center(),
           zoom: this.zoom(),
@@ -98,18 +118,25 @@ export class MapView {
       map.on('rotate', () => this.bearingState.set(map.getBearing()));
       this.map.set(map);
       this.mapReady.emit(map);
+      const available = await this.probeRelief(reliefTilesUrl(this.basemapUrl));
+      if (!destroyed) this.reliefAvailable.set(available);
     });
 
-    // Labels follow the UI language. The style is rebuilt only when the language really changes.
-    let styledLanguage: string | null = null;
+    // Labels follow the UI language and the relief follows the user's choice. The style is
+    // rebuilt only when one of them really changes; MapLibre applies the difference.
+    let styled: string | null = null;
     effect(() => {
       const map = this.map();
       const language = this.language.current();
+      const relief = this.reliefShown();
       if (!map) return;
-      if (styledLanguage !== null && styledLanguage !== language) {
-        map.setStyle(buildBasemapStyle(this.basemapUrl, language));
+      const wanted = `${language}|${relief}`;
+      // The map was created without relief.
+      styled ??= `${language}|false`;
+      if (styled !== wanted) {
+        map.setStyle(buildBasemapStyle(this.basemapUrl, language, { relief }));
       }
-      styledLanguage = language;
+      styled = wanted;
     });
 
     // Moves the map when `center` or `zoom` is written from outside.
@@ -137,5 +164,32 @@ export class MapView {
 
   protected resetNorth(): void {
     this.map()?.resetNorth();
+  }
+
+  protected toggleLayers(): void {
+    this.layersOpen.update((open) => !open);
+  }
+
+  /** Escape closes the panel of layers and gives the focus back to its button. */
+  protected closeLayers(): void {
+    if (!this.layersOpen()) return;
+    this.layersOpen.set(false);
+    this.host.nativeElement
+      .querySelector<HTMLElement>('.layers-button')
+      ?.focus();
+  }
+
+  /** A click or a tap outside the panel closes it. */
+  protected onOutside(event: Event): void {
+    if (!this.layersOpen()) return;
+    const target = event.target as Node | null;
+    const inside = this.host.nativeElement
+      .querySelector('.map-layers')
+      ?.contains(target);
+    if (!inside) this.layersOpen.set(false);
+  }
+
+  protected setRelief(event: Event): void {
+    this.layers.setRelief((event.target as HTMLInputElement).checked);
   }
 }

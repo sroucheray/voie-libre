@@ -95,7 +95,12 @@ function elevationAt(cells: readonly Cell[], lon: number, lat: number): number {
     // Pixel centres are half a pixel inside the box.
     const fx = (lon - cell.west) / cell.stepX - 0.5;
     const fy = (cell.north - lat) / cell.stepY - 0.5;
-    if (fx < -0.5 || fy < -0.5 || fx > cell.width - 0.5 || fy > cell.height - 0.5) {
+    if (
+      fx < -0.5 ||
+      fy < -0.5 ||
+      fx > cell.width - 0.5 ||
+      fy > cell.height - 0.5
+    ) {
       continue;
     }
     const x0 = Math.max(0, Math.min(cell.width - 1, Math.floor(fx)));
