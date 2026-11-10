@@ -271,7 +271,7 @@ describe('RoutePlanner', () => {
       );
     });
 
-    it('routes between both sides of a spur when the waypoint at its tip is removed', async () => {
+    it('routes between the two neighbours when the waypoint at the tip of a spur is removed', async () => {
       // The answer goes from a vertex of the route to the point and back, then on to the other
       // vertex, like BRouter does for a point beside the road.
       respond = async () =>

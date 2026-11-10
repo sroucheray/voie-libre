@@ -243,81 +243,57 @@ describe('planLocalEdit', () => {
     expect(endMoved.points[1]).toEqual(end);
   });
 
-  it('routes between the two sides of a removed waypoint', () => {
+  it('routes a removed waypoint between its two neighbours, replacing all that lies between', () => {
     const plan = planLocalEdit(
       line,
       edit({ kind: 'remove', index: 1, point: route[1] }, [route[0], route[2]]),
     ) as LocalEditPlan;
-    expect(plan.points).toEqual([
-      vertex(plan.window.from),
-      vertex(plan.window.to),
-    ]);
-    expect(plan.window.to - plan.window.from).toBe(10);
+    expect(plan.window).toEqual({ from: 0, to: 200 });
+    expect(plan.points).toEqual([vertex(0), vertex(200)]);
   });
 
-  it('cuts a spur without asking for a route when its waypoint is removed', () => {
+  it('keeps the route beyond the neighbours of a removed waypoint', () => {
+    const previous: [number, number][] = [
+      [0, 0],
+      [0.05, 0],
+      [0.1, 0],
+      [0.15, 0],
+      [0.2, 0],
+    ];
+    const plan = planLocalEdit(line, {
+      kind: 'remove',
+      index: 2,
+      point: previous[2],
+      previous,
+      next: previous.filter((_, i) => i !== 2),
+    }) as LocalEditPlan;
+    expect(plan.window).toEqual({ from: 50, to: 150 });
+    expect(plan.points).toEqual([vertex(50), vertex(150)]);
+  });
+
+  it('asks for a full computation when the neighbours of a removed waypoint are the same place', () => {
     const tip = 100;
-    const spur: LngLat3[] = [
+    // A loop out to its only stop and back: [start, tip, start].
+    const loop: LngLat3[] = [
       ...line.slice(0, tip + 1),
       ...line.slice(0, tip).reverse(),
-      ...line.slice(1),
     ];
-    // The route out to the waypoint and back by the same road: [start, tip, end].
-    const plan = planLocalEdit(spur, {
-      kind: 'remove',
-      index: 1,
-      point: [0.1, 0],
-      previous: [
-        [0, 0],
-        [0.1, 0],
-        [0.2, 0],
-      ],
-      next: [
-        [0, 0],
-        [0.2, 0],
-      ],
-    }) as LocalEditPlan;
-    expect(plan.points).toEqual([]);
-    expect(plan.direct?.geometry).toHaveLength(1);
-    expect(plan.direct?.distanceMeters).toBe(0);
-    // The whole way out and back goes, up to the start where it parts from the route.
-    expect(plan.window).toEqual({ from: 0, to: 2 * tip });
-    expect(plan.direct?.geometry).toEqual([spur[0]]);
-  });
-
-  it('routes between the two places where the way back parts from the way out', () => {
-    const tip = 100;
-    // Out to the tip, back by the same road for 7 vertices, then by another one.
-    const geometry: LngLat3[] = [
-      ...line.slice(0, tip + 1),
-      ...line.slice(tip - 7, tip).reverse(),
-      [0.0925, 0.001, 0],
-      [0.09, 0.001, 0],
-      ...line.slice(91),
-    ];
-    const plan = planLocalEdit(geometry, {
-      kind: 'remove',
-      index: 1,
-      point: [0.1, 0],
-      previous: [
-        [0, 0],
-        [0.1, 0],
-        [0.2, 0],
-      ],
-      next: [
-        [0, 0],
-        [0.2, 0],
-      ],
-    }) as LocalEditPlan;
-    expect(plan.direct).toBeUndefined();
-    // The spur (vertices 93 to 107) and about 500 m on each side of it are replaced.
-    expect(plan.window.from).toBeLessThan(93);
-    expect(plan.window.to).toBeGreaterThan(107);
-    expect(plan.points).toEqual([
-      [geometry[plan.window.from][0], geometry[plan.window.from][1]],
-      [geometry[plan.window.to][0], geometry[plan.window.to][1]],
-    ]);
-    expect(plan.points[0]).not.toEqual(plan.points[1]);
+    expect(
+      planLocalEdit(loop, {
+        kind: 'remove',
+        index: 1,
+        point: [0.1, 0],
+        previous: [
+          [0, 0],
+          [0.1, 0],
+          [0, 0],
+        ],
+        next: [
+          [0, 0],
+          [0, 0],
+        ],
+      }),
+    ).toBeNull();
   });
 
   it('asks for a full computation when a start or an end is removed, or little is left', () => {

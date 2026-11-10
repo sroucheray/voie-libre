@@ -131,11 +131,6 @@ export function applyStretch(
 export interface LocalEditPlan {
   window: EditWindow;
   points: LngLat[];
-  /**
-   * Set when there is nothing to ask for: the route just drops the window and goes on from the
-   * same place (a waypoint removed from a spur, where the way out and the way back meet again).
-   */
-  direct?: Stretch;
 }
 
 /** The vertex between `bounds.min` and `bounds.max` closest to `point`, and how far it is. */
@@ -165,8 +160,9 @@ function nearestInRange(
 /**
  * How to absorb `edit` into the route `geometry` it applies to, by recomputing only a stretch:
  * the window to replace and the points of the short route that replaces it (from the route before
- * the window, through the edited point, to the route after it). `null` when the edit has to be
- * computed in full: a start or an end removed, or fewer than two points left.
+ * the window, through the edited point, to the route after it; for a removed point, the whole way
+ * between its two neighbours). `null` when the edit has to be computed in full: a start or an end
+ * removed, a removed point whose neighbours are the same place, or fewer than two points left.
  */
 export function planLocalEdit(
   geometry: readonly LngLat3[],
@@ -210,51 +206,12 @@ export function planLocalEdit(
   if (edit.kind === 'remove') {
     // The start or the end going away leaves no point to route through: compute in full.
     if (isStart || isEnd) return null;
-    const window = editWindow(geometry, vertices[index], 0, bounds);
+    // The whole way from the point before to the point after is replaced: the detour made for
+    // the removed point goes, however long it was.
+    const window = { from: bounds.min, to: bounds.max };
     const [before, after] = [at(window.from), at(window.to)];
-    if (before[0] === after[0] && before[1] === after[1]) {
-      // Routing from a place to itself is not a route: the spur is simply cut, all the way to
-      // where the way out and the way back part (within the neighbouring points).
-      let { from, to } = window;
-      while (
-        from > bounds.min &&
-        to < bounds.max &&
-        geometry[from - 1][0] === geometry[to + 1][0] &&
-        geometry[from - 1][1] === geometry[to + 1][1]
-      ) {
-        from--;
-        to++;
-      }
-      if (from > bounds.min && to < bounds.max) {
-        // The route comes in on one side of the spur and leaves on the other: it is not the way it
-        // was before the spur was added. Route between a place before and a place after it.
-        const cumulative = cumulativeDistances(geometry);
-        const [spurFrom, spurTo] = [from, to];
-        while (
-          from > bounds.min &&
-          cumulative[spurFrom] - cumulative[from] < WINDOW_FLOOR_METERS
-        ) {
-          from--;
-        }
-        while (
-          to < bounds.max &&
-          cumulative[to] - cumulative[spurTo] < WINDOW_FLOOR_METERS
-        ) {
-          to++;
-        }
-        return { window: { from, to }, points: [at(from), at(to)] };
-      }
-      return {
-        window: { from, to },
-        points: [],
-        direct: {
-          geometry: [geometry[from]],
-          distanceMeters: 0,
-          ascentMeters: 0,
-          durationSeconds: 0,
-        },
-      };
-    }
+    // Routing from a place to itself is not a route (the only stop of a loop): compute in full.
+    if (before[0] === after[0] && before[1] === after[1]) return null;
     return { window, points: [before, after] };
   }
 
