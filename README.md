@@ -32,6 +32,7 @@ cp .env.example .env                  # optional: the defaults already match doc
 ./scripts/download-segments.sh        # BRouter data for the test region (about 120 MB, not committed)
 ./scripts/download-basemap.sh         # map tiles, fonts and sprites for the test region (about 55 MB, not committed)
 ./scripts/download-relief.sh          # Copernicus GLO-30 elevation tiles for the test region (about 85 MB, not committed)
+npm run build-relief                  # the map's hillshade tiles, built from those (about 20 MB, under a minute; needs the pmtiles CLI or Docker)
 docker compose up -d                  # PostgreSQL/PostGIS, BRouter (first start builds it) and the tiles server
 npm run db:migrate                    # enables PostGIS
 npm run dev                           # API and web app together

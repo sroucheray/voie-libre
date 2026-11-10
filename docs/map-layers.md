@@ -21,7 +21,7 @@ Effort: **S** up to a day, **M** two or three days, **L** about a week. Sizes ma
 | 9   | 3D terrain                        | The map tilts over real relief                                             | same tiles as 2                       | no                       | S after 2 |
 | 10  | Imagery (world)                   | Satellite base outside France                                              | Sentinel-2 cloudless                  | yes, or 1 GB+ to host    | M         |
 
-## 1. Layer switcher
+## 1. Layer switcher (done 2026-11-10, with the relief as its only entry)
 
 A map control like the zoom buttons: an Angular element, translated, usable by keyboard and touch.
 
@@ -33,7 +33,9 @@ A map control like the zoom buttons: an Angular element, translated, usable by k
 
 In the code: `buildBasemapStyle` takes the set of layers; overlays are added and removed with `addLayer`/`removeLayer` rather than a full `setStyle`, so the planner's own layers stay in place.
 
-## 2. Hillshade
+## 2. Hillshade (done 2026-11-10)
+
+Built as described in `BRIEF-relief.md`: `npm run build-relief` writes `data/basemap/relief.pmtiles`, **19.6 MB measured** for the test region (100 PNG tiles, zooms 6 to 11, elevations rounded to 0.25 m), more than the first estimate below, which assumed WebP and whole metres. The notes below are the proposal as it was written.
 
 MapLibre draws shading itself from elevation tiles (`raster-dem` source, `hillshade` layer). The elevations come from the Copernicus GLO-30 files that `scripts/download-relief.sh` already fetches for the API.
 
@@ -133,7 +135,7 @@ Worth doing only when the app is used outside France.
 
 ## Recommended order
 
-1. **Switcher and hillshade** (1, 2). The data is already on disk, it works offline, and relief is what the plain map lacks most for cycling and running.
+1. **Switcher and hillshade** (1, 2): done. The data is already on disk, it works offline, and relief is what the plain map lacks most for cycling and running.
 2. **Ways for the profile** (3). A day of styling on the current tiles; it also makes snapping understandable.
 3. **Surface and way type of the route** (4). The most useful answer to "is this route right for my bike", with no new data to host.
 4. **IGN imagery, opt-in** (5). Small, and the best way to judge a track or a path before going.

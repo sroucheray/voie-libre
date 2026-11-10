@@ -40,6 +40,8 @@ Checked in a browser against the local stack: the three alternatives on the Cler
 
 ## Asked 2026-11-10 (done 2026-11-10)
 
+Then, the same day: layer switcher and hillshade (brief `BRIEF-relief.md`, plan `PLAN-relief.md`), done.
+
 Brief: `BRIEF-reverse-fit-snap.md`, plan: `PLAN-reverse-fit-snap.md`. Reverse the whole route, removal recomputed between the two neighbours, FIT export, points on ways for Road and Gravel, map layer proposals (document only). The proposals are in `docs/map-layers.md`: nothing of them is built; the recommended start is a layer switcher with hillshade from the Copernicus tiles.
 
 Seen on the way, left as they are (backlog of 2026-11-08):

@@ -12,7 +12,7 @@ The author, on desktop and on touch. Nothing may depend on hover.
 
 ## Scope
 
-1. **Relief tiles, built locally.** A script (`scripts/build-relief-tiles.mjs`) turns the Copernicus GeoTIFFs of `data/relief` into elevation tiles for the map: Web Mercator, 512 px, zooms 6 to 11 (zoom 11 is about the 30 m of the data; the map stretches it beyond), elevations rounded to 0.25 m in the "terrarium" encoding MapLibre reads, PNG, over the same area as the basemap (`BASEMAP_BBOX`). The result is `data/basemap/relief.pmtiles`, served by the existing `tiles` service. Places without elevation data are at sea level.
+1. **Relief tiles, built locally.** A script (`scripts/build-relief-tiles.ts`, run by `npm run build-relief`) turns the Copernicus GeoTIFFs of `data/relief` into elevation tiles for the map: Web Mercator, 512 px, zooms 6 to 11 (zoom 11 is about the 30 m of the data; the map stretches it beyond), elevations rounded to 0.25 m in the "terrarium" encoding MapLibre reads, PNG, over the same area as the basemap (`BASEMAP_BBOX`). The result is `data/basemap/relief.pmtiles`, served by the existing `tiles` service. Places without elevation data are at sea level.
 2. **Hillshade on the map.** A `raster-dem` source and one `hillshade` layer, drawn above the land cover and under the water, the roads and the labels. Soft enough that roads, the route and names stay readable.
 3. **Shown by default.** The relief is on when the map opens.
 4. **Layer switcher.** A button under the zoom buttons opens a small panel listing the overlays, with one entry for now: Relief (a checkbox). Angular, translated, usable by keyboard and touch; Escape or a click outside closes it. The choice is kept on the device (`localStorage`) and never sent.
