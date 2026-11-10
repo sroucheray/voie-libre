@@ -30,11 +30,12 @@ The author, on desktop and on touch. Nothing may depend on hover.
    - The "Export" button of a saved route offers the two formats (GPX, FIT). Shared-route links keep GPX only.
 4. **Points on ways, for road and gravel.** On the Road and Gravel profiles, a point placed on the map (click, map menu, marker drop, waypoint pulled out of the route) snaps to the nearest way the profile can use, when one is close. When none is close, the point is refused and a short message says so ("No road close to this place" / "Pas de route près de cet endroit"); a refused drop puts the marker back.
    - Close means within 24 px on screen and within 100 m on the ground. Both figures are constants, to tune by hand.
-   - Ways come from the basemap's vector tiles already on screen (`roads` layer of the Protomaps tiles), so snapping is instant, works offline and calls nothing. Road: roads, no motorway, no path or track. Gravel: the same plus tracks and paths.
+   - Ways come from the basemap's vector tiles (`roads` layer of the Protomaps tiles): the zoom 14 tile around the point, read from the local archive, because the tiles of lower zooms leave the small roads out (decided on 2026-11-10, after measuring the archive). Snapping therefore works at every zoom, offline, and calls nothing. Road: roads and cycleways, no motorway, no path or track. Gravel: the same plus tracks and paths.
    - Trail: no snapping, the point stays where it is placed (running off the ways is allowed).
    - Not snapped: places picked from the search, "My position", imported GPX, points already placed (changing the profile moves nothing). Where the basemap has no tiles (outside the extract), the point is kept as placed: the routing engine still attaches it to its network, as today.
    - The ghost marker under the mouse shows the snapped place, so the user sees where the point will land.
    - During a live drag the place reported is the snapped one; where there is no way close, the route stays on the last valid place.
+   - While the tile around a place is being read (the first time only), the ghost stays under the pointer.
 5. **Map layers: proposals only.** A document, `docs/map-layers.md`, to choose from later. Nothing is built. For each proposal: what the user sees, where the data comes from and its licence, download size for the test region and for France, what it costs offline, effort, risks. It covers at least:
    - a layer switcher on the map (Angular, translated), and how layers and overlays combine;
    - relief from the Copernicus tiles already downloaded: hillshade, contour lines, slope shading, 3D terrain;
@@ -42,7 +43,7 @@ The author, on desktop and on touch. Nothing may depend on hover.
    - ways that suit the selected profile: what the current tiles allow (road classes only) and what needs our own tiles (surface, track grade, cycle routes, trail difficulty, traffic class), with the tool to build them;
    - signed cycling and hiking routes as an overlay;
    - what is not possible with open data (popularity heatmaps).
-   The document ends with a recommended order.
+     The document ends with a recommended order.
 
 ## Done, and how we check it
 
@@ -55,7 +56,7 @@ The author, on desktop and on touch. Nothing may depend on hover.
 ## Constraints
 
 - Stack and rules of `CLAUDE.md`: no hard-coded string, error codes translated, the map calls no external domain (the layers document may propose opt-in exceptions; nothing in this brief adds one).
-- No new runtime dependency.
+- No new runtime dependency, except `@mapbox/vector-tile` and `pbf` to decode the tiles (agreed on 2026-11-10; both already come with MapLibre).
 - One commit per step.
 
 ## Out of scope

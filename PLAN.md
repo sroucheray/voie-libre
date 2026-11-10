@@ -38,9 +38,9 @@ Brief: `BRIEF-backlog.md`. One commit per item. Decisions taken: stops are searc
 
 Checked in a browser against the local stack: the three alternatives on the Clermont-Ferrand to Pavezin trip, the tiles after a failed load, the profile selection and its highlight, the live drag (marker and route line, Escape, drop, Ctrl+Z). Not checked: touch screens (a drag cannot be cancelled there other than by the undo button), Cmd+Z on macOS.
 
-## Asked 2026-11-10 (not started)
+## Asked 2026-11-10 (done 2026-11-10)
 
-Brief: `BRIEF-reverse-fit-snap.md`, plan: `PLAN-reverse-fit-snap.md`. Reverse the whole route, removal recomputed between the two neighbours, FIT export, points on ways for Road and Gravel, map layer proposals (document only).
+Brief: `BRIEF-reverse-fit-snap.md`, plan: `PLAN-reverse-fit-snap.md`. Reverse the whole route, removal recomputed between the two neighbours, FIT export, points on ways for Road and Gravel, map layer proposals (document only). The proposals are in `docs/map-layers.md`: nothing of them is built; the recommended start is a layer switcher with hillshade from the Copernicus tiles.
 
 Seen on the way, left as they are (backlog of 2026-11-08):
 
