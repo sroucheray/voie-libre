@@ -235,7 +235,7 @@ class Writer {
 export function buildFit(
   route: FitSource,
   stopNames: readonly string[] = [],
-): Uint8Array {
+): Uint8Array<ArrayBuffer> {
   const { geometry } = route;
   if (geometry.length < 2) throw new Error('A course needs two points');
 

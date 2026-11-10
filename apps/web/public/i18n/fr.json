@@ -184,10 +184,16 @@
       "quota": "Le stockage de l'appareil est plein. Supprimez un parcours enregistré et réessayez.",
       "not_found": "Ce parcours enregistré n'existe plus.",
       "unknown": "Les parcours enregistrés n'ont pas pu être lus ou écrits.",
-      "export_failed": "Le fichier GPX n'a pas pu être créé."
+      "export_failed": "Le fichier n'a pas pu être créé."
     },
     "export": "Exporter",
-    "exportNamed": "Exporter {{name}} en GPX",
+    "exportNamed": "Exporter {{name}}",
+    "exportFormat": "Format du fichier",
+    "exportAs": "Exporter {{name}} en {{format}}",
+    "formats": {
+      "gpx": "GPX",
+      "fit": "FIT"
+    },
     "summaryNoClimb": "{{distance}}, enregistré le {{date}}"
   },
   "offline": {

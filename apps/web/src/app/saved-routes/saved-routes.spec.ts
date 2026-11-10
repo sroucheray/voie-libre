@@ -37,7 +37,13 @@ describe('Saved routes', () => {
   let calls: number;
   let respond: () => Response;
   let routeStore: InMemoryRouteStore;
-  let downloads: { content: string; fileName: string; mimeType: string }[];
+  let downloads: {
+    /** The text of the file; empty for a binary one, whose bytes are in `bytes`. */
+    content: string;
+    bytes?: Uint8Array;
+    fileName: string;
+    mimeType: string;
+  }[];
   let downloadFails: boolean;
   let sharingEnabled: boolean;
   let sharingCalls: {
@@ -87,9 +93,17 @@ describe('Saved routes', () => {
         { provide: SHARING_ENABLED, useFactory: () => sharingEnabled },
         {
           provide: FILE_DOWNLOADER,
-          useValue: (content: string, fileName: string, mimeType: string) => {
+          useValue: (
+            content: string | Uint8Array,
+            fileName: string,
+            mimeType: string,
+          ) => {
             if (downloadFails) throw new Error('blocked');
-            downloads.push({ content, fileName, mimeType });
+            downloads.push(
+              typeof content === 'string'
+                ? { content, fileName, mimeType }
+                : { content: '', bytes: content, fileName, mimeType },
+            );
           },
         },
         {
@@ -469,6 +483,8 @@ describe('Saved routes', () => {
     it('downloads a GPX built from the stored geometry, with no network call', async () => {
       const view = await renderWithSavedRoute();
       calls = 0;
+      view.button('Export Road, 41 km').click();
+      await view.settle();
       view.button('Export Road, 41 km as GPX').click();
       await view.settle();
       expect(calls).toBe(0);
@@ -500,12 +516,16 @@ describe('Saved routes', () => {
             .querySelectorAll('wpt > name'),
         ).map((n) => n.textContent);
 
+      view.button('Export Road, 41 km').click();
+      await view.settle();
       view.button('Export Road, 41 km as GPX').click();
       await view.settle();
       expect(names(downloads[0].content)).toEqual(['Start', 'End']);
 
       TestBed.inject(LanguageService).use('fr');
       await view.settle();
+      await view.settle();
+      view.button('Exporter Road, 41 km').click();
       await view.settle();
       view.button('Exporter Road, 41 km en GPX').click();
       await view.settle();
@@ -516,26 +536,63 @@ describe('Saved routes', () => {
       const view = await renderWithSavedRoute();
       const [saved] = [...routeStore.records.values()];
       await routeStore.rename(saved.id, 'Été');
+      view.button('Export Road, 41 km').click();
+      await view.settle();
       view.button('Export Road, 41 km as GPX').click();
       await view.settle();
       expect(downloads[0].fileName).toBe('ete.gpx');
     });
 
+    it('offers the formats under the route and downloads a FIT course', async () => {
+      const view = await renderWithSavedRoute();
+      calls = 0;
+      const toggle = view.button('Export Road, 41 km');
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      toggle.click();
+      await view.settle();
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+      view.button('Export Road, 41 km as FIT').click();
+      await view.settle();
+      expect(calls).toBe(0);
+      expect(downloads).toHaveLength(1);
+      expect(downloads[0].fileName).toBe('road-41-km.fit');
+      expect(downloads[0].mimeType).toBe('application/vnd.ant.fit');
+      const bytes = downloads[0].bytes as Uint8Array;
+      expect(String.fromCharCode(...bytes.subarray(8, 12))).toBe('.FIT');
+      // The choice closes once a format is picked.
+      expect(view.root.querySelector('.export-formats')).toBeNull();
+      expect(view.alert()).toBeNull();
+    });
+
+    it('closes the choice of a format without exporting', async () => {
+      const view = await renderWithSavedRoute();
+      view.button('Export Road, 41 km').click();
+      await view.settle();
+      view.confirmButton('Cancel').click();
+      await view.settle();
+      expect(view.root.querySelector('.export-formats')).toBeNull();
+      expect(downloads).toHaveLength(0);
+    });
+
     it('translates a refused download', async () => {
       const view = await renderWithSavedRoute();
       downloadFails = true;
+      view.button('Export Road, 41 km').click();
+      await view.settle();
       view.button('Export Road, 41 km as GPX').click();
       await view.settle();
-      expect(view.alert()).toContain('GPX file could not be created');
+      expect(view.alert()).toContain('The file could not be created');
       TestBed.inject(LanguageService).use('fr');
       await view.settle();
       await view.settle();
-      expect(view.alert()).toContain("fichier GPX n'a pas pu être créé");
+      expect(view.alert()).toContain("Le fichier n'a pas pu être créé");
     });
 
     it('says so when the route was deleted elsewhere', async () => {
       const view = await renderWithSavedRoute();
       routeStore.records.clear();
+      view.button('Export Road, 41 km').click();
+      await view.settle();
       view.button('Export Road, 41 km as GPX').click();
       await view.settle();
       expect(downloads).toHaveLength(0);
@@ -897,6 +954,8 @@ describe('Saved routes', () => {
     it('exports an imported route without elevation with no <ele>', async () => {
       const view = await render();
       await importFile(view, gpx(noEle));
+      view.button('Export Imported ride').click();
+      await view.settle();
       view.button('Export Imported ride as GPX').click();
       await view.settle();
       expect(downloads[0].content).not.toContain('<ele>');

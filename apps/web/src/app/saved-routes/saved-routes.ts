@@ -16,6 +16,7 @@ import {
 } from '@jsverse/transloco';
 import { FormattingService } from '../core/format/formatting.service';
 import { FILE_DOWNLOADER } from '../export/file-download';
+import { buildFit, fitFileName } from '../export/fit';
 import { buildGpx, gpxFileName } from '@voie-libre/shared';
 import {
   ElevationError,
@@ -56,6 +57,10 @@ class ExportError extends Error {}
  * (after a confirmation). A storage failure shows a translated message and leaves the planner
  * fully usable.
  */
+/** The file formats a saved route exports to. */
+const EXPORT_FORMATS = ['gpx', 'fit'] as const;
+type ExportFormat = (typeof EXPORT_FORMATS)[number];
+
 @Component({
   selector: 'vl-saved-routes',
   imports: [TranslocoPipe],
@@ -90,6 +95,9 @@ export class SavedRoutes {
   protected readonly copiedId = signal<string | null>(null);
   protected readonly renamingId = signal<string | null>(null);
   protected readonly confirmingId = signal<string | null>(null);
+  /** The route whose export formats are offered. */
+  protected readonly exportingId = signal<string | null>(null);
+  protected readonly exportFormats = EXPORT_FORMATS;
   /** The route whose opening waits for the user's yes, because a route is being planned. */
   protected readonly confirmingOpenId = signal<string | null>(null);
   protected readonly savable = this.planner.savable;
@@ -241,8 +249,14 @@ export class SavedRoutes {
     });
   }
 
-  /** Builds the GPX on the device from the stored geometry and downloads it. */
-  protected async exportGpx(id: string): Promise<void> {
+  /** Shows or hides the choice of a file format under a route. */
+  protected toggleExport(id: string): void {
+    this.exportingId.update((current) => (current === id ? null : id));
+  }
+
+  /** Builds the file on the device from the stored geometry and downloads it. */
+  protected async exportAs(id: string, format: ExportFormat): Promise<void> {
+    this.exportingId.set(null);
     await this.attempt(async () => {
       const saved = await this.routeStore.get(id);
       if (!saved) {
@@ -250,14 +264,23 @@ export class SavedRoutes {
         throw new RouteStoreError('not_found');
       }
       try {
-        this.download(
-          buildGpx(
-            { ...saved, withElevation: saved.ascentMeters !== null },
-            this.pointNames(saved),
-          ),
-          gpxFileName(saved.name),
-          'application/gpx+xml',
-        );
+        const names = this.pointNames(saved);
+        if (format === 'fit') {
+          this.download(
+            buildFit(saved, names.slice(1, -1)),
+            fitFileName(saved.name),
+            'application/vnd.ant.fit',
+          );
+        } else {
+          this.download(
+            buildGpx(
+              { ...saved, withElevation: saved.ascentMeters !== null },
+              names,
+            ),
+            gpxFileName(saved.name),
+            'application/gpx+xml',
+          );
+        }
       } catch {
         throw new ExportError();
       }

@@ -184,10 +184,16 @@
       "quota": "The device storage is full. Delete a saved route and try again.",
       "not_found": "This saved route no longer exists.",
       "unknown": "The saved routes could not be read or written.",
-      "export_failed": "The GPX file could not be created."
+      "export_failed": "The file could not be created."
     },
     "export": "Export",
-    "exportNamed": "Export {{name}} as GPX",
+    "exportNamed": "Export {{name}}",
+    "exportFormat": "File format",
+    "exportAs": "Export {{name}} as {{format}}",
+    "formats": {
+      "gpx": "GPX",
+      "fit": "FIT"
+    },
     "summaryNoClimb": "{{distance}}, saved {{date}}"
   },
   "offline": {

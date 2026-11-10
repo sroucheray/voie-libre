@@ -144,7 +144,28 @@
           {{ 'saved.cancel' | transloco }}
         </button>
       </div>
-      } @else { @if (confirmingOpenId() === route.id) {
+      } @else { @if (exportingId() === route.id) {
+      <div
+        class="confirm export-formats"
+        role="group"
+        [attr.aria-label]="'saved.exportFormat' | transloco"
+        (keydown.escape)="exportingId.set(null)"
+      >
+        <span>{{ 'saved.exportFormat' | transloco }}</span>
+        @for (format of exportFormats; track format) {
+        <button
+          type="button"
+          [attr.aria-label]="'saved.exportAs' | transloco : { name: route.name, format: ('saved.formats.' + format | transloco) }"
+          (click)="exportAs(route.id, format)"
+        >
+          {{ 'saved.formats.' + format | transloco }}
+        </button>
+        }
+        <button type="button" (click)="exportingId.set(null)">
+          {{ 'saved.cancel' | transloco }}
+        </button>
+      </div>
+      } @if (confirmingOpenId() === route.id) {
       <div
         class="confirm"
         role="group"
@@ -191,8 +212,9 @@
         <button
           type="button"
           class="export"
+          [attr.aria-expanded]="exportingId() === route.id"
           [attr.aria-label]="'saved.exportNamed' | transloco : { name: route.name }"
-          (click)="exportGpx(route.id)"
+          (click)="toggleExport(route.id)"
         >
           {{ 'saved.export' | transloco }}
         </button>

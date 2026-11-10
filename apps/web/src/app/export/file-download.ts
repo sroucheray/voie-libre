@@ -2,7 +2,8 @@ import { InjectionToken } from '@angular/core';
 
 /** Hands a file to the user. Replaced in tests, and by the share plugin under Capacitor. */
 export type FileDownloader = (
-  content: string,
+  /** Text (GPX) or bytes (FIT). */
+  content: string | Uint8Array<ArrayBuffer>,
   fileName: string,
   mimeType: string,
 ) => void;
