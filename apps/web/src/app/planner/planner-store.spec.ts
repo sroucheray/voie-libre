@@ -301,33 +301,45 @@ describe('PlannerStore', () => {
       ]);
     });
 
-    it('swaps the start and the end, keeping the stops, and undoes it', () => {
+    it('reverses the route, stops included, and undoes it', () => {
       store.addPoint([1, 1]);
       store.addPoint([2, 2]);
       store.addPoint([3, 3]);
-      store.swapEnds();
-      expect(store.points()).toEqual([
-        [2, 2],
-        [3, 3],
-        [1, 1],
-      ]);
+      store.addPoint([4, 4]);
+      const before = store.points();
+      store.reverse();
+      expect(store.points()).toEqual([...before].reverse());
+      expect(store.points()[0]).toEqual(before[before.length - 1]);
       store.undo();
-      expect(store.points()).toEqual([
-        [1, 1],
-        [3, 3],
-        [2, 2],
-      ]);
+      expect(store.points()).toEqual(before);
     });
 
-    it('does not swap a loop or fewer than two points', () => {
+    it('does not reverse a single point or a loop with fewer than two stops', () => {
       store.addPoint([1, 1]);
-      store.swapEnds();
+      expect(store.canReverse()).toBe(false);
+      store.reverse();
       expect(store.points()).toEqual([[1, 1]]);
       store.addPoint([2, 2]);
       store.closeLoop();
+      expect(store.isLoop()).toBe(true);
+      expect(store.canReverse()).toBe(false);
       const before = store.points();
-      store.swapEnds();
+      store.reverse();
       expect(store.points()).toBe(before);
+    });
+
+    it('goes round a loop with stops the other way, from the same start', () => {
+      store.addPoint([1, 1]);
+      store.addPoint([2, 2]);
+      store.addPoint([3, 3]);
+      store.closeLoop();
+      const before = store.points();
+      expect(store.isLoop()).toBe(true);
+      expect(store.canReverse()).toBe(true);
+      store.reverse();
+      expect(store.points()).toEqual([...before].reverse());
+      expect(store.points()[0]).toEqual(before[0]);
+      expect(store.isLoop()).toBe(true);
     });
 
     it('names places by position, so a name follows its point', () => {
@@ -336,7 +348,7 @@ describe('PlannerStore', () => {
       store.setLabel([1, 1], 'Gare de Lyon, Paris');
       expect(store.labelOf([1, 1])).toBe('Gare de Lyon, Paris');
       expect(store.labelOf([2, 2])).toBeNull();
-      store.swapEnds();
+      store.reverse();
       expect(store.labelOf(store.points()[1])).toBe('Gare de Lyon, Paris');
       store.setLabel([1, 1], 'Renamed');
       expect(store.labelOf([1, 1])).toBe('Renamed');

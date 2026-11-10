@@ -1454,7 +1454,7 @@ describe('Planner', () => {
       });
     });
 
-    it('swaps the start and the end, names included', async () => {
+    it('reverses the route, names included', async () => {
       const view = await render();
       const store = TestBed.inject(PlannerStore);
       store.setStart([gare.lon, gare.lat]);
@@ -1476,7 +1476,7 @@ describe('Planner', () => {
       ]);
     });
 
-    it('cannot swap a single point or a loop', async () => {
+    it('cannot reverse a single point or a loop without stops', async () => {
       const view = await render();
       const swap = () => view.root.querySelector('.swap') as HTMLButtonElement;
       expect(swap().disabled).toBe(true);

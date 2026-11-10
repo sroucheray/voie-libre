@@ -63,7 +63,7 @@
       "start": "Départ",
       "end": "Arrivée",
       "stop": "Étape {{n}}",
-      "swap": "Intervertir le départ et l'arrivée",
+      "reverse": "Inverser l'itinéraire",
       "placeholder": {
         "start": "Chercher un départ ou cliquer sur la carte",
         "end": "Chercher une arrivée",

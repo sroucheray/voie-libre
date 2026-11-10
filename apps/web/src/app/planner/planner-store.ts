@@ -556,18 +556,23 @@ export class PlannerStore {
   }
 
   /**
-   * Swaps the start and the end, as the swap button of a route search does; the stops in between
-   * stay where they are. No-op for a loop or fewer than two points. Several segments change, so
-   * the whole route is computed again.
+   * True when the route can be reversed: two points or more, and a different order once reversed
+   * (a loop needs two stops at least: with one or none, it reads the same both ways).
    */
-  swapEnds(): void {
+  readonly canReverse = computed(() => {
     const points = this.pointsState();
-    if (points.length < 2 || isLoopOf(points)) return;
-    const next = [...points];
-    next[0] = points[points.length - 1];
-    next[points.length - 1] = points[0];
+    return points.length >= (isLoopOf(points) ? 4 : 2);
+  });
+
+  /**
+   * Reverses the route: the end becomes the start and the stops are visited in the opposite order.
+   * A loop keeps its start and goes round the other way. The way back is not the way out (one-way
+   * streets, climbs), so the whole route is computed again.
+   */
+  reverse(): void {
+    if (!this.canReverse()) return;
     this.removedState.set(null);
-    this.setPoints(next);
+    this.setPoints([...this.pointsState()].reverse());
   }
 
   /** Moves the point at `from` to the place `to` (after the move, it is at index `to`). */

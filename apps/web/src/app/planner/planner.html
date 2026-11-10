@@ -335,10 +335,10 @@
       <button
         type="button"
         class="swap"
-        [disabled]="!canSwap()"
-        [title]="'planner.search.swap' | transloco"
-        [attr.aria-label]="'planner.search.swap' | transloco"
-        (click)="store.swapEnds()"
+        [disabled]="!store.canReverse()"
+        [title]="'planner.search.reverse' | transloco"
+        [attr.aria-label]="'planner.search.reverse' | transloco"
+        (click)="store.reverse()"
       >
         <span aria-hidden="true">⇅</span>
       </button>

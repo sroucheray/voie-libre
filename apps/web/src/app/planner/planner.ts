@@ -158,10 +158,6 @@ export class Planner {
   /** The field waiting for the user's position, until the device gives it or fails. */
   private readonly positionTarget = signal<PositionTarget | null>(null);
   private readonly injector = inject(Injector);
-  protected readonly canSwap = computed(
-    () => this.store.points().length >= 2 && !this.store.isLoop(),
-  );
-
   /** The menu opened by a right click or a long press: where, and at which pixel. */
   protected readonly menu = signal<{
     point: LngLat;

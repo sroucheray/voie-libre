@@ -63,7 +63,7 @@
       "start": "Start",
       "end": "Destination",
       "stop": "Stop {{n}}",
-      "swap": "Swap start and end",
+      "reverse": "Reverse the route",
       "placeholder": {
         "start": "Search a start or click the map",
         "end": "Search a destination",
