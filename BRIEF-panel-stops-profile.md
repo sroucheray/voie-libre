@@ -20,11 +20,11 @@ The author, on desktop and on touch (Android later): nothing may depend on hover
 5. **Profile dropdown.** The radio buttons become a custom dropdown: a button showing the selected profile's title and description, opening a list where each option has its title and description, the selected one marked. Keyboard and screen-reader behaviour of a select-only combobox (ARIA `combobox` + `listbox`): Enter, Space or arrows open it, arrows move, Home/End, Enter or Space pick, Escape or a click outside closes without change, focus returns to the button.
 6. **Wording** (Transloco keys in `en.json` and `fr.json`):
 
-   | Profile | English | French |
-   | --- | --- | --- |
-   | Road / Route | Road bike: paved roads, the fastest way | Vélo de route : routes revêtues, au plus rapide |
-   | Gravel / Gravel | Gravel bike: tracks and quiet roads | Vélo gravel : chemins et petites routes |
-   | Trail / Trail | Running: footpaths and tracks first | Course à pied : sentiers et chemins d'abord |
+   | Profile         | English                                 | French                                          |
+   | --------------- | --------------------------------------- | ----------------------------------------------- |
+   | Road / Route    | Road bike: paved roads, the fastest way | Vélo de route : routes revêtues, au plus rapide |
+   | Gravel / Gravel | Gravel bike: tracks and quiet roads     | Vélo gravel : chemins et petites routes         |
+   | Trail / Trail   | Running: footpaths and tracks first     | Course à pied : sentiers et chemins d'abord     |
 
 ## Out of scope
 
