@@ -37,7 +37,8 @@ export interface MapCreateOptions {
   style: StyleSpecification;
   center: LngLat;
   zoom: number;
-  offlineTiles?: OfflineTiles;
+  /** The archives the map reads from the device when they are downloaded. */
+  offlineTiles?: OfflineTiles[];
 }
 
 export type MapFactory = (options: MapCreateOptions) => Promise<MapLike>;
@@ -85,15 +86,15 @@ export const createMapLibreMap: MapFactory = async ({
   ]);
   if (!pmtilesRegistered) {
     const protocol = new Protocol();
-    if (offlineTiles) {
+    for (const tiles of offlineTiles ?? []) {
       // Registered under the URL the style uses: the map reads the downloaded copy when there is
       // one, and falls back to HTTP range requests.
       protocol.add(
         new PMTiles(
           new OfflineFirstSource(
-            offlineTiles.url,
-            offlineTiles.reader,
-            new FetchSource(offlineTiles.url),
+            tiles.url,
+            tiles.reader,
+            new FetchSource(tiles.url),
           ),
         ),
       );

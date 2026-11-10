@@ -85,6 +85,7 @@ export class MapView {
       created?.remove();
     });
 
+    const reliefUrl = reliefTilesUrl(this.basemapUrl);
     afterNextRender(async () => {
       let map: MapLike;
       try {
@@ -94,10 +95,9 @@ export class MapView {
           style: buildBasemapStyle(this.basemapUrl, this.language.current()),
           center: this.center(),
           zoom: this.zoom(),
-          offlineTiles: {
-            url: basemapTilesUrl(this.basemapUrl),
-            reader: this.offline,
-          },
+          offlineTiles: [basemapTilesUrl(this.basemapUrl), reliefUrl].map(
+            (url) => ({ url, reader: this.offline.readerFor(url) }),
+          ),
         });
       } catch (error) {
         console.error('Map could not be created', error);
@@ -118,7 +118,10 @@ export class MapView {
       map.on('rotate', () => this.bearingState.set(map.getBearing()));
       this.map.set(map);
       this.mapReady.emit(map);
-      const available = await this.probeRelief(reliefTilesUrl(this.basemapUrl));
+      // The copy on the device is enough: no network is needed to know.
+      const available =
+        (await this.offline.has(reliefUrl)) ||
+        (await this.probeRelief(reliefUrl));
       if (!destroyed) this.reliefAvailable.set(available);
     });
 

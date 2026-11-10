@@ -40,17 +40,27 @@ describe('OfflineBasemap', () => {
   let storage: FakeCacheStorage;
   let fetched: string[];
   let failOn: ((url: string) => Response | Error | null) | null;
+  /** The relief archive on the server; `null` when it has none (404). */
+  let relief: Uint8Array<ArrayBuffer> | null;
 
   beforeEach(() => {
     storage = new FakeCacheStorage();
     fetched = [];
     failOn = null;
+    relief = null;
     vi.stubGlobal('caches', storage);
     vi.stubGlobal('fetch', async (url: string) => {
       fetched.push(url);
       const failure = failOn?.(url);
       if (failure instanceof Error) throw failure;
       if (failure) return failure;
+      if (url.endsWith('/relief.pmtiles')) {
+        return relief
+          ? new Response(relief, {
+              headers: { 'content-length': String(relief.length) },
+            })
+          : new Response(null, { status: 404 });
+      }
       return url.endsWith('.pmtiles')
         ? new Response(ARCHIVE, {
             headers: { 'content-length': String(ARCHIVE.length) },
@@ -87,8 +97,10 @@ describe('OfflineBasemap', () => {
     expect(offline.sizeBytes()).toBe(ARCHIVE.length);
     expect(offline.totalBytes()).toBe(ARCHIVE.length);
     expect(fetched.filter((url) => url.endsWith('.pbf'))).toHaveLength(768);
+    // The relief is asked for too; this server has none, which is not a failure.
     expect(fetched.filter((url) => url.endsWith('.pmtiles'))).toEqual([
       `${BASE}/clermont.pmtiles`,
+      `${BASE}/relief.pmtiles`,
     ]);
     expect(storage.caches.get(OFFLINE_CACHE_NAME)?.entries.size).toBe(1);
 
@@ -96,6 +108,76 @@ describe('OfflineBasemap', () => {
     expect(Array.from(new Uint8Array(slice!))).toEqual(
       Array.from(ARCHIVE.slice(100, 116)),
     );
+  });
+
+  describe('with a relief archive on the server', () => {
+    const RELIEF = Uint8Array.from({ length: 3000 }, (_, i) => (i * 7) % 256);
+    const RELIEF_URL = `${BASE}/relief.pmtiles`;
+
+    beforeEach(() => {
+      relief = RELIEF;
+    });
+
+    it('downloads both archives and reads each one by its URL', async () => {
+      const offline = await create();
+      expect(await offline.has(RELIEF_URL)).toBe(false);
+      await offline.download();
+
+      expect(offline.state()).toBe('ready');
+      expect(offline.progress()).toBe(1);
+      expect(offline.totalBytes()).toBe(ARCHIVE.length + RELIEF.length);
+      expect(offline.downloadedBytes()).toBe(ARCHIVE.length + RELIEF.length);
+      expect(offline.sizeBytes()).toBe(ARCHIVE.length + RELIEF.length);
+      expect(storage.caches.get(OFFLINE_CACHE_NAME)?.entries.size).toBe(2);
+      expect(await offline.has(RELIEF_URL)).toBe(true);
+
+      const fromRelief = await offline.readerFor(RELIEF_URL).read(10, 8);
+      expect(Array.from(new Uint8Array(fromRelief!))).toEqual(
+        Array.from(RELIEF.slice(10, 18)),
+      );
+      const fromBasemap = await offline
+        .readerFor(`${BASE}/clermont.pmtiles`)
+        .read(10, 8);
+      expect(Array.from(new Uint8Array(fromBasemap!))).toEqual(
+        Array.from(ARCHIVE.slice(10, 18)),
+      );
+      expect(Array.from(new Uint8Array((await offline.read(10, 8))!))).toEqual(
+        Array.from(ARCHIVE.slice(10, 18)),
+      );
+    });
+
+    it('finds both again after a reload, and removes both', async () => {
+      await (await create()).download();
+      const reloaded = await create();
+      expect(reloaded.state()).toBe('ready');
+      expect(reloaded.sizeBytes()).toBe(ARCHIVE.length + RELIEF.length);
+      expect(await reloaded.has(RELIEF_URL)).toBe(true);
+
+      await reloaded.remove();
+      expect(reloaded.sizeBytes()).toBe(0);
+      expect(await reloaded.has(RELIEF_URL)).toBe(false);
+      expect(await reloaded.readerFor(RELIEF_URL).read(0, 4)).toBeNull();
+    });
+
+    it('drops the relief kept before when the server no longer has it', async () => {
+      const offline = await create();
+      await offline.download();
+      relief = null;
+      await offline.download();
+      expect(offline.state()).toBe('ready');
+      expect(offline.sizeBytes()).toBe(ARCHIVE.length);
+      expect(await offline.has(RELIEF_URL)).toBe(false);
+    });
+
+    it('fails, keeping nothing new, when the network drops on the relief', async () => {
+      failOn = (url) =>
+        url === RELIEF_URL ? new TypeError('Failed to fetch') : null;
+      const offline = await create();
+      await offline.download();
+      expect(offline.state()).toBe('error');
+      expect(offline.errorCode()).toBe('network');
+      expect(storage.caches.get(OFFLINE_CACHE_NAME)?.entries.size ?? 0).toBe(0);
+    });
   });
 
   it('finds the archive again after a reload', async () => {

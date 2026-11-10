@@ -1,5 +1,9 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { basemapTilesUrl, buildBasemapStyle } from '../map/basemap-style';
+import {
+  basemapTilesUrl,
+  buildBasemapStyle,
+  reliefTilesUrl,
+} from '../map/basemap-style';
 import { BASEMAP_URL } from '../map/map-factory';
 import type { OfflineTilesReader } from './tiles-source';
 
@@ -74,12 +78,15 @@ export function basemapAssetUrls(baseUrl: string): string[] {
  * The basemap on the device. The user downloads the PMTiles archive of the region on request; it
  * is kept in Cache Storage and read by byte ranges (see {@link OfflineFirstSource}). The same
  * action fetches every glyph and sprite file, which the service worker keeps (`dataGroups` in
- * `ngsw-config.json`). The state is `ready` only once everything is in place.
+ * `ngsw-config.json`), and the archive of relief tiles when the server has one. The state is
+ * `ready` only once everything is in place; the relief alone never makes it so.
  */
 @Injectable({ providedIn: 'root' })
 export class OfflineBasemap implements OfflineTilesReader {
   private readonly baseUrl = inject(BASEMAP_URL);
   private readonly tilesUrl = basemapTilesUrl(this.baseUrl);
+  /** The hillshade's elevation tiles: optional, a server may not have them. */
+  private readonly reliefUrl = reliefTilesUrl(this.baseUrl);
 
   private readonly stateSignal = signal<OfflineState>('checking');
   private readonly progressSignal = signal(0);
@@ -94,12 +101,13 @@ export class OfflineBasemap implements OfflineTilesReader {
   readonly downloadedBytes = this.downloadedSignal.asReadonly();
   /** Size announced by the server; 0 while unknown. */
   readonly totalBytes = this.totalSignal.asReadonly();
-  /** Size of the archive on the device. */
+  /** Size of the archives on the device. */
   readonly sizeBytes = this.sizeSignal.asReadonly();
   readonly errorCode = this.errorSignal.asReadonly();
   readonly supported = computed(() => this.cacheStorage() !== undefined);
 
-  private blobPromise: Promise<Blob | null> | null = null;
+  /** The archives read from the cache, by URL; a failed read is forgotten and tried again. */
+  private readonly blobs = new Map<string, Promise<Blob | null>>();
   private controller: AbortController | null = null;
 
   constructor() {
@@ -113,18 +121,42 @@ export class OfflineBasemap implements OfflineTilesReader {
       return;
     }
     try {
-      const blob = await this.blob();
-      this.sizeSignal.set(blob?.size ?? 0);
+      const blob = await this.blob(this.tilesUrl);
+      const relief = blob ? await this.blob(this.reliefUrl) : null;
+      this.sizeSignal.set((blob?.size ?? 0) + (relief?.size ?? 0));
       this.stateSignal.set(blob ? 'ready' : 'none');
     } catch {
       this.stateSignal.set('none');
     }
   }
 
-  async read(offset: number, length: number): Promise<ArrayBuffer | null> {
+  /** Reads the basemap's archive. */
+  read(offset: number, length: number): Promise<ArrayBuffer | null> {
+    return this.readFrom(this.tilesUrl, offset, length);
+  }
+
+  /** A reader of the downloaded copy of the archive at `url` (the basemap's or the relief's). */
+  readerFor(url: string): OfflineTilesReader {
+    return { read: (offset, length) => this.readFrom(url, offset, length) };
+  }
+
+  /** True when the archive at `url` is on the device. */
+  async has(url: string): Promise<boolean> {
+    try {
+      return (await this.blob(url)) !== null;
+    } catch {
+      return false;
+    }
+  }
+
+  private async readFrom(
+    url: string,
+    offset: number,
+    length: number,
+  ): Promise<ArrayBuffer | null> {
     let blob: Blob | null;
     try {
-      blob = await this.blob();
+      blob = await this.blob(url);
     } catch {
       return null;
     }
@@ -150,19 +182,28 @@ export class OfflineBasemap implements OfflineTilesReader {
       void navigator.storage?.persist?.().catch(() => undefined);
       await this.waitForServiceWorker();
       await this.fetchAssets(controller.signal);
-      const archive = await this.fetchArchive(controller.signal);
+      const archives = await this.fetchArchives(controller.signal);
       const cache = await caches.open(OFFLINE_CACHE_NAME);
-      await cache.put(
-        this.tilesUrl,
-        new Response(archive, {
-          headers: {
-            'content-type': 'application/octet-stream',
-            'content-length': String(archive.size),
-          },
-        }),
-      );
-      this.blobPromise = Promise.resolve(archive);
-      this.sizeSignal.set(archive.size);
+      let size = 0;
+      for (const [url, archive] of archives) {
+        await cache.put(
+          url,
+          new Response(archive, {
+            headers: {
+              'content-type': 'application/octet-stream',
+              'content-length': String(archive.size),
+            },
+          }),
+        );
+        this.blobs.set(url, Promise.resolve(archive));
+        size += archive.size;
+      }
+      if (!archives.some(([url]) => url === this.reliefUrl)) {
+        // A relief kept from before and gone from the server would no longer match the map.
+        await cache.delete(this.reliefUrl);
+        this.blobs.delete(this.reliefUrl);
+      }
+      this.sizeSignal.set(size);
       this.progressSignal.set(1);
       this.stateSignal.set('ready');
     } catch (error) {
@@ -183,7 +224,7 @@ export class OfflineBasemap implements OfflineTilesReader {
   }
 
   /**
-   * Deletes the downloaded archive. The glyphs and sprites stay in the service worker cache
+   * Deletes the downloaded archives. The glyphs and sprites stay in the service worker cache
    * (about 14 MB the browser may evict): they are shared with the online map.
    */
   async remove(): Promise<void> {
@@ -194,25 +235,29 @@ export class OfflineBasemap implements OfflineTilesReader {
     } catch {
       // Nothing more to do: the next refresh shows the real state.
     }
-    this.blobPromise = null;
+    this.blobs.clear();
     this.sizeSignal.set(0);
     this.errorSignal.set(null);
     this.stateSignal.set('none');
   }
 
-  private blob(): Promise<Blob | null> {
-    this.blobPromise ??= this.loadBlob().catch((error: unknown) => {
-      this.blobPromise = null;
-      throw error;
-    });
-    return this.blobPromise;
+  private blob(url: string): Promise<Blob | null> {
+    let blob = this.blobs.get(url);
+    if (!blob) {
+      blob = this.loadBlob(url).catch((error: unknown) => {
+        this.blobs.delete(url);
+        throw error;
+      });
+      this.blobs.set(url, blob);
+    }
+    return blob;
   }
 
-  private async loadBlob(): Promise<Blob | null> {
+  private async loadBlob(url: string): Promise<Blob | null> {
     const caches = this.cacheStorage();
     if (!caches || !(await caches.has(OFFLINE_CACHE_NAME))) return null;
     const cache = await caches.open(OFFLINE_CACHE_NAME);
-    const response = await cache.match(this.tilesUrl);
+    const response = await cache.match(url);
     return response ? response.blob() : null;
   }
 
@@ -250,29 +295,50 @@ export class OfflineBasemap implements OfflineTilesReader {
     await Promise.all(Array.from({ length: CONCURRENCY }, worker));
   }
 
-  private async fetchArchive(signal: AbortSignal): Promise<Blob> {
-    const response = await fetch(this.tilesUrl, { signal });
-    if (!response.ok || !response.body) {
-      throw new Error(`${this.tilesUrl}: HTTP ${response.status}`);
+  /**
+   * Downloads the basemap's archive, and the relief's when the server has it (a missing relief is
+   * not a failure: the map works without). Both are asked for first, so that the progress counts
+   * the bytes of the two.
+   */
+  private async fetchArchives(signal: AbortSignal): Promise<[string, Blob][]> {
+    const basemap = await fetch(this.tilesUrl, { signal });
+    if (!basemap.ok || !basemap.body) {
+      throw new Error(`${this.tilesUrl}: HTTP ${basemap.status}`);
     }
-    const total = Number(response.headers.get('content-length')) || 0;
+    const relief = await fetch(this.reliefUrl, { signal });
+    const responses: [string, Response][] = [[this.tilesUrl, basemap]];
+    if (relief.ok && relief.body) responses.push([this.reliefUrl, relief]);
+    else void relief.body?.cancel().catch(() => undefined);
+
+    const total = responses.reduce(
+      (sum, [, response]) =>
+        sum + (Number(response.headers.get('content-length')) || 0),
+      0,
+    );
     this.totalSignal.set(total);
-    const reader = response.body.getReader();
-    const chunks: Uint8Array<ArrayBuffer>[] = [];
     let received = 0;
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value as Uint8Array<ArrayBuffer>);
-      received += value.byteLength;
-      this.downloadedSignal.set(received);
-      if (total > 0) {
-        this.progressSignal.set(
-          ASSETS_SHARE + (received / total) * (1 - ASSETS_SHARE),
-        );
+    const archives: [string, Blob][] = [];
+    for (const [url, response] of responses) {
+      const reader = (response.body as ReadableStream<Uint8Array>).getReader();
+      const chunks: Uint8Array<ArrayBuffer>[] = [];
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value as Uint8Array<ArrayBuffer>);
+        received += value.byteLength;
+        this.downloadedSignal.set(received);
+        if (total > 0) {
+          this.progressSignal.set(
+            ASSETS_SHARE + (received / total) * (1 - ASSETS_SHARE),
+          );
+        }
       }
+      archives.push([
+        url,
+        new Blob(chunks, { type: 'application/octet-stream' }),
+      ]);
     }
-    return new Blob(chunks, { type: 'application/octet-stream' });
+    return archives;
   }
 
   private fail(code: OfflineErrorCode): void {

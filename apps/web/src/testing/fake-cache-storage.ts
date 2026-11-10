@@ -1,4 +1,4 @@
-/** A minimal in-memory Cache: enough for put and match. */
+/** A minimal in-memory Cache: enough for put, match and delete. */
 class FakeCache {
   readonly entries = new Map<string, { blob: Blob; headers: Headers }>();
 
@@ -11,6 +11,10 @@ class FakeCache {
       blob: await response.blob(),
       headers: new Headers(response.headers),
     });
+  }
+
+  async delete(url: string) {
+    return this.entries.delete(url);
   }
 
   async match(url: string) {
