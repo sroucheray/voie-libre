@@ -137,7 +137,7 @@ Worth doing only when the app is used outside France.
 
 1. **Switcher and hillshade** (1, 2): done. The data is already on disk, it works offline, and relief is what the plain map lacks most for cycling and running.
 2. **Ways for the profile** (3): done (a checkbox in the switcher, three levels per profile, see `BRIEF-ways.md`).
-3. **Surface and way type of the route** (4). The most useful answer to "is this route right for my bike", with no new data to host.
+3. **Surface and way type of the route** (4): done (five categories from BRouter's way tags, a bar under the profile, an option to colour the route on the map; see `BRIEF-surface.md`).
 4. **IGN imagery, opt-in** (5). Small, and the best way to judge a track or a path before going.
 5. **Contours** (6), then **own way tiles** (7) when surfaces and signed routes on the map are worth a build pipeline.
 6. **Slope, 3D, world imagery** (8, 9, 10) last.
