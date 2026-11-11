@@ -9,7 +9,7 @@
 #
 # What it does: nx build web, `docker compose build` (web, api, migrate, brouter), sends the images
 # with `docker save | ssh docker load` (no registry), copies the compose file and the tiles
-# server's configuration, then `docker compose up -d --no-build`.
+# server's configuration and the two data download scripts, then `docker compose up -d --no-build`.
 # What it does not do: create `.env` (copy .env.production.example there once, set the password)
 # or fetch the data (scripts/download-segments.sh and scripts/download-basemap.sh, run on the
 # server). Nothing secret travels: `.env` stays on the server.
@@ -43,7 +43,7 @@ echo "==> Sending the images"
 docker save "${IMAGES[@]}" | gzip | remote "gunzip | docker load"
 
 echo "==> Sending the stack files"
-tar -c docker-compose.prod.yml docker/tiles/default.conf | remote "mkdir -p '$DIR' && tar -x -C '$DIR'"
+tar -c docker-compose.prod.yml docker/tiles/default.conf scripts/download-segments.sh scripts/download-basemap.sh | remote "mkdir -p '$DIR' && tar -x -C '$DIR'"
 
 echo "==> Starting"
 remote "cd '$DIR' && docker compose -f docker-compose.prod.yml up -d --no-build --remove-orphans && docker compose -f docker-compose.prod.yml ps"
