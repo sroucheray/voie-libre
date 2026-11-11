@@ -185,263 +185,303 @@
   </div>
   }
 
-  <section class="panel" [attr.aria-label]="'planner.title' | transloco">
-    <h2>{{ 'planner.title' | transloco }}</h2>
-
+  <section
+    class="panel"
+    [class.panel--open]="sheetOpen()"
+    [attr.aria-label]="'planner.title' | transloco"
+  >
+    <!-- On a phone the panel is a bottom sheet: this handle opens and closes it. -->
+    <button
+      type="button"
+      class="sheet-handle"
+      [attr.aria-expanded]="sheetOpen()"
+      [attr.aria-label]="'planner.sheet.toggle' | transloco"
+      (click)="sheetOpen.set(!sheetOpen())"
+    >
+      <span aria-hidden="true"></span>
+    </button>
+    <h2 class="visually-hidden">{{ 'planner.title' | transloco }}</h2>
     <div
-      class="history"
-      role="group"
-      [attr.aria-label]="'planner.history.label' | transloco"
+      class="tabs"
+      role="tablist"
+      [attr.aria-label]="'planner.tabs.label' | transloco"
     >
       <button
         type="button"
-        class="history__undo"
-        [disabled]="!store.canUndo()"
-        [title]="'planner.history.undoHint' | transloco"
-        (click)="undo()"
+        role="tab"
+        [attr.aria-selected]="tab() === 'route'"
+        (click)="openTab('route')"
       >
-        ↶ {{ 'planner.history.undo' | transloco }}
+        {{ 'planner.tabs.route' | transloco }}
       </button>
       <button
         type="button"
-        class="history__redo"
-        [disabled]="!store.canRedo()"
-        [title]="'planner.history.redoHint' | transloco"
-        (click)="redo()"
+        role="tab"
+        [attr.aria-selected]="tab() === 'saved'"
+        (click)="openTab('saved')"
       >
-        ↷ {{ 'planner.history.redo' | transloco }}
+        {{ 'planner.tabs.saved' | transloco }}
       </button>
     </div>
 
-    <vl-profile-select
-      [value]="store.profile()"
-      [profiles]="profiles"
-      (changed)="selectProfile($event)"
-    />
-
-    <label class="alternatives">
-      {{ 'planner.alternatives.label' | transloco }}
-      <select (change)="selectAlternatives($event)">
-        @for (count of alternativeChoices; track count) {
-        <option [value]="count" [selected]="count === store.alternatives()">
-          {{ format.number(count) }}
-        </option>
-        }
-      </select>
-    </label>
-
-    @if (canPlaceMyPosition()) {
-    <button type="button" class="place-position" (click)="placeMyPosition()">
-      {{ 'location.place.' + store.nextRole() | transloco }}
-    </button>
-    }
-    <div class="route-fields">
-      <div class="route-fields__list">
-        <vl-place-field
-          role="start"
-          [label]="startLabel()"
-          [near]="endPoint()"
-          (picked)="pickStart($event)"
-          (position)="usePosition('start')"
-        />
-        @if (stops().length > 0 || canAddStop()) {
-        <ol
-          class="points"
-          [class.points--reordering]="reorder()"
-          [attr.aria-label]="'planner.points.label' | transloco"
-        >
-          @for (stop of stops(); track stop.index) {
-          <ng-container
-            [ngTemplateOutlet]="gap"
-            [ngTemplateOutletContext]="{ $implicit: stop.index }"
-          />
-          <li
-            class="points__stop"
-            [class.dragging]="reorder()?.from === stop.index"
-            [style.order]="reorder() ? 2 * numberOf(stop.index) : null"
-          >
-            <!-- Only the handle moves the stop, so that the text of the field can be selected. -->
-            <button
-              type="button"
-              class="point-grip"
-              [attr.aria-label]="'planner.points.move' | transloco : { name: pointName(stop.index) }"
-              (pointerdown)="onGripDown($event, stop.index)"
-              (keydown)="onGripKey($event, stop.index)"
-            >
-              <span class="point-grip__dots" aria-hidden="true">⋮⋮</span>
-              <span class="point-grip__number" aria-hidden="true"
-                >{{ format.number(stop.index) }}</span
-              >
-            </button>
-            <vl-place-field
-              role="stop"
-              [bareMarker]="true"
-              [number]="stop.index"
-              [label]="pointText(stop.point)"
-              [near]="stop.point"
-              (picked)="pickStop(stop.index, $event)"
-              (position)="usePosition(stop.index)"
-            />
-            <button
-              type="button"
-              class="point-remove"
-              (click)="store.removePoint(stop.index)"
-              [attr.aria-label]="'planner.points.remove' | transloco : { name: pointName(stop.index) }"
-            >
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </li>
-          }
-          <ng-container
-            [ngTemplateOutlet]="gap"
-            [ngTemplateOutletContext]="{ $implicit: stops().length + 1 }"
-          />
-        </ol>
-        <p class="visually-hidden" aria-live="polite">
-          {{ moveAnnouncement() }}
-        </p>
-        }
-        <!-- Between two fields: a "+" that opens an empty field there, for a stop to search. -->
-        <ng-template #gap let-at>
-          @if (addingAt() === at) {
-          <li class="points__new">
-            <vl-place-field
-              #newStop
-              role="stop"
-              [number]="at"
-              [near]="store.points()[at - 1]"
-              (picked)="pickNewStop($event)"
-              (position)="usePosition('new')"
-            />
-            <button
-              type="button"
-              class="point-remove"
-              (click)="newStopAt.set(null)"
-              [attr.aria-label]="'planner.stops.cancel' | transloco"
-            >
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </li>
-          } @else if (canAddStop()) {
-          <li
-            class="points__gap"
-            [style.order]="reorder() ? 2 * at - 1 : null"
-            [attr.inert]="reorder() ? '' : null"
-          >
-            <button
-              type="button"
-              class="add-stop"
-              (click)="addStop(at)"
-              [title]="'planner.stops.add' | transloco"
-              [attr.aria-label]="'planner.stops.addHere' | transloco : { before: pointName(at - 1), after: pointName(at) }"
-            >
-              <span aria-hidden="true">+</span>
-            </button>
-          </li>
-          }
-        </ng-template>
-        <vl-place-field
-          role="end"
-          [label]="endLabel()"
-          [near]="startPoint()"
-          [blocked]="store.points().length === 0"
-          (picked)="pickEnd($event)"
-          (position)="usePosition('end')"
-        />
-      </div>
-      <button
-        type="button"
-        class="swap"
-        [disabled]="!store.canReverse()"
-        [title]="'planner.search.reverse' | transloco"
-        [attr.aria-label]="'planner.search.reverse' | transloco"
-        (click)="store.reverse()"
+    <div class="tab-route" [hidden]="tab() !== 'route'">
+      <div
+        class="history"
+        role="group"
+        [attr.aria-label]="'planner.history.label' | transloco"
       >
-        <span aria-hidden="true">⇅</span>
-      </button>
-    </div>
-    @if (store.points().length > 0) { @if (store.loop(); as loop) { @if
-    (loop.mode === 'distance') {
-    <label class="loop-length">
-      {{ 'planner.loop.length' | transloco }}
-      <input
-        type="number"
-        [min]="distanceMinKm"
-        [max]="distanceMaxKm"
-        step="1"
-        [value]="loop.distanceMeters / 1000"
-        (change)="setLoopKm($any($event.target).value)"
-      />
-    </label>
-    <label class="loop-length">
-      {{ 'planner.loop.ascent' | transloco }}
-      <input
-        type="number"
-        min="0"
-        [max]="ascentMax"
-        step="100"
-        [placeholder]="'planner.loop.ascentAny' | transloco"
-        [value]="loop.ascentMeters ?? ''"
-        (change)="setLoopAscent($any($event.target).value)"
-      />
-    </label>
-    <label class="loop-length">
-      {{ 'planner.loop.direction' | transloco }}
-      <select
-        class="loop-direction"
-        (change)="setLoopDirection($any($event.target).value)"
-      >
-        <option value="" [selected]="!loop.direction">
-          {{ 'planner.loop.directions.any' | transloco }}
-        </option>
-        @for (direction of directions; track direction) {
-        <option [value]="direction" [selected]="loop.direction === direction">
-          {{ 'planner.loop.directions.' + direction | transloco }}
-        </option>
-        }
-      </select>
-    </label>
-    } } @if (canClose()) {
-    <button type="button" class="loop" (click)="openLoopDialog()">
-      {{ 'planner.loop.button' | transloco }}
-    </button>
-    }
-    <button type="button" class="clear" (click)="store.clear()">
-      {{ 'planner.clear' | transloco }}
-    </button>
-    } @if (store.status() === 'loading') {
-    <p role="status">{{ 'planner.status.loading' | transloco }}</p>
-    } @if (store.errorCode(); as code) {
-    <p class="error" role="alert">{{ 'planner.errors.' + code | transloco }}</p>
-    } @if (store.routes().length > 0) {
-    <ul class="routes" [attr.aria-label]="'planner.routes.label' | transloco">
-      @for (route of store.routes(); track $index; let i = $index) {
-      <li>
         <button
           type="button"
-          [attr.aria-pressed]="i === store.selectedIndex()"
-          (click)="store.selectRoute(i)"
+          class="history__undo"
+          [disabled]="!store.canUndo()"
+          [title]="'planner.history.undoHint' | transloco"
+          (click)="undo()"
         >
-          <strong
-            >{{ 'planner.routes.route' | transloco : { n: i + 1 } }}</strong
-          >
-          <span>
-            @if (route.ascentMeters === null) { {{
-            'planner.routes.summaryNoClimb' | transloco : { distance:
-            format.distance(route.distanceMeters), duration:
-            format.duration(route.durationSeconds) } }} } @else { {{
-            'planner.routes.summary' | transloco : { distance:
-            format.distance(route.distanceMeters), ascent:
-            format.elevation(route.ascentMeters), duration:
-            format.duration(route.durationSeconds) } }} }
-          </span>
+          ↶ {{ 'planner.history.undo' | transloco }}
         </button>
-      </li>
-      }
-    </ul>
-    }
+        <button
+          type="button"
+          class="history__redo"
+          [disabled]="!store.canRedo()"
+          [title]="'planner.history.redoHint' | transloco"
+          (click)="redo()"
+        >
+          ↷ {{ 'planner.history.redo' | transloco }}
+        </button>
+      </div>
 
-    <vl-saved-routes />
+      <vl-profile-select
+        [value]="store.profile()"
+        [profiles]="profiles"
+        (changed)="selectProfile($event)"
+      />
+
+      <label class="alternatives">
+        {{ 'planner.alternatives.label' | transloco }}
+        <select (change)="selectAlternatives($event)">
+          @for (count of alternativeChoices; track count) {
+          <option [value]="count" [selected]="count === store.alternatives()">
+            {{ format.number(count) }}
+          </option>
+          }
+        </select>
+      </label>
+
+      @if (canPlaceMyPosition()) {
+      <button type="button" class="place-position" (click)="placeMyPosition()">
+        {{ 'location.place.' + store.nextRole() | transloco }}
+      </button>
+      }
+      <div class="route-fields">
+        <div class="route-fields__list">
+          <vl-place-field
+            role="start"
+            [label]="startLabel()"
+            [near]="endPoint()"
+            (picked)="pickStart($event)"
+            (position)="usePosition('start')"
+          />
+          @if (stops().length > 0 || canAddStop()) {
+          <ol
+            class="points"
+            [class.points--reordering]="reorder()"
+            [attr.aria-label]="'planner.points.label' | transloco"
+          >
+            @for (stop of stops(); track stop.index) {
+            <ng-container
+              [ngTemplateOutlet]="gap"
+              [ngTemplateOutletContext]="{ $implicit: stop.index }"
+            />
+            <li
+              class="points__stop"
+              [class.dragging]="reorder()?.from === stop.index"
+              [style.order]="reorder() ? 2 * numberOf(stop.index) : null"
+            >
+              <!-- Only the handle moves the stop, so that the text of the field can be selected. -->
+              <button
+                type="button"
+                class="point-grip"
+                [attr.aria-label]="'planner.points.move' | transloco : { name: pointName(stop.index) }"
+                (pointerdown)="onGripDown($event, stop.index)"
+                (keydown)="onGripKey($event, stop.index)"
+              >
+                <span class="point-grip__dots" aria-hidden="true">⋮⋮</span>
+                <span class="point-grip__number" aria-hidden="true"
+                  >{{ format.number(stop.index) }}</span
+                >
+              </button>
+              <vl-place-field
+                role="stop"
+                [bareMarker]="true"
+                [number]="stop.index"
+                [label]="pointText(stop.point)"
+                [near]="stop.point"
+                (picked)="pickStop(stop.index, $event)"
+                (position)="usePosition(stop.index)"
+              />
+              <button
+                type="button"
+                class="point-remove"
+                (click)="store.removePoint(stop.index)"
+                [attr.aria-label]="'planner.points.remove' | transloco : { name: pointName(stop.index) }"
+              >
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </li>
+            }
+            <ng-container
+              [ngTemplateOutlet]="gap"
+              [ngTemplateOutletContext]="{ $implicit: stops().length + 1 }"
+            />
+          </ol>
+          <p class="visually-hidden" aria-live="polite">
+            {{ moveAnnouncement() }}
+          </p>
+          }
+          <!-- Between two fields: a "+" that opens an empty field there, for a stop to search. -->
+          <ng-template #gap let-at>
+            @if (addingAt() === at) {
+            <li class="points__new">
+              <vl-place-field
+                #newStop
+                role="stop"
+                [number]="at"
+                [near]="store.points()[at - 1]"
+                (picked)="pickNewStop($event)"
+                (position)="usePosition('new')"
+              />
+              <button
+                type="button"
+                class="point-remove"
+                (click)="newStopAt.set(null)"
+                [attr.aria-label]="'planner.stops.cancel' | transloco"
+              >
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </li>
+            } @else if (canAddStop()) {
+            <li
+              class="points__gap"
+              [style.order]="reorder() ? 2 * at - 1 : null"
+              [attr.inert]="reorder() ? '' : null"
+            >
+              <button
+                type="button"
+                class="add-stop"
+                (click)="addStop(at)"
+                [title]="'planner.stops.add' | transloco"
+                [attr.aria-label]="'planner.stops.addHere' | transloco : { before: pointName(at - 1), after: pointName(at) }"
+              >
+                <span aria-hidden="true">+</span>
+              </button>
+            </li>
+            }
+          </ng-template>
+          <vl-place-field
+            role="end"
+            [label]="endLabel()"
+            [near]="startPoint()"
+            [blocked]="store.points().length === 0"
+            (picked)="pickEnd($event)"
+            (position)="usePosition('end')"
+          />
+        </div>
+        <button
+          type="button"
+          class="swap"
+          [disabled]="!store.canReverse()"
+          [title]="'planner.search.reverse' | transloco"
+          [attr.aria-label]="'planner.search.reverse' | transloco"
+          (click)="store.reverse()"
+        >
+          <span aria-hidden="true">⇅</span>
+        </button>
+      </div>
+      @if (store.points().length > 0) { @if (store.loop(); as loop) { @if
+      (loop.mode === 'distance') {
+      <label class="loop-length">
+        {{ 'planner.loop.length' | transloco }}
+        <input
+          type="number"
+          [min]="distanceMinKm"
+          [max]="distanceMaxKm"
+          step="1"
+          [value]="loop.distanceMeters / 1000"
+          (change)="setLoopKm($any($event.target).value)"
+        />
+      </label>
+      <label class="loop-length">
+        {{ 'planner.loop.ascent' | transloco }}
+        <input
+          type="number"
+          min="0"
+          [max]="ascentMax"
+          step="100"
+          [placeholder]="'planner.loop.ascentAny' | transloco"
+          [value]="loop.ascentMeters ?? ''"
+          (change)="setLoopAscent($any($event.target).value)"
+        />
+      </label>
+      <label class="loop-length">
+        {{ 'planner.loop.direction' | transloco }}
+        <select
+          class="loop-direction"
+          (change)="setLoopDirection($any($event.target).value)"
+        >
+          <option value="" [selected]="!loop.direction">
+            {{ 'planner.loop.directions.any' | transloco }}
+          </option>
+          @for (direction of directions; track direction) {
+          <option [value]="direction" [selected]="loop.direction === direction">
+            {{ 'planner.loop.directions.' + direction | transloco }}
+          </option>
+          }
+        </select>
+      </label>
+      } } @if (canClose()) {
+      <button type="button" class="loop" (click)="openLoopDialog()">
+        {{ 'planner.loop.button' | transloco }}
+      </button>
+      }
+      <button type="button" class="clear" (click)="store.clear()">
+        {{ 'planner.clear' | transloco }}
+      </button>
+      } @if (store.status() === 'loading') {
+      <p role="status">{{ 'planner.status.loading' | transloco }}</p>
+      } @if (store.errorCode(); as code) {
+      <p class="error" role="alert">
+        {{ 'planner.errors.' + code | transloco }}
+      </p>
+      } @if (store.routes().length > 0) {
+      <ul class="routes" [attr.aria-label]="'planner.routes.label' | transloco">
+        @for (route of store.routes(); track $index; let i = $index) {
+        <li>
+          <button
+            type="button"
+            [attr.aria-pressed]="i === store.selectedIndex()"
+            (click)="store.selectRoute(i)"
+          >
+            <strong
+              >{{ 'planner.routes.route' | transloco : { n: i + 1 } }}</strong
+            >
+            <span>
+              @if (route.ascentMeters === null) { {{
+              'planner.routes.summaryNoClimb' | transloco : { distance:
+              format.distance(route.distanceMeters), duration:
+              format.duration(route.durationSeconds) } }} } @else { {{
+              'planner.routes.summary' | transloco : { distance:
+              format.distance(route.distanceMeters), ascent:
+              format.elevation(route.ascentMeters), duration:
+              format.duration(route.durationSeconds) } }} }
+            </span>
+          </button>
+        </li>
+        }
+      </ul>
+      }
+    </div>
+
+    <vl-saved-routes [hidden]="tab() !== 'saved'" />
   </section>
 </div>
 <vl-elevation-panel />

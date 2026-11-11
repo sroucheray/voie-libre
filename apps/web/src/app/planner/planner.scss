@@ -17,27 +17,70 @@
 
 .panel {
   position: absolute;
-  top: 0.75rem;
-  left: 0.75rem;
-  width: min(20rem, calc(100% - 4.5rem));
+  top: var(--space-3);
+  left: var(--space-3);
+  width: min(21rem, calc(100% - 4.5rem));
   max-height: calc(100% - 1.5rem);
   overflow: auto;
   box-sizing: border-box;
-  padding: 0.75rem;
-  background: #fff;
-  border: 1px solid #c9cdd3;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 4px rgb(0 0 0 / 15%);
-  font-size: 0.875rem;
+  padding: 0;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+  font-size: var(--font-size-base);
 
   h2 {
-    margin: 0 0 0.5rem;
-    font-size: 1rem;
+    margin: 0 0 var(--space-2);
+    font-size: var(--font-size-md);
   }
 
   p {
-    margin: 0.5rem 0 0;
+    margin: var(--space-2) 0 0;
   }
+}
+
+.tab-route,
+vl-saved-routes {
+  display: block;
+  padding: var(--space-3);
+}
+
+// Sections of the panel: Route, Saved.
+.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  gap: var(--space-4);
+  padding: 0 var(--space-3);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+
+  button {
+    min-height: 2.75rem;
+    margin-bottom: -1px;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    color: var(--color-text-2);
+
+    &:hover:not(:disabled) {
+      background: none;
+      color: var(--color-text);
+    }
+
+    &[aria-selected='true'] {
+      color: var(--color-accent);
+      border-bottom-color: var(--color-accent);
+    }
+  }
+}
+
+// Only a phone has a handle: the panel is a bottom sheet there.
+.sheet-handle {
+  display: none;
 }
 
 .alternatives {
@@ -47,11 +90,11 @@
 }
 
 .hint {
-  color: #475467;
+  color: var(--color-text-2);
 }
 
 .error {
-  color: #b42318;
+  color: var(--color-danger);
 }
 
 .route-fields {
@@ -112,23 +155,23 @@
     font: inherit;
     font-weight: 700;
     line-height: 1;
-    color: #475467;
-    background: #fff;
-    border: 1px solid #c9cdd3;
+    color: var(--color-text-2);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: 50%;
     cursor: pointer;
 
     &:hover,
     &:focus-visible {
-      color: #175cd3;
-      border-color: #175cd3;
+      color: var(--color-accent);
+      border-color: var(--color-accent);
     }
   }
 
   &::after {
     content: '';
     flex: 1;
-    border-top: 1px dashed #d0d5dd;
+    border-top: 1px dashed var(--color-border);
   }
 }
 
@@ -163,7 +206,7 @@
     font: inherit;
 
     &:hover {
-      background: #f2f4f7;
+      background: var(--color-surface-2);
     }
 
     &:active {
@@ -172,7 +215,7 @@
   }
 
   .point-grip__dots {
-    color: #667085;
+    color: var(--color-text-2);
     letter-spacing: -0.2em;
   }
 
@@ -182,8 +225,8 @@
     width: 1.5rem;
     height: 1.5rem;
     border-radius: 50%;
-    background: #475467;
-    color: #fff;
+    background: var(--color-text-2);
+    color: var(--color-surface);
     font-size: 0.75rem;
     font-weight: 700;
   }
@@ -194,11 +237,11 @@
 
   // The stop being moved, already at the place it would take.
   &.dragging {
-    background: #eff8ff;
+    background: var(--color-accent-soft);
     border-radius: 0.5rem;
     box-shadow:
-      0 0 0 2px #1570ef,
-      0 4px 12px rgb(16 24 40 / 18%);
+      0 0 0 2px var(--color-accent),
+      var(--shadow-2);
   }
 }
 
@@ -220,14 +263,14 @@
   margin-top: 0.25rem;
   padding: 0.375rem 0.5rem;
   text-align: left;
-  background: #fff;
-  border: 1px solid #c9cdd3;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 0.375rem;
   cursor: pointer;
 
   &[aria-pressed='true'] {
-    border-color: #1570ef;
-    background: #eff8ff;
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
   }
 }
 
@@ -240,8 +283,8 @@
   margin: 0;
   padding: 0.375rem 0.75rem;
   border-radius: 0.5rem;
-  background: rgb(16 24 40 / 85%);
-  color: #fff;
+  background: var(--color-tooltip);
+  color: var(--color-surface);
   font-size: 0.8125rem;
   text-align: center;
   /* Never takes a click meant for the map. */
@@ -260,9 +303,9 @@
   gap: 0.5rem;
   width: min(22rem, calc(100% - 2rem));
   padding: 1rem;
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 0.5rem;
-  box-shadow: 0 4px 16px rgb(0 0 0 / 30%);
+  box-shadow: var(--shadow-2);
   font-size: 0.875rem;
 
   h2 {
@@ -277,19 +320,19 @@
   align-items: flex-start;
   padding: 0.5rem 0.75rem;
   text-align: left;
-  background: #fff;
-  border: 1px solid #c9cdd3;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 0.375rem;
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    border-color: #1570ef;
-    background: #eff8ff;
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
   }
 
   &:disabled {
-    color: #667085;
-    background: #f9fafb;
+    color: var(--color-text-2);
+    background: var(--color-surface-2);
     cursor: not-allowed;
   }
 
@@ -297,7 +340,7 @@
     margin-left: 0.25rem;
     padding: 0 0.375rem;
     border-radius: 0.25rem;
-    background: #eaecf0;
+    background: var(--color-border);
     font-size: 0.75rem;
     font-style: normal;
     font-weight: 500;
@@ -326,20 +369,20 @@
   display: grid;
   place-items: center;
   padding: 0;
-  color: #475467;
-  background: #fff;
-  border: 1px solid #c9cdd3;
+  color: var(--color-text-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 0.375rem;
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: #f2f4f7;
+    background: var(--color-surface-2);
   }
 
   &[aria-pressed='true'] {
-    color: #fff;
-    background: #1a73e8;
-    border-color: #1a73e8;
+    color: var(--color-surface);
+    background: var(--map-location);
+    border-color: var(--map-location);
   }
 
   &:disabled {
@@ -354,8 +397,8 @@
   font-size: 0.8125rem;
   padding: 0.25rem 0.5rem;
   border-radius: 0.375rem;
-  background: rgb(16 24 40 / 85%);
-  color: #fff;
+  background: var(--color-tooltip);
+  color: var(--color-surface);
 
   /* Nothing to say: no empty bubble, but the live region stays in the page. */
   &:empty {
@@ -378,10 +421,10 @@
   /* Stays inside the map when opened near its right or bottom edge. */
   max-width: calc(100% - 1rem);
   padding: 0.25rem;
-  background: #fff;
-  border: 1px solid #c9cdd3;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  box-shadow: 0 4px 12px rgb(0 0 0 / 25%);
+  box-shadow: var(--shadow-2);
   font-size: 0.875rem;
 
   button {
@@ -394,7 +437,7 @@
 
     &:hover,
     &:focus-visible {
-      background: #eff8ff;
+      background: var(--color-accent-soft);
     }
   }
 }
@@ -416,14 +459,14 @@
   margin: 0;
   padding: 0.375rem 0.75rem;
   border-radius: 0.5rem;
-  background: rgb(16 24 40 / 90%);
-  color: #fff;
+  background: var(--color-tooltip);
+  color: var(--color-surface);
   font-size: 0.8125rem;
 
   button {
     padding: 0.125rem 0.5rem;
     background: none;
-    border: 1px solid #fff;
+    border: 1px solid var(--color-surface);
     border-radius: 0.25rem;
     color: inherit;
     cursor: pointer;
@@ -463,18 +506,76 @@
   button {
     flex: 1;
     padding: 0.25rem 0.5rem;
-    background: #fff;
-    border: 1px solid #c9cdd3;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: 0.375rem;
     cursor: pointer;
 
     &:hover:not(:disabled) {
-      background: #f2f4f7;
+      background: var(--color-surface-2);
     }
 
     &:disabled {
-      color: #98a2b3;
+      color: var(--color-text-2);
       cursor: not-allowed;
     }
+  }
+}
+
+// Phone: the panel becomes a bottom sheet that leaves the map visible until it is opened.
+@media (max-width: 40rem) {
+  .panel {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    max-height: 4.25rem;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    overflow: hidden;
+  }
+
+  .panel--open {
+    max-height: min(75%, calc(100% - 3rem));
+    overflow: auto;
+  }
+
+  .panel:not(.panel--open) {
+    .tab-route,
+    vl-saved-routes {
+      display: none;
+    }
+  }
+
+  .sheet-handle {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    min-height: 1.5rem;
+    padding: 0;
+    background: var(--color-surface);
+    border: 0;
+    border-radius: 0;
+
+    span {
+      width: 2.5rem;
+      height: 0.3125rem;
+      border-radius: var(--radius-pill);
+      background: var(--color-border);
+    }
+  }
+
+  .tabs {
+    top: 1.5rem;
+  }
+
+  // Everything that floats over the map stays above the closed sheet.
+  .help-bar,
+  .undo-toast,
+  .locate {
+    margin-bottom: 4.25rem;
   }
 }

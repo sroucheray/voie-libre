@@ -6,6 +6,7 @@ import { HealthService } from '../api/health.service';
   selector: 'vl-api-status',
   imports: [TranslocoPipe],
   templateUrl: './api-status.html',
+  styleUrl: './api-status.scss',
 })
 export class ApiStatus implements OnInit {
   protected readonly health = inject(HealthService);

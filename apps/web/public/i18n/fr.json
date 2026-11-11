@@ -180,6 +180,14 @@
     },
     "snap": {
       "refused": "Pas de route près de cet endroit pour ce profil."
+    },
+    "tabs": {
+      "label": "Sections du panneau",
+      "route": "Itinéraire",
+      "saved": "Enregistrés"
+    },
+    "sheet": {
+      "toggle": "Afficher ou masquer le panneau"
     }
   },
   "saved": {

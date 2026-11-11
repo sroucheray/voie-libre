@@ -1,0 +1,39 @@
+:host {
+  display: block;
+}
+
+// A dot and a word, white on the green header; on a phone the dot alone.
+.api-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-xs);
+
+  &::before {
+    content: '';
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--color-surface);
+  }
+
+  &[data-status='ok']::before {
+    background: var(--color-header-ok);
+  }
+
+  &[data-status='degraded']::before {
+    background: var(--way-fair);
+  }
+
+  &[data-status='unreachable']::before {
+    background: var(--color-header-error);
+  }
+}
+
+@media (max-width: 40rem) {
+  .api-status {
+    font-size: 0;
+    gap: 0;
+  }
+}

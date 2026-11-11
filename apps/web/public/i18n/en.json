@@ -180,6 +180,14 @@
     },
     "snap": {
       "refused": "No road close to this place for this profile."
+    },
+    "tabs": {
+      "label": "Panel sections",
+      "route": "Route",
+      "saved": "Saved"
+    },
+    "sheet": {
+      "toggle": "Show or hide the panel"
     }
   },
   "saved": {

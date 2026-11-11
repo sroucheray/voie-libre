@@ -174,6 +174,9 @@ export class Planner {
   } | null>(null);
 
   /** The dialog that asks how to close the loop. */
+  /** The panel's section, and (on a phone) whether the bottom sheet is open. */
+  protected readonly tab = signal<'route' | 'saved'>('route');
+  protected readonly sheetOpen = signal(false);
   protected readonly loopDialogOpen = signal(false);
   protected readonly loopStep = signal<'choose' | 'distance'>('choose');
   protected readonly loopKm = signal(LOOP_DISTANCE_DEFAULT_METERS / 1000);
@@ -943,6 +946,11 @@ export class Planner {
 
   protected setLoopAscent(value: string): void {
     this.store.setLoopAscent(value.trim() === '' ? null : Number(value));
+  }
+
+  protected openTab(tab: 'route' | 'saved'): void {
+    this.tab.set(tab);
+    this.sheetOpen.set(true);
   }
 
   protected selectProfile(profile: Profile): void {
