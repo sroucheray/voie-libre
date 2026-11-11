@@ -89,6 +89,27 @@ describe('ElevationPanel', () => {
     expect(legend[2]).toMatch(/^Path 10 % \(/);
   });
 
+  it('offers to calculate the surface of a route that does not say, and the button asks for it', async () => {
+    const { store, fixture, root } = await setup(true);
+    store.loadSaved({
+      points: [
+        [3, 45],
+        [3, 45.01],
+      ],
+      profile: 'road',
+      geometry,
+      distanceMeters: 1110,
+      ascentMeters: 100,
+      durationSeconds: 300,
+    });
+    await fixture.whenStable();
+    const note = root.querySelector('.surface-missing')!;
+    expect(note.textContent).toContain('no surface information');
+    const before = store.recomputeCount();
+    note.querySelector('button')!.click();
+    expect(store.recomputeCount()).toBe(before + 1);
+  });
+
   it('shows no surface bar for a route that does not say, or whose codes do not fit', async () => {
     expect((await setup(true)).root.querySelector('.surface')).toBeNull();
     TestBed.resetTestingModule();

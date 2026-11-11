@@ -2,6 +2,8 @@
   <vl-map-view
     class="map"
     [waysProfile]="store.profile()"
+    [surfaceMissing]="store.surfaceMissing()"
+    (computeSurface)="store.recompute()"
     (mapReady)="onMapReady($event)"
   />
 

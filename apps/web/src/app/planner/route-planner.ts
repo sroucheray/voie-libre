@@ -61,6 +61,8 @@ export class RoutePlanner {
       const profile = this.store.profile();
       const alternatives = this.store.alternatives();
       const loop = this.store.loop();
+      // A request to calculate the same inputs again.
+      this.store.recomputeCount();
 
       if (points.length < 2) {
         untracked(() => {

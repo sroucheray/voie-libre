@@ -281,6 +281,27 @@ describe('MapView', () => {
       );
     });
 
+    it('says why the route has no colours, and asks for them', async () => {
+      const view = await renderWith(true);
+      view.open();
+      view.root.querySelector<HTMLInputElement>('.surface-checkbox')!.click();
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.layers-action')).toBeNull();
+      const asked: number[] = [];
+      view.fixture.componentInstance.computeSurface.subscribe(() =>
+        asked.push(1),
+      );
+      view.fixture.componentRef.setInput('surfaceMissing', true);
+      view.fixture.detectChanges();
+      const button =
+        view.root.querySelector<HTMLButtonElement>('.layers-action')!;
+      expect(button.closest('p')?.textContent).toContain(
+        'no surface information',
+      );
+      button.click();
+      expect(asked).toEqual([1]);
+    });
+
     it('leaves the map as it is without the relief file, and says why', async () => {
       const view = await renderWith(false);
       expect(maps[0].calls).not.toContain('setStyle');

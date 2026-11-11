@@ -110,6 +110,13 @@
       </li>
       }
     </ul>
+    } @if (store.surfaceMissing()) {
+    <p class="surface-missing">
+      {{ 'surface.missing' | transloco }}
+      <button type="button" (click)="store.recompute()">
+        {{ 'surface.compute' | transloco }}
+      </button>
+    </p>
     } @if (store.elevationSource(); as source) {
     <p class="source">{{ 'profile.source.' + source | transloco }}</p>
     }

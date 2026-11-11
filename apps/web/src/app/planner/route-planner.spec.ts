@@ -616,6 +616,49 @@ describe('RoutePlanner', () => {
       expect(store.viewRequest()?.geometry).toEqual(saved.geometry);
     });
 
+    it('calculates a restored route again only when asked, as one step of history', async () => {
+      store.loadSaved(saved);
+      await settle();
+      expect(requests).toHaveLength(0);
+      // A route opened from the device carries no surfaces: that is what can be asked for.
+      expect(store.surfaceMissing()).toBe(true);
+
+      respond = async () =>
+        json({
+          routes: [
+            {
+              geometry: saved.geometry,
+              distanceMeters: 41007,
+              ascentMeters: 399,
+              durationSeconds: 8674,
+              surfaces: 'p'.repeat(saved.geometry.length - 1),
+            },
+          ],
+        });
+      store.recompute();
+      await settle();
+      expect(requests).toHaveLength(1);
+      expect(requests[0].body).toMatchObject({ profile: 'trail' });
+      expect(store.surfaceMissing()).toBe(false);
+      expect(store.routes()[0].surfaces).toBeDefined();
+
+      // Undo brings the route as it was saved back, with no request.
+      store.undo();
+      await settle();
+      expect(requests).toHaveLength(1);
+      expect(store.routes()[0].surfaces).toBeUndefined();
+    });
+
+    it('does not offer to calculate the surface of a route that has it, or of none', async () => {
+      expect(store.surfaceMissing()).toBe(false);
+      store.loadSaved({
+        ...saved,
+        surfaces: 'p'.repeat(saved.geometry.length - 1),
+      });
+      await settle();
+      expect(store.surfaceMissing()).toBe(false);
+    });
+
     it('cancels a computation still in flight when a route is opened', async () => {
       store.addPoint([3, 45]);
       store.addPoint([3.2, 45.2]);

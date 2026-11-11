@@ -124,7 +124,18 @@
         />
         {{ 'map.layers.surface' | transloco }}
       </label>
-      @if (layers.surface()) {
+      @if (layers.surface() && surfaceMissing()) {
+      <p class="layers-note">
+        {{ 'surface.missing' | transloco }}
+        <button
+          type="button"
+          class="layers-action"
+          (click)="computeSurface.emit()"
+        >
+          {{ 'surface.compute' | transloco }}
+        </button>
+      </p>
+      } @if (layers.surface()) {
       <ul
         class="ways-legend surface-legend"
         [attr.aria-label]="'map.layers.surfaceLegend' | transloco"

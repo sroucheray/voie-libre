@@ -57,6 +57,10 @@ export class MapView {
   readonly zoom = model<number>(DEFAULT_ZOOM);
   /** Emits the map once it is created, for features that draw on it. */
   readonly mapReady = output<MapLike>();
+  /** The route on screen does not say what it rides on (so there is nothing to colour). */
+  readonly surfaceMissing = input(false);
+  /** The user asks for the route to be calculated again, to get what it rides on. */
+  readonly computeSurface = output<void>();
 
   /** True when the map could not be created, typically because WebGL2 is unavailable. */
   protected readonly failed = signal(false);

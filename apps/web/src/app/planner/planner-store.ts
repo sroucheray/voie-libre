@@ -304,6 +304,35 @@ export class PlannerStore {
     () => this.routesState()[this.selectedState()]?.surfaces ?? null,
   );
 
+  /**
+   * True when a route is on screen and does not say what it rides on: saved before that was kept,
+   * imported, or opened from a link. It can be calculated again with {@link recompute}.
+   */
+  readonly surfaceMissing = computed(
+    () =>
+      this.statusState() === 'ready' &&
+      !!this.routesState()[this.selectedState()] &&
+      this.selectedSurfaces() === null,
+  );
+
+  /** Bumped by {@link recompute}: the planner reads it to compute although the inputs are the same. */
+  readonly recomputeCount = signal(0);
+
+  /**
+   * Calculates the route again from its points, as a change of the route would: the one on screen
+   * may differ (a route edited by hand, an imported track). One step of history, so undo brings the
+   * previous route back without a request.
+   */
+  recompute(): void {
+    if (this.pointsState().length < 2) return;
+    this.record();
+    this.lastEdit = null;
+    this.lastEditRoute = null;
+    this.restored = null;
+    this.routesFor = null;
+    this.recomputeCount.update((n) => n + 1);
+  }
+
   /** Picks the stretch between two points of the selected route, in either order; `null` clears it. */
   selectStretch(range: [number, number] | null): void {
     const geometry = this.selectedGeometry();

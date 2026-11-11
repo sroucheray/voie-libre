@@ -327,6 +327,8 @@
     "c": "Cycleway",
     "u": "Unpaved or rough",
     "s": "Path",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "missing": "This route has no surface information (it was saved or imported without it). It can be calculated again between its points; the result may differ, and Undo brings the saved one back.",
+    "compute": "Calculate the surface"
   }
 }

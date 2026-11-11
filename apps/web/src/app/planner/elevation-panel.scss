@@ -147,6 +147,18 @@
   bottom: 0;
 }
 
+.surface-missing {
+  grid-column: 2;
+  margin: 0.25rem 0 0;
+
+  button {
+    font: inherit;
+    font-size: 0.75rem;
+    margin-left: 0.25rem;
+    cursor: pointer;
+  }
+}
+
 .surface-legend {
   grid-column: 2;
   display: flex;

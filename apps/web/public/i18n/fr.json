@@ -327,6 +327,8 @@
     "c": "Piste cyclable",
     "u": "Non revêtu ou rugueux",
     "s": "Sentier",
-    "unknown": "Inconnu"
+    "unknown": "Inconnu",
+    "missing": "Ce parcours n'a pas d'information de revêtement (il a été enregistré ou importé sans). On peut le recalculer entre ses points ; le résultat peut différer, et Annuler rend le parcours enregistré.",
+    "compute": "Calculer le revêtement"
   }
 }
