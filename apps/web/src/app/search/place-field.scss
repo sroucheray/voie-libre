@@ -5,6 +5,7 @@
 
 .field {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
 
@@ -61,12 +62,12 @@
 }
 
 .suggestions {
-  position: absolute;
-  z-index: 2;
-  top: 100%;
-  left: 2rem;
-  right: 0;
-  margin: 0.125rem 0 0;
+  // In the flow, on a line of its own under the input: a panel that scrolls would clip a floating list.
+  flex: 0 0 calc(100% - 2rem);
+  box-sizing: border-box;
+  max-height: 14rem;
+  overflow-y: auto;
+  margin: 0 0 0 2rem;
   padding: 0.25rem 0;
   list-style: none;
   background: var(--color-surface);
@@ -103,7 +104,8 @@
 // Without its marker the field starts at the left edge, and so does what hangs under it.
 :host(.bare) {
   .suggestions {
-    left: 0;
+    flex-basis: 100%;
+    margin-left: 0;
   }
 
   .message {
