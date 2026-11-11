@@ -40,8 +40,8 @@ services:
   brouter:
     image: ${IMAGE_PREFIX:-voie-libre}/brouter:${VERSION:-latest}
     build:
-      # The BRouter commit validated by the spike (see spike/brouter/RAPPORT.md).
-      context: https://github.com/abrensch/brouter.git#fed8f185ecdba4c01f4d6913bff7c0fae4576a32
+      # The BRouter commit validated by the spike, built without BuildKit-only features.
+      context: docker/brouter
     environment:
       MAXTHREADS: '2'
       JAVA_OPTS: '-Xmx256M -Xms256M -DmaxRunningTime=300 -DuseRFCMimeType=false'

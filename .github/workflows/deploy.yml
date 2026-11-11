@@ -80,8 +80,8 @@ jobs:
       - name: brouter
         uses: docker/build-push-action@v6
         with:
-          # The BRouter commit validated by the spike (the same as docker-compose.prod.yml).
-          context: https://github.com/abrensch/brouter.git#fed8f185ecdba4c01f4d6913bff7c0fae4576a32
+          # The BRouter commit validated by the spike (see docker/brouter/Dockerfile).
+          context: docker/brouter
           push: true
           tags: ${{ env.IMAGE_PREFIX }}/brouter:${{ env.TAG }}
           labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
