@@ -7,6 +7,7 @@ import {
   RELIEF_TILES_FILE,
 } from '@voie-libre/shared';
 import { wayLayers } from './way-levels';
+import { PALETTE } from './palette';
 
 /** Name of the vector source in the style; the Protomaps layers refer to it. */
 export const BASEMAP_SOURCE = 'protomaps';
@@ -110,9 +111,9 @@ export function buildBasemapStyle(
         paint: {
           // Soft: the roads, the route and the names must stay easy to read.
           'hillshade-exaggeration': 0.35,
-          'hillshade-shadow-color': '#4b5563',
-          'hillshade-highlight-color': '#ffffff',
-          'hillshade-accent-color': '#6b7280',
+          'hillshade-shadow-color': PALETTE.hillshade.shadow,
+          'hillshade-highlight-color': PALETTE.hillshade.highlight,
+          'hillshade-accent-color': PALETTE.hillshade.accent,
         },
       },
       ...styleLayers.slice(index),

@@ -14,6 +14,7 @@ import type {
 import { accuracyCircle } from '../location/accuracy-circle';
 import type { LocationFix } from '../location/geolocation';
 import { routesToGeoJson, surfacesToGeoJson } from './route-geojson';
+import { PALETTE } from '../core/map/palette';
 import { SURFACE_CODES, SURFACE_COLORS } from './route-surface';
 
 const SOURCE = 'planner-routes';
@@ -95,14 +96,14 @@ export async function createMapLibreDriver(
       id: ACCURACY_FILL_LAYER,
       type: 'fill',
       source: ACCURACY_SOURCE,
-      paint: { 'fill-color': '#1570ef', 'fill-opacity': 0.14 },
+      paint: { 'fill-color': PALETTE.location, 'fill-opacity': 0.14 },
     });
     map.addLayer({
       id: ACCURACY_LINE_LAYER,
       type: 'line',
       source: ACCURACY_SOURCE,
       paint: {
-        'line-color': '#1570ef',
+        'line-color': PALETTE.location,
         'line-opacity': 0.4,
         'line-width': 1,
       },
@@ -114,7 +115,11 @@ export async function createMapLibreDriver(
       source: SOURCE,
       filter: ['==', ['get', 'selected'], false],
       layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': '#98a2b3', 'line-width': 5, 'line-opacity': 0.9 },
+      paint: {
+        'line-color': PALETTE.routeAlternative,
+        'line-width': 5,
+        'line-opacity': 0.9,
+      },
     });
     map.addLayer({
       id: SELECTED_LAYER,
@@ -122,7 +127,7 @@ export async function createMapLibreDriver(
       source: SOURCE,
       filter: ['==', ['get', 'selected'], true],
       layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': '#1570ef', 'line-width': 6 },
+      paint: { 'line-color': PALETTE.route, 'line-width': 6 },
     });
     map.addSource(SURFACE_SOURCE, {
       type: 'geojson',
@@ -154,7 +159,7 @@ export async function createMapLibreDriver(
       type: 'line',
       source: HIGHLIGHT_SOURCE,
       layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': '#101828', 'line-width': 6 },
+      paint: { 'line-color': PALETTE.routeHighlight, 'line-width': 6 },
     });
     map.addSource(PREVIEW_SOURCE, {
       type: 'geojson',
@@ -166,7 +171,7 @@ export async function createMapLibreDriver(
       source: PREVIEW_SOURCE,
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
-        'line-color': '#f79009',
+        'line-color': PALETTE.routePreview,
         'line-width': 5,
         'line-opacity': 0.9,
       },

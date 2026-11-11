@@ -1,4 +1,5 @@
 import type { LayerSpecification } from 'maplibre-gl';
+import { PALETTE } from './palette';
 
 /** How well a way suits a profile. Ways of no level are drawn as the basemap draws them. */
 export type WayLevel = 'good' | 'fair' | 'avoid';
@@ -7,9 +8,9 @@ export type WayLevel = 'good' | 'fair' | 'avoid';
 export const WAY_LEVELS: readonly WayLevel[] = ['avoid', 'fair', 'good'];
 
 export const WAY_COLORS: Record<WayLevel, string> = {
-  good: '#12b76a',
-  fair: '#f79009',
-  avoid: '#d92d20',
+  good: PALETTE.way.good,
+  fair: PALETTE.way.fair,
+  avoid: PALETTE.way.avoid,
 };
 
 /** The OpenStreetMap value of a way (`kind_detail` in the Protomaps `roads` layer), with links. */
