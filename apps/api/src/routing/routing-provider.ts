@@ -26,6 +26,11 @@ export interface RouteResult {
   distanceMeters: number;
   ascentMeters: number;
   durationSeconds: number;
+  /**
+   * What the route rides on, one {@link SurfaceCode} character per segment of the geometry
+   * (`geometry.length - 1`). Absent when the engine does not tell.
+   */
+  surfaces?: string;
 }
 
 export type RoutingErrorCode =

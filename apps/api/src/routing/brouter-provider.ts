@@ -8,6 +8,7 @@ import {
   type RoutingProvider,
 } from './routing-provider';
 import { retracedRatio, trimSpurs } from './spurs';
+import { surfacesFromMessages } from './surface';
 
 /**
  * Voie Libre profile to BRouter profile. `trail` uses `hiking-mountain`: on the Clermont test region
@@ -338,6 +339,8 @@ export function parseGeoJson(body: string): RouteResult {
     if (geometry.length < 2 || numbers.some((n) => !Number.isFinite(n))) {
       throw new Error('missing fields');
     }
+    const surfaces = surfacesFromMessages(properties.messages, geometry);
+    if (surfaces !== undefined) result.surfaces = surfaces;
     return result;
   } catch (cause) {
     throw new RoutingError('provider_error', 'Unexpected BRouter response', {

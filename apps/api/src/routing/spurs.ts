@@ -50,15 +50,19 @@ export function retracedRatio(geometry: readonly Point[]): number {
  */
 export function trimSpurs(route: RouteResult): RouteResult {
   const kept: [number, number, number][] = [];
-  for (const point of route.geometry) {
+  // One code per segment kept, in step with `kept`.
+  const keptSurfaces: string[] = [];
+  route.geometry.forEach((point, i) => {
     const back = kept.length >= 2 ? kept[kept.length - 2] : null;
     if (back && key(back) === key(point)) {
       // Back on the point before the last one: the last stretch was a spur.
       kept.pop();
+      keptSurfaces.pop();
     } else {
+      if (kept.length > 0) keptSurfaces.push(route.surfaces?.[i - 1] ?? '?');
       kept.push(point as [number, number, number]);
     }
-  }
+  });
   if (kept.length === route.geometry.length || kept.length < 2) return route;
 
   const before = length(route.geometry);
@@ -82,5 +86,8 @@ export function trimSpurs(route: RouteResult): RouteResult {
       route.ascentMeters - (climb(route.geometry) - climb(kept)),
     ),
     durationSeconds: route.durationSeconds * ratio,
+    ...(route.surfaces === undefined
+      ? {}
+      : { surfaces: keptSurfaces.join('') }),
   };
 }

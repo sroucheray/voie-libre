@@ -107,6 +107,13 @@ const Route = Type.Object({
   distanceMeters: Type.Number(),
   ascentMeters: Type.Number(),
   durationSeconds: Type.Number(),
+  surfaces: Type.Optional(
+    Type.String({
+      pattern: '^[pcus?]*$',
+      description:
+        'What the route rides on, one character per segment of the geometry (geometry length minus one): p paved, c cycleway, u unpaved or rough, s path, ? unknown. Absent when unknown.',
+    }),
+  ),
 });
 
 const RouteResponse = Type.Object({ routes: Type.Array(Route) });

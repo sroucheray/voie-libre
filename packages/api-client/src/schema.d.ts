@@ -263,6 +263,8 @@ export interface operations {
               distanceMeters: number;
               ascentMeters: number;
               durationSeconds: number;
+              /** @description What the route rides on, one character per segment of the geometry (geometry length minus one): p paved, c cycleway, u unpaved or rough, s path, ? unknown. Absent when unknown. */
+              surfaces?: string;
             }[];
           };
         };

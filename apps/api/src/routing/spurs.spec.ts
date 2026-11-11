@@ -74,6 +74,15 @@ describe('trimSpurs', () => {
     expect(retracedRatio(trimmed.geometry)).toBe(0);
   });
 
+  it('drops the surfaces of the spur with it, one per segment kept', () => {
+    const geometry = withSpur();
+    // One letter per segment (a to i). The spur is c to f; the way back from it, g, stays.
+    expect(geometry).toHaveLength(10);
+    const trimmed = trimSpurs({ ...routeOf(geometry), surfaces: 'abcdefghi' });
+    expect(trimmed.surfaces).toBe('abghi');
+    expect(trimmed.surfaces).toHaveLength(trimmed.geometry.length - 1);
+  });
+
   it('takes the length, climb and duration of the spur off', () => {
     const route = routeOf(withSpur());
     const trimmed = trimSpurs(route);

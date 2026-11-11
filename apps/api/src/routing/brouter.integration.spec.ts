@@ -30,6 +30,22 @@ run('BRouter integration', () => {
     );
   });
 
+  it('tells what each stretch rides on, for a route, a loop and a trimmed round trip', async () => {
+    const [route] = await provider.route([clermont, issoire], 'gravel', [], 1);
+    expect(route.surfaces).toHaveLength(route.geometry.length - 1);
+    expect(route.surfaces).toMatch(/^[pcus?]+$/);
+    expect(route.surfaces).toContain('p');
+    const [loop] = await routeLoop(
+      provider,
+      [clermont, { lon: 3.1, lat: 45.75 }, clermont],
+      'road',
+      [],
+      1,
+      { mode: 'avoid_outbound' },
+    );
+    expect(loop.surfaces).toHaveLength(loop.geometry.length - 1);
+  });
+
   it('goes around a circle placed on the first route', async () => {
     const [first] = await provider.route([clermont, issoire], 'road', [], 1);
     const [lon, lat] = first.geometry[Math.floor(first.geometry.length / 2)];

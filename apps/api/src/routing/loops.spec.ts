@@ -102,6 +102,23 @@ describe('routeLoop', () => {
     expect(route.geometry).toHaveLength(101 + 100);
   });
 
+  it('joins the surfaces of the two ways, one per segment', async () => {
+    const withSurfaces: RoutingProvider = {
+      name: 'fake',
+      route: async (points) => [
+        {
+          ...leg(points[0], points[points.length - 1]),
+          surfaces: (points[0] === A ? 'p' : 'u').repeat(100),
+        },
+      ],
+    };
+    const [route] = await routeLoop(withSurfaces, [A, B, A], 'road', [], 1, {
+      mode: 'avoid_outbound',
+    });
+    expect(route.surfaces).toBe('p'.repeat(100) + 'u'.repeat(100));
+    expect(route.surfaces).toHaveLength(route.geometry.length - 1);
+  });
+
   it('keeps the waypoints on the way out and the last one as the turnaround', async () => {
     await routeLoop(provider(), [A, C, B, A], 'road', [], 1, {
       mode: 'avoid_outbound',

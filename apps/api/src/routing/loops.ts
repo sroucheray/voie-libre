@@ -107,6 +107,10 @@ function join(out: RouteResult, back: RouteResult): RouteResult {
     distanceMeters: out.distanceMeters + back.distanceMeters,
     ascentMeters: out.ascentMeters + back.ascentMeters,
     durationSeconds: out.durationSeconds + back.durationSeconds,
+    // The way back starts where the way out ends: the segments simply follow one another.
+    ...(out.surfaces !== undefined && back.surfaces !== undefined
+      ? { surfaces: out.surfaces + back.surfaces }
+      : {}),
   };
 }
 
