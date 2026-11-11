@@ -30,7 +30,15 @@
     (blur)="onBlur()"
   />
   @if (open()) {
-  <ul class="suggestions" role="listbox" [id]="listId">
+  <ul
+    class="suggestions"
+    role="listbox"
+    [id]="listId"
+    [style.left.px]="box()?.left"
+    [style.top.px]="box()?.top"
+    [style.width.px]="box()?.width"
+    [style.visibility]="box() ? null : 'hidden'"
+  >
     @if (offersPosition()) {
     <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
     <li

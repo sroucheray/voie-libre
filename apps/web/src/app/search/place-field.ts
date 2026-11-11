@@ -4,6 +4,7 @@ import {
   DestroyRef,
   ElementRef,
   computed,
+  effect,
   inject,
   input,
   output,
@@ -115,8 +116,41 @@ export class PlaceField {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private controller: AbortController | null = null;
 
+  /**
+   * Where the list of suggestions is drawn, in the window's coordinates: it floats over the page
+   * (`position: fixed`) so that neither the scrolling panel clips it nor does it push the fields
+   * below it down. Followed while the list is open.
+   */
+  protected readonly box = signal<{
+    left: number;
+    top: number;
+    width: number;
+  } | null>(null);
+
   constructor() {
     inject(DestroyRef).onDestroy(() => this.cancel());
+    effect((onCleanup) => {
+      if (!this.open()) {
+        this.box.set(null);
+        return;
+      }
+      const place = () => {
+        const rect = this.field().nativeElement.getBoundingClientRect();
+        this.box.set({
+          left: rect.left,
+          top: rect.bottom + 2,
+          width: rect.width,
+        });
+      };
+      place();
+      // Scroll events do not bubble: capture them to follow the panel's own scrolling too.
+      window.addEventListener('scroll', place, true);
+      window.addEventListener('resize', place);
+      onCleanup(() => {
+        window.removeEventListener('scroll', place, true);
+        window.removeEventListener('resize', place);
+      });
+    });
   }
 
   /** Puts the keyboard in the field, e.g. when it was just added. */
