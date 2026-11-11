@@ -1,0 +1,161 @@
+name: Deploy
+
+# A version goes online when a tag `v*` is pushed (after the CI checks passed), or by hand with
+# the tag of a version already built (to go back to an earlier one). Never from a pull request.
+# See BRIEF-deploy.md and docs/deployment.md for the secrets this workflow reads.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag of a version already built, to deploy again (a rollback)
+        required: true
+
+# One deployment at a time; a running one is never cut short.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/ci.yml
+
+  images:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Image prefix
+        run: echo "IMAGE_PREFIX=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # The web image only holds the built app and the Caddyfile (docker/web/Dockerfile).
+      - run: npx nx build web
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: web
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/web/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}/web:${{ env.TAG }}
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+      - name: api
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}/api:${{ env.TAG }}
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+      - name: migrate
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/migrate/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}/migrate:${{ env.TAG }}
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+      - name: brouter
+        uses: docker/build-push-action@v6
+        with:
+          # The BRouter commit validated by the spike (the same as docker-compose.prod.yml).
+          context: https://github.com/abrensch/brouter.git#fed8f185ecdba4c01f4d6913bff7c0fae4576a32
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}/brouter:${{ env.TAG }}
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha,scope=brouter
+          cache-to: type=gha,scope=brouter,mode=max
+
+  deploy:
+    needs: images
+    # After a push: only when the images were built (so the checks passed). By hand: at once.
+    if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || needs.images.result == 'success') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: read
+    env:
+      TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      DEPLOY_DIR: voie-libre
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - name: SSH access
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # The server's key is pinned in a secret: nothing is trusted on first sight.
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<EOF
+          Host server
+            HostName ${{ secrets.DEPLOY_HOST }}
+            User ${{ secrets.DEPLOY_USER }}
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            BatchMode yes
+          EOF
+      - name: Send the stack files
+        run: |
+          tar -c docker-compose.prod.yml docker/tiles/default.conf \
+            scripts/download-segments.sh scripts/download-basemap.sh \
+            | ssh server "mkdir -p '$DEPLOY_DIR' && tar -x -C '$DEPLOY_DIR'"
+      - name: Pull and start
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_USER: ${{ github.actor }}
+        run: |
+          prefix="ghcr.io/${GITHUB_REPOSITORY,,}"
+          # The job's own token (valid until the job ends) lets the server pull even private images.
+          printf '%s' "$REGISTRY_TOKEN" | ssh server "docker login ghcr.io -u '$REGISTRY_USER' --password-stdin"
+          ssh server "bash -s" <<EOF
+          set -euo pipefail
+          cd '$DEPLOY_DIR'
+          test -f .env || { echo 'No .env on the server (see docs/deployment.md)' >&2; exit 1; }
+          printf 'IMAGE_PREFIX=%s\nVERSION=%s\n' '$prefix' '$TAG' > .env.deploy
+          compose="docker compose --env-file .env --env-file .env.deploy -f docker-compose.prod.yml"
+          \$compose pull
+          \$compose up -d --remove-orphans
+          \$compose ps
+          docker logout ghcr.io
+          docker image prune -f >/dev/null
+          EOF
+      - name: Health check
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: |
+          test -n "$SITE_URL" || { echo "Set the SITE_URL repository variable"; exit 1; }
+          for i in $(seq 1 30); do
+            if curl -fsS -m 10 "$SITE_URL/api/health"; then echo; echo "Version $TAG is up"; exit 0; fi
+            sleep 10
+          done
+          echo "No healthy answer from $SITE_URL/api/health" >&2
+          exit 1

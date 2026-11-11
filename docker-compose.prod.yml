@@ -1,6 +1,7 @@
 # Production stack (see BRIEF-deploy.md and docs/deployment.md).
-#   scripts/deploy.sh builds the images on the developer's machine and sends them to the server,
-#   where this file runs with `docker compose -f docker-compose.prod.yml up -d --no-build`.
+#   The GitHub workflow .github/workflows/deploy.yml builds the images, publishes them to ghcr.io
+#   under IMAGE_PREFIX with the tag VERSION, then runs this file on the server (`pull`, `up -d`).
+#   scripts/deploy.sh does the same by hand from the developer's machine (images sent over SSH).
 # Only `web` publishes ports (80 and 443): Docker opens published ports around the firewall, so
 # nothing else may publish one. Settings come from `.env` next to this file (see
 # .env.production.example); nothing secret is in this file.
@@ -25,7 +26,7 @@ services:
 
   migrate:
     # Applies the SQL migrations at every `up`, then exits (a run with nothing new does nothing).
-    image: voie-libre/migrate
+    image: ${IMAGE_PREFIX:-voie-libre}/migrate:${VERSION:-latest}
     build:
       context: .
       dockerfile: docker/migrate/Dockerfile
@@ -37,7 +38,7 @@ services:
     restart: 'no'
 
   brouter:
-    image: voie-libre/brouter
+    image: ${IMAGE_PREFIX:-voie-libre}/brouter:${VERSION:-latest}
     build:
       # The BRouter commit validated by the spike (see spike/brouter/RAPPORT.md).
       context: https://github.com/abrensch/brouter.git#fed8f185ecdba4c01f4d6913bff7c0fae4576a32
@@ -59,7 +60,7 @@ services:
     restart: unless-stopped
 
   api:
-    image: voie-libre/api
+    image: ${IMAGE_PREFIX:-voie-libre}/api:${VERSION:-latest}
     build:
       context: .
       dockerfile: apps/api/Dockerfile
@@ -87,7 +88,7 @@ services:
     restart: unless-stopped
 
   web:
-    image: voie-libre/web
+    image: ${IMAGE_PREFIX:-voie-libre}/web:${VERSION:-latest}
     build:
       context: .
       dockerfile: docker/web/Dockerfile

@@ -26,7 +26,7 @@ How we check: the smoke test of `PLAN-deploy.md` step 8, run from the phone and 
 
 - **One origin.** Caddy serves the web app and proxies `/api/*` to the API (prefix stripped) and `/tiles/*` to the tiles server, so no CORS and a single certificate. The `/p/:id` page of the web app is why the API cannot sit at the root.
 - **HTTPS by Caddy** (automatic Let's Encrypt), the only service publishing ports.
-- **Images built on the author's machine** and sent to the server with `docker save | ssh docker load` (no registry, and the server has too little memory to build). The web build is copied into the Caddy image.
+- **Deployed by GitHub Actions on a version tag** (`v*`, after the CI checks): `.github/workflows/deploy.yml` builds the four images, publishes them to `ghcr.io/<owner>/voie-libre/*` and has the server pull them over SSH (a dedicated key in repository secrets, the server's host key pinned; the job's own token lets the server pull even private images). A manual run with an existing tag goes back to an earlier version. Never from a pull request. The repository will become public, so no address, key or password may be in it. `scripts/deploy.sh` (images built on the author's machine and sent over SSH) stays as a fallback.
 - **Routing area: metropolitan France**, six BRouter segments: `W5_N40`, `W5_N45`, `E0_N40`, `E0_N45`, `E5_N40`, `E5_N45` (about 750 MB; names checked before downloading).
 - **Basemap: France**, `basemap.pmtiles` (4.7 GB) with fonts and sprites, built on the server by `scripts/download-basemap.sh` (fallback: `rsync` from the laptop).
 - **Relief: public terrain tiles** (default). The local `relief.pmtiles` is not uploaded.
