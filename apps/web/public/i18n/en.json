@@ -30,12 +30,16 @@
       "ways_fair": "Possible",
       "ways_avoid": "To avoid",
       "surface": "Surface of the route",
-      "surfaceLegend": "Surface of the route: legend"
+      "surfaceLegend": "Surface of the route: legend",
+      "imagery": "Aerial photos (IGN, France)",
+      "imageryNote": "Calls the IGN server: it sees your address and the area you look at. Nothing about your route is sent. France only.",
+      "imageryOffline": "Not available offline."
     },
     "attribution": {
       "label": "Map data attribution",
       "contributors": "contributors",
-      "relief": "Relief: Copernicus"
+      "relief": "Relief: Copernicus",
+      "imagery": "Photos: IGN"
     },
     "unavailable": "The map could not be displayed. Your browser may not support WebGL2."
   },

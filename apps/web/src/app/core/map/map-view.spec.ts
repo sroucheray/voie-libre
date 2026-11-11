@@ -202,6 +202,7 @@ describe('MapView', () => {
         relief: false,
         ways: false,
         surface: false,
+        imagery: false,
       });
 
       view.checkbox()!.click();
@@ -310,9 +311,60 @@ describe('MapView', () => {
       view.fixture.componentRef.setInput('surfaceComputable', false);
       view.fixture.detectChanges();
       expect(view.root.querySelector('.layers-action')).toBeNull();
-      expect(view.root.querySelector('.layers-note')?.textContent).toContain(
+      expect(view.root.querySelector('.surface-note')?.textContent).toContain(
         'cannot be calculated again',
       );
+    });
+
+    it('offers the IGN photos, off at first, with a note about the server, and a credit once shown', async () => {
+      const view = await renderWith(true);
+      view.open();
+      const box =
+        view.root.querySelector<HTMLInputElement>('.imagery-checkbox')!;
+      expect(box.checked).toBe(false);
+      expect(box.disabled).toBe(false);
+      expect(
+        view.root.querySelector('#map-layers-imagery-note')?.textContent,
+      ).toContain('Calls the IGN server');
+      // Nothing external is asked for before the box is ticked.
+      expect(
+        JSON.stringify(maps[0].style ?? maps[0].options.style),
+      ).not.toContain('geopf');
+      expect(
+        view.root.querySelector('.map-attribution')?.textContent,
+      ).not.toContain('IGN');
+      box.click();
+      await flush();
+      view.fixture.detectChanges();
+      expect(JSON.stringify(maps[0].style)).toContain('data.geopf.fr');
+      expect(
+        view.root.querySelector('.map-attribution')?.textContent,
+      ).toContain('Photos: IGN');
+      expect(JSON.parse(localStorage.getItem(MAP_LAYERS_KEY)!).imagery).toBe(
+        true,
+      );
+    });
+
+    it('goes back to the local map while the device is offline, and says so', async () => {
+      localStorage.setItem(
+        MAP_LAYERS_KEY,
+        JSON.stringify({ relief: true, imagery: true }),
+      );
+      vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+      const view = await renderWith(true);
+      view.open();
+      const box =
+        view.root.querySelector<HTMLInputElement>('.imagery-checkbox')!;
+      expect(box.disabled).toBe(true);
+      expect(
+        view.root.querySelector('#map-layers-imagery-note')?.textContent,
+      ).toContain('Not available offline');
+      expect(
+        JSON.stringify(maps[0].style ?? maps[0].options.style),
+      ).not.toContain('geopf');
+      expect(
+        view.root.querySelector('.map-attribution')?.textContent,
+      ).not.toContain('IGN');
     });
 
     it('leaves the map as it is without the relief file, and says why', async () => {
@@ -321,9 +373,9 @@ describe('MapView', () => {
       view.open();
       expect(view.checkbox()?.disabled).toBe(true);
       expect(view.checkbox()?.checked).toBe(false);
-      expect(view.root.querySelector('.layers-note')?.textContent).toContain(
-        'Not available',
-      );
+      expect(
+        view.root.querySelector('#map-layers-relief-note')?.textContent,
+      ).toContain('Not available');
     });
 
     it('closes the panel on Escape, giving the focus back, and on a press outside', async () => {

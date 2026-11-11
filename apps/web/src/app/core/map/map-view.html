@@ -90,6 +90,21 @@
       <label>
         <input
           type="checkbox"
+          class="imagery-checkbox"
+          [checked]="layers.imagery()"
+          [disabled]="!online()"
+          aria-describedby="map-layers-imagery-note"
+          (change)="setImagery($event)"
+        />
+        {{ 'map.layers.imagery' | transloco }}
+      </label>
+      <p id="map-layers-imagery-note" class="layers-note">
+        {{ 'map.layers.imageryNote' | transloco }} @if (!online()) { {{
+        'map.layers.imageryOffline' | transloco }} }
+      </p>
+      <label>
+        <input
+          type="checkbox"
           class="ways-checkbox"
           [checked]="layers.ways()"
           [disabled]="!waysProfile()"
@@ -125,7 +140,7 @@
         {{ 'map.layers.surface' | transloco }}
       </label>
       @if (layers.surface() && surfaceMissing()) {
-      <p class="layers-note">
+      <p class="layers-note surface-note">
         @if (surfaceComputable()) { {{ 'surface.missing' | transloco }}
         <button
           type="button"
@@ -174,4 +189,5 @@
     >Protomaps</a
   >
   @if (reliefShown()) { &middot; {{ 'map.attribution.relief' | transloco }} }
+  @if (imageryShown()) { &middot; {{ 'map.attribution.imagery' | transloco }} }
 </p>

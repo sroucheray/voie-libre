@@ -30,12 +30,16 @@
       "ways_fair": "Possibles",
       "ways_avoid": "À éviter",
       "surface": "Revêtement du tracé",
-      "surfaceLegend": "Revêtement du tracé : légende"
+      "surfaceLegend": "Revêtement du tracé : légende",
+      "imagery": "Photos aériennes (IGN, France)",
+      "imageryNote": "Appelle le serveur de l'IGN : il voit votre adresse et la zone que vous regardez. Rien sur votre parcours n'est envoyé. France seulement.",
+      "imageryOffline": "Indisponible hors ligne."
     },
     "attribution": {
       "label": "Source des données cartographiques",
       "contributors": "contributeurs",
-      "relief": "Relief : Copernicus"
+      "relief": "Relief : Copernicus",
+      "imagery": "Photos : IGN"
     },
     "unavailable": "La carte n'a pas pu être affichée. Votre navigateur ne gère peut-être pas WebGL2."
   },

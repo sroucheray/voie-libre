@@ -1,6 +1,10 @@
 import {
   BASEMAP_SOURCE,
   buildBasemapStyle,
+  IMAGERY_HOST,
+  IMAGERY_LAYER,
+  IMAGERY_SOURCE,
+  IMAGERY_TILES,
   RELIEF_LAYER,
   RELIEF_SOURCE,
   reliefTilesUrl,
@@ -47,6 +51,61 @@ describe('with ways', () => {
     }).layers.map((l) => l.id);
     expect(all.indexOf('relief')).toBe(all.indexOf('water') - 1);
     expect(all.indexOf('ways-good')).toBeGreaterThan(all.indexOf('water'));
+  });
+});
+
+describe('with imagery', () => {
+  const base = 'http://tiles.test:8081/';
+  const plain = buildBasemapStyle(base, 'en');
+  const photos = buildBasemapStyle(base, 'en', { imagery: true });
+  const ids = (style: typeof plain) => style.layers.map((l) => l.id);
+
+  it('calls no external server unless asked, and then only the IGN', () => {
+    expect(JSON.stringify(plain)).not.toContain('geopf');
+    const urls = (JSON.stringify(photos).match(/https?:\/\/[^/"]+/g) ?? [])
+      .filter((u) => !u.startsWith('http://tiles.test'))
+      .map((u) => new URL(u).host);
+    expect(new Set(urls)).toEqual(new Set([IMAGERY_HOST]));
+  });
+
+  it('reads the IGN photo tiles as 256 px images from zoom 6 to 19', () => {
+    expect(photos.sources[IMAGERY_SOURCE]).toMatchObject({
+      type: 'raster',
+      tileSize: 256,
+      minzoom: 6,
+      maxzoom: 19,
+      tiles: [IMAGERY_TILES],
+    });
+    expect(IMAGERY_TILES).toContain('ORTHOIMAGERY.ORTHOPHOTOS');
+    expect(IMAGERY_TILES).toContain('{z}');
+  });
+
+  it('puts the photos after the background and replaces every filled layer', () => {
+    expect(ids(photos)[0]).toBe('background');
+    expect(ids(photos)[1]).toBe(IMAGERY_LAYER);
+    expect(photos.layers.some((l) => l.type === 'fill')).toBe(false);
+    expect(ids(plain)).toContain('water');
+    expect(ids(photos)).not.toContain('water');
+  });
+
+  it('keeps the roads and the names over the photos', () => {
+    const at = ids(photos).indexOf(IMAGERY_LAYER);
+    expect(ids(photos).indexOf('roads_highway')).toBeGreaterThan(at);
+    expect(ids(photos).indexOf('roads_labels_major')).toBeGreaterThan(at);
+    expect(ids(photos).indexOf('places_locality')).toBeGreaterThan(at);
+  });
+
+  it('draws the relief right over the photos, and the ways over the roads', () => {
+    const both = buildBasemapStyle(base, 'en', {
+      imagery: true,
+      relief: true,
+      ways: 'road',
+    });
+    const all = ids(both);
+    expect(all.indexOf('relief')).toBe(all.indexOf(IMAGERY_LAYER) + 1);
+    expect(all.indexOf('ways-good')).toBeGreaterThan(
+      all.indexOf('roads_highway'),
+    );
   });
 });
 

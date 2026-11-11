@@ -15,6 +15,7 @@ import {
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { LanguageService } from '../i18n/language.service';
+import { NetworkStatus } from '../offline/network-status';
 import { OfflineBasemap } from '../offline/offline-basemap';
 import {
   basemapTilesUrl,
@@ -103,6 +104,11 @@ export class MapView {
     color: SURFACE_COLORS[code],
     key: surfaceKey(code),
   }));
+  protected readonly online = inject(NetworkStatus).online;
+  /** The photos are drawn: the user wants them and the device can reach the IGN. */
+  protected readonly imageryShown = computed(
+    () => this.layers.imagery() && this.online(),
+  );
   protected readonly layersOpen = signal(false);
 
   constructor() {
@@ -161,13 +167,18 @@ export class MapView {
       const language = this.language.current();
       const relief = this.reliefShown();
       const ways = this.waysShown();
+      const imagery = this.imageryShown();
       if (!map) return;
-      const wanted = `${language}|${relief}|${ways ?? ''}`;
-      // The map was created without relief or ways.
-      styled ??= `${language}|false|`;
+      const wanted = `${language}|${relief}|${ways ?? ''}|${imagery}`;
+      // The map was created without relief, ways or photos.
+      styled ??= `${language}|false||false`;
       if (styled !== wanted) {
         map.setStyle(
-          buildBasemapStyle(this.basemapUrl, language, { relief, ways }),
+          buildBasemapStyle(this.basemapUrl, language, {
+            relief,
+            ways,
+            imagery,
+          }),
         );
       }
       styled = wanted;
@@ -221,6 +232,10 @@ export class MapView {
       .querySelector('.map-layers')
       ?.contains(target);
     if (!inside) this.layersOpen.set(false);
+  }
+
+  protected setImagery(event: Event): void {
+    this.layers.setImagery((event.target as HTMLInputElement).checked);
   }
 
   protected setSurface(event: Event): void {

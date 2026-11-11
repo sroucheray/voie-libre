@@ -12,12 +12,15 @@ export class MapLayers {
   private readonly reliefState = signal(this.read().relief ?? true);
   private readonly waysState = signal(this.read().ways ?? false);
   private readonly surfaceState = signal(this.read().surface ?? false);
+  private readonly imageryState = signal(this.read().imagery ?? false);
   /** True when the user wants the hillshade. */
   readonly relief = this.reliefState.asReadonly();
   /** True when the user wants the ways coloured by how well they suit the profile (off at first). */
   readonly ways = this.waysState.asReadonly();
   /** True when the user wants the route coloured by what it rides on (off at first). */
   readonly surface = this.surfaceState.asReadonly();
+  /** True when the user wants the IGN's aerial photos (off at first: it calls an external server). */
+  readonly imagery = this.imageryState.asReadonly();
 
   setRelief(shown: boolean): void {
     this.reliefState.set(shown);
@@ -34,6 +37,11 @@ export class MapLayers {
     this.save();
   }
 
+  setImagery(shown: boolean): void {
+    this.imageryState.set(shown);
+    this.save();
+  }
+
   private save(): void {
     try {
       localStorage.setItem(
@@ -42,6 +50,7 @@ export class MapLayers {
           relief: this.reliefState(),
           ways: this.waysState(),
           surface: this.surfaceState(),
+          imagery: this.imageryState(),
         }),
       );
     } catch {
@@ -49,7 +58,12 @@ export class MapLayers {
     }
   }
 
-  private read(): { relief?: boolean; ways?: boolean; surface?: boolean } {
+  private read(): {
+    relief?: boolean;
+    ways?: boolean;
+    surface?: boolean;
+    imagery?: boolean;
+  } {
     try {
       const stored = JSON.parse(localStorage.getItem(MAP_LAYERS_KEY) ?? '{}');
       return {
@@ -59,6 +73,9 @@ export class MapLayers {
         ...(typeof stored?.ways === 'boolean' ? { ways: stored.ways } : {}),
         ...(typeof stored?.surface === 'boolean'
           ? { surface: stored.surface }
+          : {}),
+        ...(typeof stored?.imagery === 'boolean'
+          ? { imagery: stored.imagery }
           : {}),
       };
     } catch {

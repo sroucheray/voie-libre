@@ -30,23 +30,34 @@ export function reliefTilesUrl(baseUrl: string): string {
   return `${baseUrl.replace(/\/+$/, '')}/${RELIEF_TILES_FILE}`;
 }
 
+/** The only external host the map can call, and only when the user turns the aerial photos on. */
+export const IMAGERY_HOST = 'data.geopf.fr';
+export const IMAGERY_SOURCE = 'imagery';
+export const IMAGERY_LAYER = 'imagery';
+/** IGN Géoplateforme, layer `ORTHOIMAGERY.ORTHOPHOTOS`: 256 px JPEG tiles, Web Mercator, zooms 6 to 19. */
+export const IMAGERY_TILES = `https://${IMAGERY_HOST}/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}`;
+
 export interface BasemapStyleOptions {
   /** Draws the hillshade. Only when the archive of elevation tiles exists. */
   relief?: boolean;
   /** Draws the ways by how well they suit this profile (`road`, `gravel`, `trail`). */
   ways?: string | null;
+  /** Draws the IGN's aerial photos under the roads and the names. Calls an external server. */
+  imagery?: boolean;
 }
 
 /**
  * Map style over the local basemap. Tiles, glyphs and sprites all come from `baseUrl`
- * (see scripts/download-basemap.sh), so the map never calls an external domain.
+ * (see scripts/download-basemap.sh), so the map never calls an external domain, unless `imagery`.
  *
  * `language` picks the label names (`name:<language>`, falling back to the local name). Protomaps
  * only generates the label layers when a language is given.
  *
  * With `relief`, a hillshade computed by MapLibre from the local elevation tiles is drawn under
- * the water and the roads. With `ways`, the roads, tracks and paths are drawn again in three
- * colours by how well they suit the profile, above the roads and under the labels.
+ * the water and the roads (over the photos, when there are some). With `ways`, the roads, tracks
+ * and paths are drawn again in three colours by how well they suit the profile, above the roads
+ * and under the labels. With `imagery`, the IGN's aerial photos take the place of the basemap's
+ * land, water and buildings; the roads and the names stay on top of them.
  */
 export function buildBasemapStyle(
   baseUrl: string,
@@ -54,29 +65,44 @@ export function buildBasemapStyle(
   options: BasemapStyleOptions = {},
 ): StyleSpecification {
   const base = baseUrl.replace(/\/+$/, '');
-  const basemap = layers(BASEMAP_SOURCE, namedFlavor('light'), {
+  const sources: StyleSpecification['sources'] = {};
+  let styleLayers = layers(BASEMAP_SOURCE, namedFlavor('light'), {
     lang: language,
   }) as StyleSpecification['layers'];
-  const withWays = options.ways
-    ? withWayLayers(basemap, wayLayers(BASEMAP_SOURCE, options.ways))
-    : basemap;
-  if (!options.relief) return styleOf(base, {}, withWays);
-  const at = withWays.findIndex((layer) => layer.id === RELIEF_BEFORE);
-  const index = at === -1 ? withWays.length : at;
-  return styleOf(
-    base,
-    {
-      [RELIEF_SOURCE]: {
-        type: 'raster-dem',
-        url: `pmtiles://${reliefTilesUrl(base)}`,
-        encoding: 'terrarium',
-        tileSize: RELIEF_TILE_SIZE,
-        minzoom: RELIEF_MIN_ZOOM,
-        maxzoom: RELIEF_MAX_ZOOM,
-      },
-    },
-    [
-      ...withWays.slice(0, index),
+
+  if (options.imagery) {
+    sources[IMAGERY_SOURCE] = {
+      type: 'raster',
+      tiles: [IMAGERY_TILES],
+      tileSize: 256,
+      minzoom: 6,
+      maxzoom: 19,
+      // Attribution is shown by the MapView template, translated.
+    };
+    styleLayers = withImageryLayer(styleLayers);
+  }
+  if (options.ways) {
+    styleLayers = withWayLayers(
+      styleLayers,
+      wayLayers(BASEMAP_SOURCE, options.ways),
+    );
+  }
+  if (options.relief) {
+    sources[RELIEF_SOURCE] = {
+      type: 'raster-dem',
+      url: `pmtiles://${reliefTilesUrl(base)}`,
+      encoding: 'terrarium',
+      tileSize: RELIEF_TILE_SIZE,
+      minzoom: RELIEF_MIN_ZOOM,
+      maxzoom: RELIEF_MAX_ZOOM,
+    };
+    // Under the water; with photos (which replace the water), right over them.
+    const water = styleLayers.findIndex((layer) => layer.id === RELIEF_BEFORE);
+    const photos = styleLayers.findIndex((layer) => layer.id === IMAGERY_LAYER);
+    const index =
+      water !== -1 ? water : photos !== -1 ? photos + 1 : styleLayers.length;
+    styleLayers = [
+      ...styleLayers.slice(0, index),
       {
         id: RELIEF_LAYER,
         type: 'hillshade',
@@ -89,9 +115,23 @@ export function buildBasemapStyle(
           'hillshade-accent-color': '#6b7280',
         },
       },
-      ...withWays.slice(index),
-    ],
-  );
+      ...styleLayers.slice(index),
+    ];
+  }
+  return styleOf(base, sources, styleLayers);
+}
+
+/** The photos replace every filled layer (land, water, buildings): roads and labels stay. */
+function withImageryLayer(
+  basemap: StyleSpecification['layers'],
+): StyleSpecification['layers'] {
+  const kept = basemap.filter((layer) => layer.type !== 'fill');
+  const background = kept.findIndex((layer) => layer.type === 'background');
+  return [
+    ...kept.slice(0, background + 1),
+    { id: IMAGERY_LAYER, type: 'raster', source: IMAGERY_SOURCE },
+    ...kept.slice(background + 1),
+  ];
 }
 
 /** The way layers go before the first label layer: above every road, under the names. */

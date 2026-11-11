@@ -23,6 +23,7 @@ describe('MapLayers', () => {
       relief: true,
       ways: true,
       surface: false,
+      imagery: false,
     });
     TestBed.resetTestingModule();
     expect(TestBed.inject(MapLayers).ways()).toBe(true);
@@ -36,9 +37,21 @@ describe('MapLayers', () => {
       relief: true,
       ways: false,
       surface: true,
+      imagery: false,
     });
     TestBed.resetTestingModule();
     expect(TestBed.inject(MapLayers).surface()).toBe(true);
+  });
+
+  it('leaves the aerial photos off until the user turns them on, and remembers', () => {
+    const layers = TestBed.inject(MapLayers);
+    expect(layers.imagery()).toBe(false);
+    layers.setImagery(true);
+    expect(JSON.parse(localStorage.getItem(MAP_LAYERS_KEY)!).imagery).toBe(
+      true,
+    );
+    TestBed.resetTestingModule();
+    expect(TestBed.inject(MapLayers).imagery()).toBe(true);
   });
 
   it('ignores a stored value it does not understand', () => {

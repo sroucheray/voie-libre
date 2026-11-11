@@ -67,7 +67,7 @@ BRouter can return, for each stretch of a route, the OpenStreetMap tags it trave
 - Answers the question "is this route what my bike can take?" better than any map layer, for the route at hand.
 - **Risks**: the response schema and the stored route change (a `schemaVersion` step); local edits must splice the stretches like they splice the geometry; imported GPX files have none.
 
-## 5. Imagery for France (opt-in)
+## 5. Imagery for France (opt-in; done 2026-11-11)
 
 IGN publishes its aerial photos (20 cm on most of France) as tiles on the Géoplateforme (`data.geopf.fr`, WMTS layer `ORTHOIMAGERY.ORTHOPHOTOS`), without a key, under the Licence Ouverte Etalab 2.0 (credit IGN).
 
@@ -138,6 +138,6 @@ Worth doing only when the app is used outside France.
 1. **Switcher and hillshade** (1, 2): done. The data is already on disk, it works offline, and relief is what the plain map lacks most for cycling and running.
 2. **Ways for the profile** (3): done (a checkbox in the switcher, three levels per profile, see `BRIEF-ways.md`).
 3. **Surface and way type of the route** (4): done (five categories from BRouter's way tags, a bar under the profile, an option to colour the route on the map; see `BRIEF-surface.md`).
-4. **IGN imagery, opt-in** (5). Small, and the best way to judge a track or a path before going.
+4. **IGN imagery, opt-in** (5): done (a checkbox with a note about the server it calls, photos under the roads and names, off when offline; see `BRIEF-imagery.md`).
 5. **Contours** (6), then **own way tiles** (7) when surfaces and signed routes on the map are worth a build pipeline.
 6. **Slope, 3D, world imagery** (8, 9, 10) last.
