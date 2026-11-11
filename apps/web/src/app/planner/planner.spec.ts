@@ -625,7 +625,7 @@ describe('Planner', () => {
     TestBed.tick();
     expect(view.driver.ghost).toEqual({
       role: 'waypoint',
-      label: '2',
+      label: '+',
       text: 'Click to add a stop',
     });
   });

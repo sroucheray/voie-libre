@@ -8,7 +8,23 @@
       [attr.aria-label]="(open() ? 'profile.hide' : 'profile.show') | transloco"
       (click)="open.set(!open())"
     >
-      <span aria-hidden="true">{{ open() ? '▾' : '▴' }}</span>
+      <svg
+        class="chevron"
+        [class.chevron--up]="!open()"
+        viewBox="0 0 24 24"
+        width="20"
+        height="20"
+        aria-hidden="true"
+      >
+        <path
+          d="m6 9 6 6 6-6"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
     </button>
   </header>
 

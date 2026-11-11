@@ -344,7 +344,6 @@ export class Planner {
     effect(() => {
       const driver = this.driver();
       const role = this.store.nextRole();
-      const count = this.store.points().length;
       const language = this.loadedLanguage();
       if (!driver) return;
       if (!language) {
@@ -353,7 +352,9 @@ export class Planner {
       }
       driver.setGhost({
         role,
-        label: role === 'start' ? 'A' : role === 'end' ? 'B' : `${count - 1}`,
+        // A stop is a "+": where it lands in the order depends on where the click falls on the
+        // route, and its number is only known once it is placed.
+        label: role === 'start' ? 'A' : role === 'end' ? 'B' : '+',
         text: this.transloco.translate(`planner.ghost.${role}`, {}, language),
       });
     });

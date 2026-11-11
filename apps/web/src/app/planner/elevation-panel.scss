@@ -23,11 +23,26 @@
     color: var(--color-text);
   }
 
+  // The same round icon button as the map's controls: a stroke icon, grey, a tint on hover.
   header button {
-    min-width: 2.25rem;
-    background: none;
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    min-height: 0;
+    padding: 0;
     border-color: transparent;
-    font-size: var(--font-size-md);
+    border-radius: 50%;
+    background: none;
+    color: var(--color-text-2);
+  }
+
+  .chevron {
+    transition: transform 0.15s;
+  }
+
+  .chevron--up {
+    transform: rotate(180deg);
   }
 }
 
