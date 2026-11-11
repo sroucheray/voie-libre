@@ -12,7 +12,7 @@ The author, on desktop and on touch. Nothing may depend on hover.
 
 ## Scope
 
-1. **The list reorders live.** While a stop is dragged, it sits at the place it would take, the other stops move aside, and every number follows. Releasing keeps that order; the route is computed on release only (one step of undo, as today).
+1. **The list reorders live.** While a stop is dragged, it sits at the place it would take, the other stops move aside; the numbers stay as they are until the release, then follow the new order. The "+" between rows stay in place, out of use, so the list keeps its height. Releasing keeps that order; the route is computed on release only (one step of undo, as today).
 2. **Say what happens.** While dragging, the help bar reads "Release to move the stop here; the route is computed again. Press Escape to cancel." (`planner.hint.reordering`). Escape (or a cancelled pointer) puts the stop back, with no request.
 3. **Pointer events instead of native drag and drop.** One gesture for mouse and finger on the grip (`pointerdown`, `pointermove`, `pointerup`, `pointercancel`; `touch-action: none` on the grip so the panel does not scroll under the finger).
 4. **Keyboard.** The grip becomes a button: Arrow Up/Down moves the stop one place at once (a full recompute, undoable), focus stays on it, and a live region announces the result ("Waypoint 2 moved to position 1 of 3", translated).

@@ -251,7 +251,7 @@
           <li
             class="points__stop"
             [class.dragging]="reorder()?.from === stop.index"
-            [style.order]="reorder() ? numberOf(stop.index) : null"
+            [style.order]="reorder() ? 2 * numberOf(stop.index) : null"
           >
             <!-- Only the handle moves the stop, so that the text of the field can be selected. -->
             <button
@@ -263,13 +263,13 @@
             >
               <span class="point-grip__dots" aria-hidden="true">⋮⋮</span>
               <span class="point-grip__number" aria-hidden="true"
-                >{{ format.number(numberOf(stop.index)) }}</span
+                >{{ format.number(stop.index) }}</span
               >
             </button>
             <vl-place-field
               role="stop"
               [bareMarker]="true"
-              [number]="numberOf(stop.index)"
+              [number]="stop.index"
               [label]="pointText(stop.point)"
               [near]="stop.point"
               (picked)="pickStop(stop.index, $event)"
@@ -316,7 +316,11 @@
             </button>
           </li>
           } @else if (canAddStop()) {
-          <li class="points__gap">
+          <li
+            class="points__gap"
+            [style.order]="reorder() ? 2 * at - 1 : null"
+            [attr.inert]="reorder() ? '' : null"
+          >
             <button
               type="button"
               class="add-stop"

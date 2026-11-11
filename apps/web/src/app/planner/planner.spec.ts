@@ -906,13 +906,20 @@ describe('Planner', () => {
       view.fixture.detectChanges();
       expect(rows()[0].classList.contains('dragging')).toBe(true);
       expect(view.text()).toContain('Release to move the stop here');
+      // The "+" stay (the list keeps its height), but are out of use.
+      const gaps = view.root.querySelectorAll('.points__gap');
+      expect(gaps.length).toBeGreaterThan(0);
+      gaps.forEach((gap) => expect(gap.hasAttribute('inert')).toBe(true));
       // The pointer goes below the middle of the second row: the first stop takes place 2.
       pointer(document, 'pointermove', 70);
       view.fixture.detectChanges();
-      expect(grip.textContent).toContain('2');
+      // The numbers stay while the stop moves: they change on release.
+      expect(grip.textContent).toContain('1');
       expect(rows()[1].querySelector('.point-grip')?.textContent).toContain(
-        '1',
+        '2',
       );
+      expect((rows()[0] as HTMLElement).style.order).toBe('4');
+      expect((rows()[1] as HTMLElement).style.order).toBe('2');
       // Nothing changed in the store yet.
       expect(store.points()).toEqual(before);
       pointer(document, 'pointerup', 70);
@@ -927,6 +934,7 @@ describe('Planner', () => {
       ]);
       expect(view.root.querySelector('.dragging')).toBeNull();
       expect(view.text()).not.toContain('Release to move the stop here');
+      expect(view.root.querySelector('.points__gap[inert]')).toBeNull();
     });
 
     it('puts the stop back on Escape, with no change', async () => {

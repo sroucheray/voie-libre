@@ -202,9 +202,10 @@
   }
 }
 
-// While a stop moves, the rows are ordered by their future place and the "+" are out of the way.
+// While a stop moves, the rows are ordered by their future place (the "+" stay between them,
+// out of use, so that the list keeps its height).
 .points--reordering .points__gap {
-  display: none;
+  opacity: 0.35;
 }
 
 .clear {
