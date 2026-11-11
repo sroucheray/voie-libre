@@ -40,8 +40,13 @@ The author today; later cyclists and trail runners riding and running between An
 
 Dark theme, a design system documentation site, animations beyond simple transitions, redesign of features (new screens, new flows), the basemap's own style beyond its colours, marketing site, Android packaging.
 
-## Open questions
+## Decisions (phase 2, 2026-11-11)
 
-- Accent colour (the current blue `#1570ef` stays unless a mockup direction proposes another).
-- System fonts or one bundled font.
-- Whether the logo stays after the mockups.
+Chosen from `docs/design/mockups.html` and `docs/design/mockups-c.html`: **direction C, variant C3 "Dossard"**.
+
+- **Look**: green-tinted neutrals, deep green accent `#0f766e`, route `#0e7490`, large radii (14 px / 10 px), system rounded font (`ui-rounded`, then `system-ui`; no web font), light theme only.
+- **Header**: solid green (`#0f766e`), white text, word mark "VOIE LIBRE" in heavy italic capitals with a speed-stripe underline.
+- **Logo**: a race bib "VL" with speed lines, dark green on the green header; SVG, to be redrawn cleanly in phase 4 (shell step), also the source of the favicon and app icon.
+- **Profile choice**: a three-button sport selector (Route, Gravel, Trail) with pictograms replaces the select-like combobox; the title and description keys (`planner.profile.<id>.*`) stay. The pictograms are hand-drawn SVG and are refined in the panel step.
+- **Panel**: tabs (Itinerary, Saved, Offline) on desktop and in the phone bottom sheet; save and export actions at the bottom of the panel.
+- Semantic map colours (ways, surface, grade bands) stay shared and are checked for colour-blind safety in the tokens step; the accent green is kept darker than the "good way" green on purpose.

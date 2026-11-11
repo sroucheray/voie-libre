@@ -6,7 +6,7 @@ Brief: [BRIEF-design.md](BRIEF-design.md). One commit per step, after lint, buil
 
 Audit written, interview done, brief written.
 
-## Phase 2: mockups (no app code)
+## Phase 2: mockups (no app code) (done: direction C3 "Dossard" chosen, see the brief)
 
 1. **Three directions**: neutral sober (blue accent), sober with a warm accent, sober with a green accent. Each: desktop 1440 px and phone 375 px, a loaded route, panel, layer switcher, elevation profile with the surface bar, saved routes, offline panel, logo proposal. Made as static HTML pages (in `docs/design/`, no dependency) or in Figma if the author prefers.
 2. **Choice**: the author picks one and lists changes; update the brief's open questions (accent, fonts, logo).
@@ -18,9 +18,9 @@ Audit written, interview done, brief written.
 
 ## Phase 4: components, one commit each
 
-5. Shell: header with logo and word mark, language select, API status, offline entry points; app favicon and `theme-color`.
+5. Shell: green header with the "VL" bib logo and the italic word mark, language select, API status, offline entry points; app favicon and `theme-color`.
 6. Panel and layout: desktop side panel; phone bottom sheet (peek and open states), 44 px targets, map visible.
-7. Fields and buttons: profile select, place fields, stops, undo/redo, alternatives, buttons (primary, secondary, danger, icon).
+7. Fields and buttons: sport selector (Route, Gravel, Trail pictograms, replaces the profile combobox), place fields, stops, undo/redo, alternatives, buttons (primary, secondary, danger, icon).
 8. Map controls: zoom, layers switcher and legend, locate, help bar, markers, ghost marker, context menu, loop dialog.
 9. Elevation panel: chart, grade legend, surface bar, notes, stretch stats.
 10. Saved routes: cards, rename, export dialog, delete, import GPX.
