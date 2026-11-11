@@ -429,7 +429,7 @@ export class Planner {
     try {
       const driver = await this.createDriver(map, {
         onClick: (point) =>
-          this.placeOnWay(point, (place) => this.store.addPoint(place)),
+          this.placeOnWay(point, (place) => this.addStopAt(place)),
         onSelectRoute: (index) => this.store.selectRoute(index),
         onCloseLoop: () => this.openLoopDialog(),
         onInsertPoint: (hit, to) => this.insertOnRoute(hit, to),
@@ -862,7 +862,7 @@ export class Planner {
     this.placeOnWay(menu.point, (place) => {
       if (choice === 'start') this.store.setStart(place);
       else if (choice === 'end') this.store.setEnd(place);
-      else this.store.addPoint(place);
+      else this.addStopAt(place);
     });
   }
 
@@ -870,7 +870,24 @@ export class Planner {
   protected placeMyPosition(): void {
     this.menu.set(null);
     const fix = this.location.fix();
-    if (fix) this.store.addPoint(fix.position);
+    if (fix) this.addStopAt(fix.position);
+  }
+
+  /**
+   * Adds a point at `place` the way a click does. With a route on screen the point goes where it
+   * belongs: between the two points whose stretch of the route is the closest to it (a click on
+   * the route or beside it), like a waypoint dragged out of the route. Otherwise (the start, the
+   * end, a route still being computed or in error) it goes where {@link PlannerStore.addPoint}
+   * puts it, before the end.
+   */
+  private addStopAt(place: LngLat): void {
+    const points = this.store.points();
+    const index =
+      points.length >= 2 && this.store.status() === 'ready'
+        ? insertionIndex(this.store.selectedGeometry(), points, place)
+        : null;
+    if (index === null) this.store.addPoint(place);
+    else this.store.insertPoint(index, place);
   }
 
   /** With only the start placed there is one way to close the loop: go straight to its length. */

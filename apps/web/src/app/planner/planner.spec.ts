@@ -920,6 +920,73 @@ describe('Planner', () => {
     expect(view.driver.surfaces).toBeNull();
   });
 
+  describe('a click on the map with a route on screen', () => {
+    const straight = () => [
+      {
+        geometry: Array.from(
+          { length: 31 },
+          (_, i): [number, number, number] => [i / 100, 0, 100],
+        ),
+        distanceMeters: 33_000,
+        ascentMeters: 0,
+        durationSeconds: 3600,
+      },
+    ];
+
+    /** A route A, S1, S2, B along the equator; `onScreen` puts it on screen as a straight line. */
+    async function renderWithRoute(onScreen = true) {
+      const view = await render();
+      const store = TestBed.inject(PlannerStore);
+      store.addPoint([0, 0]);
+      store.addPoint([0.3, 0]);
+      store.addPoint([0.1, 0]);
+      store.addPoint([0.2, 0]);
+      expect(store.points().map((p) => p[0])).toEqual([0, 0.1, 0.2, 0.3]);
+      if (onScreen) {
+        // The planner has started its computation for these points; the route arrives.
+        TestBed.tick();
+        store.setRoutes(straight());
+      }
+      return { view, store };
+    }
+    const lons = (store: PlannerStore) => store.points().map((p) => p[0]);
+
+    it('puts the new stop between the points whose stretch it is on, or beside', async () => {
+      const { view, store } = await renderWithRoute();
+      // On the stretch between the start and the first stop.
+      view.driver.handlers.onClick([0.05, 0.001]);
+      expect(lons(store)).toEqual([0, 0.05, 0.1, 0.2, 0.3]);
+      store.setRoutes(straight());
+      // Beside the stretch between the two later stops.
+      view.driver.handlers.onClick([0.15, 0.002]);
+      expect(lons(store)).toEqual([0, 0.05, 0.1, 0.15, 0.2, 0.3]);
+    });
+
+    it('still goes before the end when it is on the last stretch', async () => {
+      const { view, store } = await renderWithRoute();
+      view.driver.handlers.onClick([0.25, 0.001]);
+      expect(lons(store)).toEqual([0, 0.1, 0.2, 0.25, 0.3]);
+    });
+
+    it('does the same for "Add a stop here" in the map menu', async () => {
+      const { view, store } = await renderWithRoute();
+      view.driver.handlers.onContextMenu([0.05, 0.001], { x: 40, y: 60 });
+      view.fixture.detectChanges();
+      Array.from(
+        view.root.querySelectorAll<HTMLButtonElement>('.map-menu button'),
+      )
+        .find((b) => b.textContent?.includes('Add a stop here'))!
+        .click();
+      expect(lons(store)).toEqual([0, 0.05, 0.1, 0.2, 0.3]);
+    });
+
+    it('adds before the end while no route is on screen', async () => {
+      const { view, store } = await renderWithRoute(false);
+      view.driver.handlers.onClick([0.05, 0.001]);
+      expect(lons(store)).toEqual([0, 0.1, 0.2, 0.05, 0.3]);
+    });
+  });
+
   it('removes a stop from the panel or with the map handler', async () => {
     const view = await render();
     view.click(3.087, 45.777);
