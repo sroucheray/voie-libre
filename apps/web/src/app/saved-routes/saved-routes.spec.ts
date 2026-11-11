@@ -197,18 +197,23 @@ describe('Saved routes', () => {
   }
 
   describe('saving', () => {
-    it('is disabled until a route is computed', async () => {
+    it('is offered with the route, once a route is computed', async () => {
       const view = await render();
-      expect(view.save().disabled).toBe(true);
-      expect(view.nameInput().disabled).toBe(true);
+      // The form sits with the route being planned: nothing to name before there is one.
+      expect(view.root.querySelector('.save')).toBeNull();
       view.driver.handlers.onClick([3.087, 45.777]);
       await view.settle();
-      expect(view.save().disabled).toBe(true);
+      expect(view.root.querySelector('.save')).toBeNull();
       view.driver.handlers.onClick([3.249, 45.544]);
       await view.settle();
-      expect(view.save().disabled).toBe(true); // still computing
+      expect(view.root.querySelector('.save')).toBeNull(); // still computing
       await view.settle(ROUTE_DEBOUNCE_MS + 10);
       expect(view.save().disabled).toBe(false);
+      expect(view.nameInput().disabled).toBe(false);
+      // In the Route section, not in the list of saved routes.
+      expect(view.root.querySelector('.tab-route')?.contains(view.save())).toBe(
+        true,
+      );
     });
 
     it('proposes a name and saves the selected route', async () => {

@@ -502,10 +502,12 @@
         </li>
         }
       </ul>
+      } @if (store.routes().length > 0 && savedRoutes(); as saved) {
+      <ng-container [ngTemplateOutlet]="saved.saveForm()" />
       }
     </div>
 
-    <vl-saved-routes [hidden]="tab() !== 'saved'" />
+    <vl-saved-routes [hidden]="tab() !== 'saved'" [formElsewhere]="true" />
   </section>
 </div>
 <vl-elevation-panel />

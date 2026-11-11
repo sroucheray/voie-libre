@@ -162,6 +162,8 @@ export class Planner {
     return at >= 1 && at < this.store.points().length ? at : null;
   });
   private readonly newStopField = viewChild<PlaceField>('newStop');
+  /** The saved routes: the form that saves the planned route is drawn here, with the route. */
+  protected readonly savedRoutes = viewChild(SavedRoutes);
   /** The field waiting for the user's position, until the device gives it or fails. */
   private readonly positionTarget = signal<PositionTarget | null>(null);
   private readonly injector = inject(Injector);

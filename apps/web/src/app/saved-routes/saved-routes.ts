@@ -1,6 +1,8 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  TemplateRef,
   DestroyRef,
   ElementRef,
   Injector,
@@ -8,8 +10,10 @@ import {
   computed,
   effect,
   inject,
+  input,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import {
   TranslocoPipe,
@@ -66,7 +70,7 @@ type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
 @Component({
   selector: 'vl-saved-routes',
-  imports: [TranslocoPipe],
+  imports: [TranslocoPipe, NgTemplateOutlet],
   templateUrl: './saved-routes.html',
   styleUrl: './saved-routes.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -82,6 +86,14 @@ export class SavedRoutes {
   private readonly relief = inject(ElevationService);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  /**
+   * The form that names and saves the planned route. It sits here with the rest of the saving code,
+   * but the planner shows it with the route being planned (`saveForm`, drawn by the planner), so it
+   * is only drawn in this list when `formElsewhere` is off.
+   */
+  readonly formElsewhere = input(false);
+  readonly saveForm = viewChild.required<TemplateRef<unknown>>('saveForm');
 
   protected readonly routes = signal<SavedRoute[]>([]);
   protected readonly error = signal<

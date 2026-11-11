@@ -1,20 +1,25 @@
 <section class="saved" [attr.aria-label]="'saved.title' | transloco">
   <h3>{{ 'saved.title' | transloco }}</h3>
 
-  <form class="save" (submit)="$event.preventDefault(); save()">
-    <label>
-      {{ 'saved.name' | transloco }}
-      <input
-        type="text"
-        [value]="name()"
-        [disabled]="!savable()"
-        (input)="onNameInput($event)"
-      />
-    </label>
-    <button type="submit" [disabled]="!savable()">
-      {{ 'saved.save' | transloco }}
-    </button>
-  </form>
+  <ng-template #saveForm>
+    <form class="save" (submit)="$event.preventDefault(); save()">
+      <label>
+        {{ 'saved.name' | transloco }}
+        <input
+          type="text"
+          [value]="name()"
+          [disabled]="!savable()"
+          (input)="onNameInput($event)"
+        />
+      </label>
+      <button type="submit" [disabled]="!savable()">
+        {{ 'saved.save' | transloco }}
+      </button>
+    </form>
+  </ng-template>
+  @if (!formElsewhere()) {
+  <ng-container [ngTemplateOutlet]="saveForm" />
+  }
 
   <div class="import">
     <input
