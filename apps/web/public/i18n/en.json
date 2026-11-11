@@ -138,9 +138,11 @@
       "waypoint": "Click to add a stop"
     },
     "loop": {
-      "button": "Loop",
+      "make": "Make a loop",
+      "makeHint": "Draw a loop of a set length from the start.",
+      "close": "Close the loop",
+      "closeHint": "Return to the start along your stops, or by another way.",
       "hint": "Close the loop",
-      "title": "Close the loop",
       "back": "Back to the start",
       "backDescription": "The end goes on the start. The route follows your stops.",
       "avoid": "Avoid the same way back",

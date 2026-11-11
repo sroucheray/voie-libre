@@ -425,6 +425,12 @@ vl-saved-routes {
   margin-top: 0.5rem;
 }
 
+.loop-hint {
+  margin: 0.25rem 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-2);
+}
+
 /* The "My position" button sits above the attribution, the message grows to its left. */
 .locate {
   position: absolute;

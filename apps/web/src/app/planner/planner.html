@@ -104,7 +104,7 @@
       tabindex="-1"
       (keydown.escape)="loopDialogOpen.set(false)"
     >
-      <h2 id="loop-dialog-title">{{ 'planner.loop.title' | transloco }}</h2>
+      <h2 id="loop-dialog-title">{{ loopLabelKey() | transloco }}</h2>
       @if (loopStep() === 'choose') { @if (store.points().length >= 2) {
       <button type="button" class="loop-choice" (click)="closeLoop()">
         <strong>{{ 'planner.loop.back' | transloco }}</strong>
@@ -449,14 +449,23 @@
         </select>
       </label>
       } } @if (canClose()) {
-      <button type="button" class="loop" (click)="openLoopDialog()">
-        {{ 'planner.loop.button' | transloco }}
+      <button
+        type="button"
+        class="loop"
+        aria-describedby="loop-hint"
+        (click)="openLoopDialog()"
+      >
+        {{ loopLabelKey() | transloco }}
       </button>
       }
       <button type="button" class="clear" (click)="store.clear()">
         {{ 'planner.clear' | transloco }}
       </button>
-      } @if (store.status() === 'loading') {
+      @if (canClose()) {
+      <p id="loop-hint" class="loop-hint">
+        {{ loopLabelKey() + 'Hint' | transloco }}
+      </p>
+      } } @if (store.status() === 'loading') {
       <p role="status">{{ 'planner.status.loading' | transloco }}</p>
       } @if (store.errorCode(); as code) {
       <p class="error" role="alert">

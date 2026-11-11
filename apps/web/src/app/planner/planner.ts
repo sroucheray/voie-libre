@@ -188,6 +188,17 @@ export class Planner {
   protected readonly ascentMax = LOOP_ASCENT_MAX_METERS;
   protected readonly distanceMinKm = LOOP_DISTANCE_MIN_METERS / 1000;
   protected readonly distanceMaxKm = LOOP_DISTANCE_MAX_METERS / 1000;
+  /**
+   * What the loop button says: with only a start it draws a loop of a set length from there; with a
+   * route it closes it. The hint under the button and the title of the dialog use the same key
+   * (`<key>Hint`).
+   */
+  protected readonly loopLabelKey = computed(() =>
+    this.store.points().length >= 2
+      ? 'planner.loop.close'
+      : 'planner.loop.make',
+  );
+
   protected readonly canClose = computed(
     () =>
       this.store.points().length >= 1 &&

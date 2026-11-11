@@ -138,9 +138,11 @@
       "waypoint": "Cliquer pour ajouter une étape"
     },
     "loop": {
-      "button": "Boucle",
+      "make": "Faire une boucle",
+      "makeHint": "Tracer une boucle d'une longueur donnée depuis le départ.",
+      "close": "Boucler le parcours",
+      "closeHint": "Revenir au départ en suivant vos étapes, ou par un autre chemin.",
       "hint": "Fermer la boucle",
-      "title": "Fermer la boucle",
       "back": "Retour au départ",
       "backDescription": "L'arrivée est placée sur le départ. Le parcours suit vos étapes.",
       "avoid": "Éviter le même chemin au retour",

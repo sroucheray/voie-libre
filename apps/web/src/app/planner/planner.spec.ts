@@ -195,6 +195,55 @@ describe('Planner', () => {
       expect(view.driver.markers[1].closable).toBeUndefined();
     });
 
+    it('says "Make a loop" with just a start and "Close the loop" with a route, with a hint for each', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.fixture.detectChanges();
+      const button = () =>
+        view.root.querySelector('.loop') as HTMLButtonElement;
+      const hint = () =>
+        view.root.querySelector('#loop-hint')?.textContent?.trim();
+      expect(button().textContent?.trim()).toBe('Make a loop');
+      expect(hint()).toBe('Draw a loop of a set length from the start.');
+      // The hint is the button's description, for screen readers.
+      expect(button().getAttribute('aria-describedby')).toBe('loop-hint');
+      button().click();
+      view.fixture.detectChanges();
+      expect(
+        view.root.querySelector('#loop-dialog-title')?.textContent?.trim(),
+      ).toBe('Make a loop');
+      view.root.querySelector<HTMLButtonElement>('.loop-cancel')?.click();
+      view.fixture.detectChanges();
+
+      view.click(3.249, 45.544);
+      view.fixture.detectChanges();
+      expect(button().textContent?.trim()).toBe('Close the loop');
+      expect(hint()).toBe(
+        'Return to the start along your stops, or by another way.',
+      );
+      button().click();
+      view.fixture.detectChanges();
+      expect(
+        view.root.querySelector('#loop-dialog-title')?.textContent?.trim(),
+      ).toBe('Close the loop');
+    });
+
+    it('speaks French too', async () => {
+      TestBed.inject(LanguageService).use('fr');
+      const view = await render();
+      await view.settle();
+      view.click(3.087, 45.777);
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.loop')?.textContent?.trim()).toBe(
+        'Faire une boucle',
+      );
+      view.click(3.249, 45.544);
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.loop')?.textContent?.trim()).toBe(
+        'Boucler le parcours',
+      );
+    });
+
     it('goes straight to the length and climb when there is just a start', async () => {
       const view = await render();
       view.click(3.087, 45.777);
