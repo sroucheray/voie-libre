@@ -30,43 +30,44 @@
     (blur)="onBlur()"
   />
   @if (open()) {
-  <ul
-    class="suggestions"
-    role="listbox"
-    [id]="listId"
+  <!-- The box rounds and clips; the list inside scrolls, so its scrollbar stays within the corners. -->
+  <div
+    class="suggestions-box"
     [style.left.px]="box()?.left"
     [style.top.px]="box()?.top"
     [style.width.px]="box()?.width"
     [style.visibility]="box() ? null : 'hidden'"
   >
-    @if (offersPosition()) {
-    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
-    <li
-      role="option"
-      class="suggestions__position"
-      [id]="optionId(0)"
-      [class.suggestions__active]="active() === 0"
-      [attr.aria-selected]="active() === 0"
-      (mousedown)="$event.preventDefault()"
-      (click)="pickPosition()"
-    >
-      {{ 'planner.search.myPosition' | transloco }}
-    </li>
-    } @for (place of results(); track $index; let i = $index) {
-    <!-- The focus stays in the input (aria-activedescendant), keys are handled there. -->
-    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
-    <li
-      role="option"
-      [id]="optionId(i)"
-      [class.suggestions__active]="i === active()"
-      [attr.aria-selected]="i === active()"
-      (mousedown)="$event.preventDefault()"
-      (click)="pick(place)"
-    >
-      {{ place.label }}
-    </li>
-    }
-  </ul>
+    <ul class="suggestions" role="listbox" [id]="listId">
+      @if (offersPosition()) {
+      <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+      <li
+        role="option"
+        class="suggestions__position"
+        [id]="optionId(0)"
+        [class.suggestions__active]="active() === 0"
+        [attr.aria-selected]="active() === 0"
+        (mousedown)="$event.preventDefault()"
+        (click)="pickPosition()"
+      >
+        {{ 'planner.search.myPosition' | transloco }}
+      </li>
+      } @for (place of results(); track $index; let i = $index) {
+      <!-- The focus stays in the input (aria-activedescendant), keys are handled there. -->
+      <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+      <li
+        role="option"
+        [id]="optionId(i)"
+        [class.suggestions__active]="i === active()"
+        [attr.aria-selected]="i === active()"
+        (mousedown)="$event.preventDefault()"
+        (click)="pick(place)"
+      >
+        {{ place.label }}
+      </li>
+      }
+    </ul>
+  </div>
   }
 </div>
 @if (messageKey(); as key) {

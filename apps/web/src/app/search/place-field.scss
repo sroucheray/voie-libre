@@ -60,20 +60,24 @@
   );
 }
 
-.suggestions {
+.suggestions-box {
   // Floats over the page, placed from the input's box (see `box` in the component).
   position: fixed;
   z-index: 10;
   box-sizing: border-box;
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-2);
+}
+
+.suggestions {
   max-height: 14rem;
   overflow-y: auto;
   margin: 0;
   padding: 0.25rem 0;
   list-style: none;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-2);
 
   li {
     display: flex;
