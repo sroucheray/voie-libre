@@ -337,6 +337,12 @@ export async function createMapLibreDriver(
   };
   const container = map.getCanvasContainer();
   container.addEventListener('mouseleave', hideGhost);
+  // A marker lies over the map and the map hears nothing from it: the ghost is hidden as the pointer
+  // gets onto one (it comes back with the next move over the map itself).
+  container.addEventListener('mouseover', (event) => {
+    if ((event.target as Element | null)?.closest?.('.planner-marker'))
+      hideGhost();
+  });
   map.on('mousemove', moveGhost);
 
   /**
