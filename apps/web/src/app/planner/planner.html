@@ -298,6 +298,7 @@
               [style.order]="reorder() ? 2 * numberOf(stop.index) : null"
             >
               <!-- Only the handle moves the stop, so that the text of the field can be selected. -->
+              @if (stops().length > 1) {
               <button
                 type="button"
                 class="point-grip"
@@ -310,6 +311,15 @@
                   >{{ format.number(stop.index) }}</span
                 >
               </button>
+              } @else {
+              <!-- A single stop has nothing to be reordered with: its number only, where the handle's would be. -->
+              <span class="point-grip point-grip--static" aria-hidden="true">
+                <span class="point-grip__dots point-grip__dots--hidden"></span>
+                <span class="point-grip__number"
+                  >{{ format.number(stop.index) }}</span
+                >
+              </span>
+              }
               <vl-place-field
                 role="stop"
                 [bareMarker]="true"

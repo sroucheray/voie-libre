@@ -1022,6 +1022,25 @@ describe('Planner', () => {
       expect(store.points()).toEqual(points);
     });
 
+    it('has no handle for a single stop, only its number, and one for each of several', async () => {
+      const view = await render();
+      view.click(3.0, 45.0);
+      view.click(3.1, 45.1);
+      view.click(3.2, 45.2);
+      view.fixture.detectChanges();
+      // A start, one stop and an end: nothing to reorder the stop with.
+      expect(view.root.querySelectorAll('.points__stop')).toHaveLength(1);
+      expect(view.root.querySelector('button.point-grip')).toBeNull();
+      const badge = view.root.querySelector('.point-grip--static')!;
+      expect(badge.textContent).toContain('1');
+      expect(badge.getAttribute('aria-hidden')).toBe('true');
+      // A second stop brings the handles back.
+      view.click(3.3, 45.3);
+      view.fixture.detectChanges();
+      expect(view.root.querySelectorAll('button.point-grip')).toHaveLength(2);
+      expect(view.root.querySelector('.point-grip--static')).toBeNull();
+    });
+
     it('lists no stops while there are only a start and an end', async () => {
       const view = await render();
       view.click(3.087, 45.777);

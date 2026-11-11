@@ -238,6 +238,19 @@ vl-saved-routes {
   }
 
   // Six dots (two columns, three rows) drawn instead of typed: the glyph has no fixed width.
+  // A single stop cannot be reordered: no handle, no grab cursor, the number stays where it was.
+  .point-grip--static {
+    cursor: default;
+
+    &:hover {
+      background: none;
+    }
+  }
+
+  .point-grip__dots--hidden {
+    visibility: hidden;
+  }
+
   .point-grip__dots {
     flex: none;
     width: 0.625rem;
