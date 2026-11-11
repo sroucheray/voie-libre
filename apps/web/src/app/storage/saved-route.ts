@@ -45,4 +45,5 @@ export type NewSavedRoute = Pick<
   | 'ascentMeters'
   | 'durationSeconds'
   | 'elevationSource'
+  | 'surfaces'
 >;

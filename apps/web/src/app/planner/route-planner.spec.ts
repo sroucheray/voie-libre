@@ -191,6 +191,7 @@ describe('RoutePlanner', () => {
           distanceMeters: 22_239,
           ascentMeters: 10,
           durationSeconds: 3600,
+          surfaces: 'p'.repeat(200),
         },
       ],
     };
@@ -205,6 +206,7 @@ describe('RoutePlanner', () => {
           distanceMeters: 2_600,
           ascentMeters: 0,
           durationSeconds: 400,
+          surfaces: 'uu',
         },
       ],
     };
@@ -244,6 +246,15 @@ describe('RoutePlanner', () => {
       expect(route.geometry.slice(0, 50)).toEqual(line.slice(0, 50));
       expect(route.geometry.slice(-50)).toEqual(line.slice(-50));
       expect(store.status()).toBe('ready');
+    });
+
+    it('splices the surfaces of the stretch like its geometry', async () => {
+      store.addPoint([0.1, 0.002]);
+      await settle();
+      const [route] = store.routes();
+      expect(route.surfaces).toHaveLength(route.geometry.length - 1);
+      // The stretch is unpaved, the rest of the route stays paved.
+      expect(route.surfaces).toMatch(/^p+uup+$/);
     });
 
     it('does not compute again once the stretch is in place', async () => {

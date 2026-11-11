@@ -13,6 +13,7 @@ export type RestorableRoute = Pick<
   | 'ascentMeters'
   | 'durationSeconds'
   | 'elevationSource'
+  | 'surfaces'
 >;
 
 export const PROFILES = ['road', 'gravel', 'trail'] as const;
@@ -33,6 +34,12 @@ export interface PlannedRoute {
   durationSeconds: number;
   /** Where the elevations come from when it must be credited (see `ELEVATION_SOURCES`). */
   elevationSource?: ElevationSource;
+  /**
+   * What the route rides on, one character per segment of the geometry (`geometry.length - 1`):
+   * `p` paved, `c` cycleway, `u` unpaved or rough, `s` path, `?` unknown. Absent for a route that
+   * does not tell (imported file, saved before this existed).
+   */
+  surfaces?: string;
 }
 
 /** Elevation data that carries an attribution requirement. */
@@ -672,6 +679,7 @@ export class PlannerStore {
         ascentMeters: saved.ascentMeters,
         durationSeconds: saved.durationSeconds,
         elevationSource: saved.elevationSource,
+        ...(saved.surfaces === undefined ? {} : { surfaces: saved.surfaces }),
       },
     ]);
     this.selectedState.set(0);

@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { PlannerStore } from '../planner/planner-store';
 import { createApiClient } from '@voie-libre/api-client';
 import {
   InMemoryRouteStore,
@@ -69,6 +70,7 @@ describe('Saved routes', () => {
             distanceMeters: 41007,
             ascentMeters: 399,
             durationSeconds: 8674,
+            surfaces: 'pu',
           },
         ],
       });
@@ -238,6 +240,18 @@ describe('Saved routes', () => {
           saved.createdAt,
         ),
       );
+    });
+
+    it('keeps the surfaces of a route when it is saved, and shows them again when it is opened', async () => {
+      const view = await render();
+      await view.plan();
+      view.save().click();
+      await view.settle();
+      expect((await routeStore.list())[0].surfaces).toBe('pu');
+      view.driver.handlers.onClick([3.0, 45.0]); // leaves the saved route
+      view.open('Open Road, 41 km');
+      await view.settle();
+      expect(TestBed.inject(PlannerStore).routes()[0].surfaces).toBe('pu');
     });
 
     it('credits the elevation source: SRTM for a planned route, kept when saved and reopened', async () => {

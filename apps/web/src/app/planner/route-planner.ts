@@ -138,6 +138,9 @@ export class RoutePlanner {
             distanceMeters: stretch.distanceMeters,
             ascentMeters: stretch.ascentMeters,
             durationSeconds: stretch.durationSeconds,
+            ...(stretch.surfaces === undefined
+              ? {}
+              : { surfaces: stretch.surfaces }),
           },
           route,
         );

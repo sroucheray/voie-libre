@@ -22,6 +22,8 @@ export interface Stretch {
   distanceMeters: number;
   ascentMeters: number | null;
   durationSeconds: number;
+  /** One character per segment of `geometry`, when the API told (see `PlannedRoute.surfaces`). */
+  surfaces?: string;
 }
 
 /** Distance along the route of each vertex, in meters (first is 0). */
@@ -93,6 +95,20 @@ export function spliceGeometry(
 }
 
 /**
+ * The segment codes after replacing `window` with `stretch`: those of the segments before the
+ * window and from its last vertex on are kept, the stretch brings its own. `undefined` when the
+ * route or the stretch does not tell, so the result does not guess.
+ */
+export function spliceSurfaces(
+  surfaces: string | undefined,
+  window: EditWindow,
+  stretch: string | undefined,
+): string | undefined {
+  if (surfaces === undefined || stretch === undefined) return undefined;
+  return surfaces.slice(0, window.from) + stretch + surfaces.slice(window.to);
+}
+
+/**
  * The route after replacing `window` with `stretch`. Distance and duration of the parts kept are
  * those of the route scaled to the geometry (the API's figures and the sum of the vertex gaps
  * differ slightly); the climb loses what the replaced vertices climbed. `elevationSource` and
@@ -117,13 +133,16 @@ export function applyStretch(
       ? null
       : Math.max(0, route.ascentMeters - removedClimb) + stretch.ascentMeters;
 
+  const { surfaces: _before, ...rest } = route;
+  const surfaces = spliceSurfaces(route.surfaces, window, stretch.surfaces);
   return {
-    ...route,
+    ...rest,
     geometry: spliceGeometry(geometry, window, stretch.geometry),
     distanceMeters: route.distanceMeters * keptShare + stretch.distanceMeters,
     ascentMeters,
     durationSeconds:
       route.durationSeconds * keptShare + stretch.durationSeconds,
+    ...(surfaces === undefined ? {} : { surfaces }),
   };
 }
 

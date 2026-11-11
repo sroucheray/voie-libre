@@ -8,6 +8,7 @@ import {
   projectOnRoute,
   type LocalEditPlan,
   spliceGeometry,
+  spliceSurfaces,
 } from './local-edit';
 import type { LngLat3 } from './planner-map-driver';
 import type { PlannedRoute, PointEdit } from './planner-store';
@@ -92,6 +93,33 @@ describe('spliceGeometry', () => {
   });
 });
 
+describe('spliceSurfaces', () => {
+  it('keeps the codes before the window and from its last vertex, and brings the stretch', () => {
+    // 10 vertices, 9 segments (a to i); the window is vertices 3 to 5, replaced by 2 segments.
+    expect(spliceSurfaces('abcdefghi', { from: 3, to: 5 }, 'XY')).toBe(
+      'abcXYfghi',
+    );
+    // A window from the first vertex to the last takes everything.
+    expect(spliceSurfaces('abcdefghi', { from: 0, to: 9 }, 'XYZ')).toBe('XYZ');
+  });
+
+  it('has as many codes as the new geometry has segments', () => {
+    const geometry = line.slice(0, 11);
+    const stretch = line.slice(3, 6);
+    const spliced = spliceGeometry(geometry, { from: 3, to: 5 }, stretch);
+    expect(
+      spliceSurfaces('p'.repeat(10), { from: 3, to: 5 }, 'uu'),
+    ).toHaveLength(spliced.length - 1);
+  });
+
+  it('says nothing when the route or the stretch does not tell', () => {
+    expect(spliceSurfaces(undefined, { from: 1, to: 2 }, 'p')).toBeUndefined();
+    expect(
+      spliceSurfaces('ppp', { from: 1, to: 2 }, undefined),
+    ).toBeUndefined();
+  });
+});
+
 describe('applyStretch', () => {
   const climbing: LngLat3[] = line.map(([lon, lat], i) => [lon, lat, i]);
   const route: PlannedRoute = {
@@ -112,6 +140,19 @@ describe('applyStretch', () => {
     ascentMeters: 12,
     durationSeconds: 300,
   };
+
+  it('splices the surfaces, and drops them when the stretch has none', () => {
+    const withSurfaces = { ...route, surfaces: 'p'.repeat(200) };
+    const edited = applyStretch(withSurfaces, window, {
+      ...stretch,
+      surfaces: 'uu',
+    });
+    expect(edited.surfaces).toHaveLength(edited.geometry.length - 1);
+    expect(edited.surfaces).toBe('p'.repeat(95) + 'uu' + 'p'.repeat(95));
+    expect(
+      applyStretch(withSurfaces, window, stretch).surfaces,
+    ).toBeUndefined();
+  });
 
   it('splices the geometry and keeps the other fields', () => {
     const edited = applyStretch(route, window, stretch);
