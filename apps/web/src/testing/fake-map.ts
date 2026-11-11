@@ -1,4 +1,8 @@
 import { RELIEF_PROBE } from '../app/core/map/map-layers';
+import {
+  RELIEF_SOURCE_KIND,
+  type ReliefSourceKind,
+} from '../app/core/map/relief-source';
 import type { Box } from '../app/core/offline/area-tiles';
 import {
   BASEMAP_COVERAGE,
@@ -76,7 +80,14 @@ export function provideFakeMap(
   {
     relief = false,
     coverage = null,
-  }: { relief?: boolean; coverage?: Box | null } = {},
+    // The local source by default: its file is absent unless `relief` says so, so the map of
+    // most tests has no hillshade and makes no call.
+    reliefKind = 'local',
+  }: {
+    relief?: boolean;
+    coverage?: Box | null;
+    reliefKind?: ReliefSourceKind;
+  } = {},
 ) {
   const factory: MapFactory = async (options) => {
     const map = new FakeMap(options);
@@ -87,5 +98,6 @@ export function provideFakeMap(
     { provide: MAP_FACTORY, useValue: factory },
     { provide: RELIEF_PROBE, useValue: async () => relief },
     { provide: BASEMAP_COVERAGE, useValue: async () => coverage },
+    { provide: RELIEF_SOURCE_KIND, useValue: reliefKind },
   ];
 }

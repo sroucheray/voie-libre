@@ -92,7 +92,11 @@
         />
         {{ 'map.layers.relief' | transloco }}
       </label>
-      @if (!reliefAvailable()) {
+      @if (reliefKind === 'public') {
+      <p id="map-layers-relief-note" class="layers-note">
+        {{ 'map.layers.reliefPublicNote' | transloco }}
+      </p>
+      } @else if (!reliefAvailable()) {
       <p id="map-layers-relief-note" class="layers-note">
         {{ 'map.layers.reliefUnavailable' | transloco }}
       </p>
@@ -202,6 +206,10 @@
   <a href="https://protomaps.com" target="_blank" rel="noopener noreferrer"
     >Protomaps</a
   >
-  @if (reliefShown()) { &middot; {{ 'map.attribution.relief' | transloco }} }
-  @if (imageryShown()) { &middot; {{ 'map.attribution.imagery' | transloco }} }
+  @if (reliefShown()) { &middot; @if (reliefKind === 'public') {
+  <a [href]="reliefCreditUrl" target="_blank" rel="noopener noreferrer"
+    >{{ 'map.attribution.reliefPublic' | transloco }}</a
+  >
+  } @else { {{ 'map.attribution.relief' | transloco }} } } @if (imageryShown())
+  { &middot; {{ 'map.attribution.imagery' | transloco }} }
 </p>

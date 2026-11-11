@@ -25,6 +25,7 @@ import {
 } from './basemap-style';
 import { MapLayers, RELIEF_PROBE } from './map-layers';
 import { MapViewport } from './map-viewport';
+import { RELIEF_CREDIT_URL, RELIEF_SOURCE_KIND } from './relief-source';
 import { viewBox, type Box } from '../offline/area-tiles';
 import { WAY_COLORS, WAY_LEVELS } from './way-levels';
 import {
@@ -108,8 +109,14 @@ export class MapView {
     );
   });
   protected readonly layers = inject(MapLayers);
-  /** True once the archive of elevation tiles is known to exist. */
-  protected readonly reliefAvailable = signal(false);
+  /** Where the hillshade gets its elevations: the public terrain tiles, or our own file. */
+  protected readonly reliefKind = inject(RELIEF_SOURCE_KIND);
+  protected readonly reliefCreditUrl = RELIEF_CREDIT_URL;
+  /**
+   * The elevation tiles can be had: at once for the public source, once the archive is known to
+   * exist for the local one.
+   */
+  protected readonly reliefAvailable = signal(this.reliefKind === 'public');
   /** The hillshade is drawn: the user wants it and its tiles exist. */
   protected readonly reliefShown = computed(
     () => this.reliefAvailable() && this.layers.relief(),
@@ -154,9 +161,12 @@ export class MapView {
           style: buildBasemapStyle(this.basemapUrl, this.language.current()),
           center: this.center(),
           zoom: this.zoom(),
-          offlineTiles: [basemapTilesUrl(this.basemapUrl), reliefUrl].map(
-            (url) => ({ url, reader: this.offline.readerFor(url) }),
-          ),
+          // The local relief archive is read from the device too; the public tiles go through the
+          // `vlterrain` protocol, which does the same.
+          offlineTiles: [
+            basemapTilesUrl(this.basemapUrl),
+            ...(this.reliefKind === 'local' ? [reliefUrl] : []),
+          ].map((url) => ({ url, reader: this.offline.readerFor(url) })),
         });
       } catch (error) {
         console.error('Map could not be created', error);
@@ -194,11 +204,13 @@ export class MapView {
       void this.coverageOf(basemapTilesUrl(this.basemapUrl)).then((box) => {
         if (!destroyed) this.coverage.set(box);
       });
-      // The copy on the device is enough: no network is needed to know.
-      const available =
-        (await this.offline.has(reliefUrl)) ||
-        (await this.probeRelief(reliefUrl));
-      if (!destroyed) this.reliefAvailable.set(available);
+      if (this.reliefKind === 'local') {
+        // The copy on the device is enough: no network is needed to know.
+        const available =
+          (await this.offline.has(reliefUrl)) ||
+          (await this.probeRelief(reliefUrl));
+        if (!destroyed) this.reliefAvailable.set(available);
+      }
     });
 
     // Labels follow the UI language and the relief follows the user's choice. The style is
@@ -218,6 +230,7 @@ export class MapView {
         map.setStyle(
           buildBasemapStyle(this.basemapUrl, language, {
             relief,
+            reliefSource: this.reliefKind,
             ways,
             imagery,
           }),

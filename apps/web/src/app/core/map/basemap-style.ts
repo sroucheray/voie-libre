@@ -6,6 +6,11 @@ import {
   RELIEF_TILE_SIZE,
   RELIEF_TILES_FILE,
 } from '@voie-libre/shared';
+import {
+  PUBLIC_RELIEF_MAX_ZOOM,
+  RELIEF_PROTOCOL,
+  type ReliefSourceKind,
+} from './relief-source';
 import { wayLayers } from './way-levels';
 import { PALETTE } from './palette';
 
@@ -39,8 +44,10 @@ export const IMAGERY_LAYER = 'imagery';
 export const IMAGERY_TILES = `https://${IMAGERY_HOST}/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}`;
 
 export interface BasemapStyleOptions {
-  /** Draws the hillshade. Only when the archive of elevation tiles exists. */
+  /** Draws the hillshade. With the local source, only when the archive of elevation tiles exists. */
   relief?: boolean;
+  /** Where the elevations come from; the public terrain tiles unless said otherwise. */
+  reliefSource?: ReliefSourceKind;
   /** Draws the ways by how well they suit this profile (`road`, `gravel`, `trail`). */
   ways?: string | null;
   /** Draws the IGN's aerial photos under the roads and the names. Calls an external server. */
@@ -89,14 +96,26 @@ export function buildBasemapStyle(
     );
   }
   if (options.relief) {
-    sources[RELIEF_SOURCE] = {
-      type: 'raster-dem',
-      url: `pmtiles://${reliefTilesUrl(base)}`,
-      encoding: 'terrarium',
-      tileSize: RELIEF_TILE_SIZE,
-      minzoom: RELIEF_MIN_ZOOM,
-      maxzoom: RELIEF_MAX_ZOOM,
-    };
+    sources[RELIEF_SOURCE] =
+      (options.reliefSource ?? 'public') === 'public'
+        ? {
+            type: 'raster-dem',
+            // The protocol reads a tile kept offline first, then the public server.
+            tiles: [`${RELIEF_PROTOCOL}://{z}/{x}/{y}`],
+            encoding: 'terrarium',
+            tileSize: 256,
+            minzoom: 0,
+            maxzoom: PUBLIC_RELIEF_MAX_ZOOM,
+            // Attribution is shown by the MapView template, translated.
+          }
+        : {
+            type: 'raster-dem',
+            url: `pmtiles://${reliefTilesUrl(base)}`,
+            encoding: 'terrarium',
+            tileSize: RELIEF_TILE_SIZE,
+            minzoom: RELIEF_MIN_ZOOM,
+            maxzoom: RELIEF_MAX_ZOOM,
+          };
     // Under the water; with photos (which replace the water), right over them.
     const water = styleLayers.findIndex((layer) => layer.id === RELIEF_BEFORE);
     const photos = styleLayers.findIndex((layer) => layer.id === IMAGERY_LAYER);

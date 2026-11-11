@@ -184,11 +184,30 @@ describe('buildBasemapStyle', () => {
   describe('with relief', () => {
     const shaded = buildBasemapStyle('http://tiles.test:8081/', 'en', {
       relief: true,
+      reliefSource: 'local',
+    });
+    const publicShaded = buildBasemapStyle('http://tiles.test:8081/', 'en', {
+      relief: true,
     });
 
     it('has no relief unless asked', () => {
       expect(style.sources[RELIEF_SOURCE]).toBeUndefined();
       expect(style.layers.some((l) => l.id === RELIEF_LAYER)).toBe(false);
+    });
+
+    it('reads the public terrain tiles by default, through the vlterrain protocol', () => {
+      expect(publicShaded.sources[RELIEF_SOURCE]).toEqual({
+        type: 'raster-dem',
+        tiles: ['vlterrain://{z}/{x}/{y}'],
+        encoding: 'terrarium',
+        tileSize: 256,
+        minzoom: 0,
+        maxzoom: 15,
+      });
+      // The style itself names no external server: the protocol does, once the user's choice is on.
+      expect(JSON.stringify(publicShaded)).not.toContain('amazonaws');
+      expect(JSON.stringify(publicShaded)).not.toContain('relief.pmtiles');
+      expect(publicShaded.layers.some((l) => l.id === RELIEF_LAYER)).toBe(true);
     });
 
     it('reads elevation tiles from the local archive, in the terrarium encoding', () => {

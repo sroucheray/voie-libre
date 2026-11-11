@@ -33,13 +33,15 @@
       "surfaceLegend": "Revêtement du tracé : légende",
       "imagery": "Photos aériennes (IGN, France)",
       "imageryNote": "Appelle le serveur de l'IGN : il voit votre adresse et la zone que vous regardez. Rien sur votre parcours n'est envoyé. France seulement.",
-      "imageryOffline": "Indisponible hors ligne."
+      "imageryOffline": "Indisponible hors ligne.",
+      "reliefPublicNote": "Charge des tuiles d'altitude depuis un serveur public d'Amazon (AWS Terrain Tiles) : il voit votre adresse et la zone que vous regardez. Décochez pour l'arrêter."
     },
     "attribution": {
       "label": "Source des données cartographiques",
       "contributors": "contributeurs",
       "relief": "Relief : Copernicus",
-      "imagery": "Photos : IGN"
+      "imagery": "Photos : IGN",
+      "reliefPublic": "Relief : Terrain Tiles (Mapzen, NASA, ESA…)"
     },
     "unavailable": "La carte n'a pas pu être affichée. Votre navigateur ne gère peut-être pas WebGL2.",
     "outside": "Pas de carte ici : cet endroit est hors de la zone couverte par la carte.",

@@ -33,13 +33,15 @@
       "surfaceLegend": "Surface of the route: legend",
       "imagery": "Aerial photos (IGN, France)",
       "imageryNote": "Calls the IGN server: it sees your address and the area you look at. Nothing about your route is sent. France only.",
-      "imageryOffline": "Not available offline."
+      "imageryOffline": "Not available offline.",
+      "reliefPublicNote": "Loads elevation tiles from a public Amazon server (AWS Terrain Tiles): it sees your address and the area you look at. Untick to stop."
     },
     "attribution": {
       "label": "Map data attribution",
       "contributors": "contributors",
       "relief": "Relief: Copernicus",
-      "imagery": "Photos: IGN"
+      "imagery": "Photos: IGN",
+      "reliefPublic": "Relief: Terrain Tiles (Mapzen, NASA, ESA…)"
     },
     "unavailable": "The map could not be displayed. Your browser may not support WebGL2.",
     "outside": "No map data here: this place is outside the area the map covers.",

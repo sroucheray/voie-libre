@@ -157,6 +157,7 @@ describe('MapView', () => {
     async function renderWith(
       relief: boolean,
       coverage: [number, number, number, number] | null = null,
+      reliefKind: 'local' | 'public' = 'local',
     ) {
       TestBed.resetTestingModule();
       maps = [];
@@ -164,7 +165,7 @@ describe('MapView', () => {
         imports: [MapView],
         providers: [
           provideTestTransloco(),
-          provideFakeMap(maps, { relief, coverage }),
+          provideFakeMap(maps, { relief, coverage, reliefKind }),
           { provide: BASEMAP_URL, useValue: 'http://tiles.test' },
         ],
       }).compileComponents();
@@ -408,6 +409,47 @@ describe('MapView', () => {
       maps[0].emit('moveend');
       view.fixture.detectChanges();
       expect(view.root.querySelector('.map-note')).toBeNull();
+    });
+
+    describe('with the public terrain tiles', () => {
+      it('shows the relief at once, with no probe of a file, a note about the server and a credit', async () => {
+        const view = await renderWith(false, null, 'public');
+        // The map was created without relief, then restyled with it at once.
+        expect(view.sources()).toEqual(['protomaps', 'relief']);
+        const style = maps[0].style as {
+          sources: { relief: { tiles: string[]; tileSize: number } };
+        };
+        expect(style.sources.relief).toMatchObject({
+          tiles: ['vlterrain://{z}/{x}/{y}'],
+          tileSize: 256,
+        });
+        // No archive of ours to read: only the basemap is registered with the offline reader.
+        expect(maps[0].options.offlineTiles?.map((t) => t.url)).toEqual([
+          'http://tiles.test/basemap.pmtiles',
+        ]);
+        view.open();
+        expect(view.checkbox()?.checked).toBe(true);
+        expect(view.checkbox()?.disabled).toBe(false);
+        expect(
+          view.root.querySelector('#map-layers-relief-note')?.textContent,
+        ).toContain('public Amazon server');
+        const credit = view.root.querySelector<HTMLAnchorElement>(
+          '.map-attribution a[href*="attribution.md"]',
+        );
+        expect(credit?.textContent).toContain('Terrain Tiles');
+      });
+
+      it('calls nothing and shows no credit once the user turns the relief off', async () => {
+        const view = await renderWith(false, null, 'public');
+        view.open();
+        view.checkbox()!.click();
+        await flush();
+        view.fixture.detectChanges();
+        expect(view.sources()).toEqual(['protomaps']);
+        expect(
+          view.root.querySelector('.map-attribution')?.textContent,
+        ).not.toContain('Terrain Tiles');
+      });
     });
 
     it('leaves the map as it is without the relief file, and says why', async () => {

@@ -6,6 +6,8 @@ import {
 } from '../offline/tiles-source';
 import type { Box } from '../offline/area-tiles';
 import { retryFailedTiles } from './failed-tiles';
+import { reliefTileProtocol } from './relief-protocol';
+import { RELIEF_PROTOCOL } from './relief-source';
 
 /** `[longitude, latitude]`. */
 export type LngLat = [number, number];
@@ -130,6 +132,8 @@ export const createMapLibreMap: MapFactory = async ({
       protocol.add(archive);
     }
     maplibre.addProtocol('pmtiles', protocol.tile);
+    // The hillshade's public terrain tiles, a kept one first (see `relief-protocol.ts`).
+    maplibre.addProtocol(RELIEF_PROTOCOL, reliefTileProtocol);
     tileReader = async (archiveUrl, z, x, y) => {
       const { data } = await protocol.tile(
         { url: `pmtiles://${archiveUrl}/${z}/${x}/${y}`, type: 'arrayBuffer' },
