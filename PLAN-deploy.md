@@ -9,8 +9,15 @@ See [BRIEF-deploy.md](BRIEF-deploy.md). One commit per step in the repository, a
 - [x] **4. Build and send.** `scripts/deploy.sh` (fallback): build the images locally, `docker save | ssh docker load`, copy the stack files, `up -d --no-build`.
 - [x] **4b. GitHub Actions deployment.** `.github/workflows/deploy.yml`: on a `v*` tag (CI checks first, `ci.yml` is reusable) or by hand with an existing tag (rollback): build and push `web`, `api`, `migrate`, `brouter` to `ghcr.io`, send the stack files, `docker compose pull && up -d` on the server, health check on `SITE_URL/api/health`. The image names follow `IMAGE_PREFIX` and `VERSION` in `docker-compose.prod.yml`.
 - [x] **4c. GitHub setup** (author): a dedicated SSH key whose public half is on the server; repository secrets `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS` and variable `SITE_URL`.
-- [ ] **5. Data on the server** (server): the six BRouter segments, then the basemap (`download-basemap.sh`, or `rsync` if it fails), checked by size and a `HEAD` through Caddy.
-- [ ] **6. DNS and first start** (author, server): `A` (and `AAAA` if any) record of `voielibre.app` to the server, `.env` with a generated database password, migrations, `up -d`, Caddy obtains the certificate.
+- [x] **5. Data on the server** (server): the six BRouter segments, then the basemap (`download-basemap.sh`, or `rsync` if it fails), checked by size and a `HEAD` through Caddy.
+- [x] **6. DNS and first start** (author, server): `A` (and `AAAA` if any) record of `voielibre.app` to the server, `.env` with a generated database password, migrations, `up -d`, Caddy obtains the certificate.
 - [ ] **7. Hardening and backups** (server): SSH password login off, `fail2ban`, `unattended-upgrades`; nightly `pg_dump` with rotation, a copy to the laptop (or an Infomaniak snapshot).
-- [ ] **8. Smoke test.** Angers → Lyon, Bordeaux → Marseille, a search, a saved route reopened, "Download the map" on a small area, the position button on the phone, `ss -tlnp` and an outside port scan, reboot test.
+- [ ] **8. Smoke test.** Done from outside on 2026-11-11: HTTPS certificate, health, Angers to Lyon (26 s), Bordeaux to Marseille (74 s), a trail, a search, tiles by range. Left: the phone, a saved route reopened, "Download the map", the reboot test, an outside port scan. Original list: Angers → Lyon, Bordeaux → Marseille, a search, a saved route reopened, "Download the map" on a small area, the position button on the phone, `ss -tlnp` and an outside port scan, reboot test.
 - [ ] **9. `docs/deployment.md`, `CLAUDE.md` and `README.md`**: the steps from zero, the production layout, what is not done.
+
+## Notes from the first deployment
+
+- Infomaniak's own firewall (Manager, VPS, Firewall) had to open ports 80 and 443 before Let's Encrypt could reach Caddy; `ufw` alone is not enough.
+- The upstream BRouter Dockerfile needs buildx, so `docker/brouter/Dockerfile` follows it without BuildKit-only features.
+- Node's `fetch` crashed the API on a large BRouter answer (`assert(!this.paused)` in undici): BRouter is now read with `node:http` (`routing/http-get.ts`).
+- GitHub Actions left the first run of CI `queued` for hours, so `deploy.yml` has not run yet; the first version went out with `scripts/deploy.sh`.
