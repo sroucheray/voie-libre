@@ -19,6 +19,79 @@ body {
   font-family: var(--font-sans);
 }
 
+/*
+ * Native controls, styled once here with :where() so that any component rule wins over them.
+ * Buttons and fields reach the 44 px target on touch screens.
+ */
+:where(button, input, select, textarea) {
+  font: inherit;
+  color: inherit;
+}
+
+:where(button) {
+  min-height: 2.25rem;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+:where(button:hover:not(:disabled)) {
+  background: var(--color-surface-2);
+}
+
+:where(button:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+:where(input:not([type='checkbox'], [type='radio']), select) {
+  min-height: 2.25rem;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+:where(input:disabled, select:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+:where(input[type='checkbox'], input[type='radio']) {
+  accent-color: var(--color-accent);
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+:where(progress) {
+  accent-color: var(--color-accent);
+}
+
+@media (pointer: coarse) {
+  :where(button, input:not([type='checkbox'], [type='radio']), select) {
+    min-height: var(--target-min);
+  }
+}
+
+/* The language selector sits on the green header. */
+.app-header select {
+  min-height: 2.25rem;
+  border-color: color-mix(in srgb, var(--color-header-ink) 50%, transparent);
+  background: transparent;
+  color: var(--color-header-ink);
+  font-size: var(--font-size-sm);
+}
+
+.app-header select option {
+  color: var(--color-text);
+}
+
 /* A visible keyboard focus everywhere; components may refine it, never remove it. */
 :focus-visible {
   outline: var(--focus-ring);

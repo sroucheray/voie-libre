@@ -1,12 +1,14 @@
 <header class="app-header">
+  <img class="logo" src="icons/logo.svg" alt="" width="36" height="36" />
   <h1>{{ 'app.title' | transloco }}</h1>
+  <span class="spacer"></span>
+  <vl-api-status />
   <vl-language-switch />
 </header>
 <vl-update-prompt />
 <main>
   <div class="status-bar">
     <p>{{ 'app.tagline' | transloco }}</p>
-    <vl-api-status />
     <vl-offline-map />
   </div>
   <div class="stage">

@@ -20,6 +20,8 @@
   --color-danger-soft: #fef3f2;
   --color-header: var(--color-accent);
   --color-header-ink: #fff;
+  --color-header-ok: #5eead4;
+  --color-header-error: #fda29b;
   --color-overlay: rgb(15 36 32 / 35%);
   --color-tooltip: rgb(15 36 32 / 88%);
 
