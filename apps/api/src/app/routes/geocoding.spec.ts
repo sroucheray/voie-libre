@@ -12,12 +12,18 @@ describe('geocoding routes', () => {
     geocoder = {
       name: 'fake',
       search: jest.fn(async () => [
-        { label: 'Gare de Lyon, Paris', lon: 2.37, lat: 48.84 },
+        {
+          label: 'Gare de Lyon, Paris',
+          lon: 2.37,
+          lat: 48.84,
+          short: 'Gare de Lyon',
+        },
       ]),
       reverse: jest.fn(async () => ({
         label: 'Rue de Bercy, Paris',
         lon: 2.37,
         lat: 48.84,
+        short: 'Paris',
       })),
     };
     server = await buildApp({
@@ -45,7 +51,14 @@ describe('geocoding routes', () => {
     });
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({
-      places: [{ label: 'Gare de Lyon, Paris', lon: 2.37, lat: 48.84 }],
+      places: [
+        {
+          label: 'Gare de Lyon, Paris',
+          lon: 2.37,
+          lat: 48.84,
+          short: 'Gare de Lyon',
+        },
+      ],
     });
     expect(geocoder.search).toHaveBeenCalledWith('gare de lyon', {
       lang: 'fr',
@@ -90,7 +103,12 @@ describe('geocoding routes', () => {
       url: '/geocode/reverse?lat=48.84&lon=2.37',
     });
     expect(found.json()).toEqual({
-      place: { label: 'Rue de Bercy, Paris', lon: 2.37, lat: 48.84 },
+      place: {
+        label: 'Rue de Bercy, Paris',
+        lon: 2.37,
+        lat: 48.84,
+        short: 'Paris',
+      },
     });
     expect(geocoder.reverse).toHaveBeenCalledWith(
       { lat: 48.84, lon: 2.37 },

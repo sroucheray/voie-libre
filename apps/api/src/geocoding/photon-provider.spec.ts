@@ -1,5 +1,5 @@
 import { GeocodingError } from './geocoder';
-import { PhotonProvider, photonLabel } from './photon-provider';
+import { PhotonProvider, photonLabel, photonShort } from './photon-provider';
 
 const feature = (
   coordinates: [number, number],
@@ -27,6 +27,95 @@ describe('photonLabel', () => {
   });
 });
 
+describe('photonShort', () => {
+  it('calls a searched place by its own name', () => {
+    expect(photonShort({ type: 'city', name: 'Issoire' }, 'search')).toBe(
+      'Issoire',
+    );
+    expect(
+      photonShort(
+        { type: 'other', name: 'Puy de Dôme', county: 'Puy-de-Dôme' },
+        'search',
+      ),
+    ).toBe('Puy de Dôme');
+    expect(
+      photonShort(
+        { type: 'district', name: 'Montferrand', city: 'Clermont-Ferrand' },
+        'search',
+      ),
+    ).toBe('Montferrand');
+  });
+
+  it('calls an address, or a place with no name, by its locality', () => {
+    expect(
+      photonShort(
+        {
+          type: 'house',
+          housenumber: '10',
+          street: 'Rue Abbé Girard',
+          city: 'Clermont-Ferrand',
+        },
+        'search',
+      ),
+    ).toBe('Clermont-Ferrand');
+    expect(
+      photonShort(
+        { type: 'street', name: 'Rue de Bercy', city: 'Paris' },
+        'search',
+      ),
+    ).toBe('Paris');
+    expect(
+      photonShort({ street: 'Rue de Bercy', district: 'Bercy' }, 'search'),
+    ).toBe('Bercy');
+  });
+
+  it('calls the place found for a click by its locality, not by the shop or street there', () => {
+    expect(
+      photonShort(
+        { type: 'other', name: 'Boulangerie Dupont', city: 'Issoire' },
+        'reverse',
+      ),
+    ).toBe('Issoire');
+    expect(
+      photonShort(
+        { type: 'house', street: 'Rue Abbé Girard', city: 'Clermont-Ferrand' },
+        'reverse',
+      ),
+    ).toBe('Clermont-Ferrand');
+  });
+
+  it('falls back on the other name, and on nothing', () => {
+    expect(photonShort({ type: 'city', name: 'Issoire' }, 'reverse')).toBe(
+      'Issoire',
+    );
+    expect(photonShort({ type: 'house', name: 'Maison' }, 'search')).toBe(
+      'Maison',
+    );
+    expect(photonShort({}, 'search')).toBeUndefined();
+  });
+
+  it('is on the places the provider returns', async () => {
+    const provider = new PhotonProvider('https://photon.test', async () =>
+      json({
+        features: [
+          feature([3.25, 45.54], {
+            type: 'city',
+            name: 'Issoire',
+            country: 'France',
+          }),
+        ],
+      }),
+    );
+    const [place] = await provider.search('Issoire', { lang: 'en', limit: 1 });
+    expect(place).toEqual({
+      label: 'Issoire, France',
+      lon: 3.25,
+      lat: 45.54,
+      short: 'Issoire',
+    });
+  });
+});
+
 describe('PhotonProvider', () => {
   it('searches with language, limit and a bias position', async () => {
     const urls: string[] = [];
@@ -45,7 +134,12 @@ describe('PhotonProvider', () => {
       near: { lon: 2.3, lat: 48.8 },
     });
     expect(places).toEqual([
-      { label: 'Gare de Lyon, Paris', lon: 2.37, lat: 48.84 },
+      {
+        label: 'Gare de Lyon, Paris',
+        lon: 2.37,
+        lat: 48.84,
+        short: 'Gare de Lyon',
+      },
     ]);
     const url = new URL(urls[0]);
     expect(url.origin + url.pathname).toBe('https://photon.test/api');
@@ -71,6 +165,7 @@ describe('PhotonProvider', () => {
       label: 'Rue de Bercy, Paris',
       lon: 2.37,
       lat: 48.84,
+      short: 'Paris',
     });
     expect(new URL(urls[0]).pathname).toBe('/reverse');
     features = [];

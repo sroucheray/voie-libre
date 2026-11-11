@@ -13,7 +13,10 @@ const TIMEOUT_MS = 5000;
 const USER_AGENT = 'voie-libre-api (open-source route planner)';
 
 interface PhotonProperties {
+  /** What the feature is: `house`, `street`, `city`, `district`, `locality`, `other`... */
+  type?: string;
   name?: string;
+  locality?: string;
   housenumber?: string;
   street?: string;
   district?: string;
@@ -40,7 +43,28 @@ export function photonLabel(p: PhotonProperties): string {
   return parts.filter((part, i) => part !== parts[i - 1]).join(', ');
 }
 
-function toPlace(feature: PhotonFeature): Place | null {
+/** The town, village or district an address belongs to. */
+const localityOf = (p: PhotonProperties): string | undefined =>
+  p.city ?? p.locality ?? p.district ?? p.county;
+
+/**
+ * A short name for a place. A search result is called by its own name, except an address (a
+ * house, a street, a place with no name), which is called by its locality. The place found for a
+ * click is called by its locality: the click is not on that shop or that street.
+ */
+export function photonShort(
+  p: PhotonProperties,
+  mode: 'search' | 'reverse',
+): string | undefined {
+  if (mode === 'reverse') return localityOf(p) ?? p.name;
+  const isAddress = p.type === 'house' || p.type === 'street' || !p.name;
+  return isAddress ? (localityOf(p) ?? p.name) : p.name;
+}
+
+function toPlace(
+  feature: PhotonFeature,
+  mode: 'search' | 'reverse',
+): Place | null {
   const coordinates = feature.geometry?.coordinates;
   if (
     feature.geometry?.type !== 'Point' ||
@@ -52,7 +76,13 @@ function toPlace(feature: PhotonFeature): Place | null {
   }
   const label = photonLabel(feature.properties ?? {});
   if (!label) return null;
-  return { label, lon: coordinates[0], lat: coordinates[1] };
+  const short = photonShort(feature.properties ?? {}, mode);
+  return {
+    label,
+    lon: coordinates[0],
+    lat: coordinates[1],
+    ...(short ? { short } : {}),
+  };
 }
 
 /** Photon (https://photon.komoot.io) over HTTP. Only the API calls it, never the browser. */
@@ -80,7 +110,7 @@ export class PhotonProvider implements Geocoder {
       params.set('lat', String(near.lat));
       params.set('lon', String(near.lon));
     }
-    return this.places(`${this.baseUrl}/api?${params}`);
+    return this.places(`${this.baseUrl}/api?${params}`, 'search');
   }
 
   async reverse(
@@ -93,11 +123,17 @@ export class PhotonProvider implements Geocoder {
       lang,
       limit: '1',
     });
-    const [place] = await this.places(`${this.baseUrl}/reverse?${params}`);
+    const [place] = await this.places(
+      `${this.baseUrl}/reverse?${params}`,
+      'reverse',
+    );
     return place ?? null;
   }
 
-  private async places(url: string): Promise<Place[]> {
+  private async places(
+    url: string,
+    mode: 'search' | 'reverse',
+  ): Promise<Place[]> {
     let response: Response;
     try {
       response = await this.fetchImpl(url, {
@@ -126,7 +162,7 @@ export class PhotonProvider implements Geocoder {
       });
     }
     return (body.features ?? [])
-      .map(toPlace)
+      .map((feature) => toPlace(feature, mode))
       .filter((place): place is Place => place !== null);
   }
 }

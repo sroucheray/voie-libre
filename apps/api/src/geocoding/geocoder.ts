@@ -9,6 +9,12 @@ export interface Position {
 /** A place found by a geocoder: a display label and where it is. */
 export interface Place extends Position {
   label: string;
+  /**
+   * A short name to call the place by, e.g. in the name of a route: its own name for a place that
+   * was searched (`Puy de Dôme`, `Issoire`), the town, village or district for an address or a
+   * place found for a click. Absent when the provider tells neither.
+   */
+  short?: string;
 }
 
 export interface SearchOptions {

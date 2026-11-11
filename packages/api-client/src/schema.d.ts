@@ -402,6 +402,8 @@ export interface operations {
           'application/json': {
             places: {
               label: string;
+              /** @description A short name to call the place by: its own name for a searched place, the town or village for an address or a place found for a click. */
+              short?: string;
               lon: number;
               lat: number;
             }[];
@@ -457,6 +459,8 @@ export interface operations {
             /** @description The nearest address or place, null when there is none. */
             place: {
               label: string;
+              /** @description A short name to call the place by: its own name for a searched place, the town or village for an address or a place found for a click. */
+              short?: string;
               lon: number;
               lat: number;
             } | null;

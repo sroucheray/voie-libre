@@ -12,6 +12,12 @@ const Language = Type.Union([Type.Literal('en'), Type.Literal('fr')], {
 
 const Place = Type.Object({
   label: Type.String(),
+  short: Type.Optional(
+    Type.String({
+      description:
+        'A short name to call the place by: its own name for a searched place, the town or village for an address or a place found for a click.',
+    }),
+  ),
   lon: Type.Number(),
   lat: Type.Number(),
 });
