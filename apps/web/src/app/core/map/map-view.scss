@@ -15,24 +15,28 @@
   right: 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-2);
 
   button {
-    width: 2.25rem;
-    height: 2.25rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    min-height: 0;
     display: grid;
     place-items: center;
     padding: 0;
     font-size: 1.25rem;
     line-height: 1;
-    background: #fff;
-    border: 1px solid #c9cdd3;
-    border-radius: 0.375rem;
-    cursor: pointer;
+    border-color: transparent;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-1);
+    font-weight: 400;
+  }
+}
 
-    &:hover {
-      background: #f2f4f7;
-    }
+@media (pointer: coarse) {
+  .map-controls button {
+    width: var(--target-min);
+    height: var(--target-min);
   }
 }
 
@@ -43,21 +47,20 @@
 .layers-panel {
   position: absolute;
   top: 0;
-  right: 2.75rem;
+  right: 3.25rem;
   width: max-content;
   max-width: 16rem;
-  padding: 0.5rem 0.75rem;
-  background: #fff;
-  border: 1px solid #c9cdd3;
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 12px rgb(0 0 0 / 25%);
-  font-size: 0.875rem;
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+  font-size: var(--font-size-base);
 
   label {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    min-height: 2rem;
+    gap: var(--space-2);
+    min-height: 2.25rem;
     cursor: pointer;
   }
 }
@@ -76,7 +79,7 @@
 
 .layers-note {
   margin: 0.25rem 0 0;
-  color: #475467;
+  color: var(--color-text-2);
   font-size: 0.75rem;
 }
 
@@ -85,7 +88,7 @@
   margin: 0 0 0.25rem;
   padding: 0 0 0 1.5rem;
   font-size: 0.75rem;
-  color: #475467;
+  color: var(--color-text-2);
 
   li {
     display: flex;
@@ -115,11 +118,10 @@
   max-width: 24rem;
   text-align: center;
   font-size: 0.875rem;
-  color: #101828;
-  background: rgb(255 255 255 / 92%);
-  border: 1px solid #c9cdd3;
-  border-radius: 0.5rem;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 20%);
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
   pointer-events: none;
 }
 
@@ -130,7 +132,7 @@
   margin: 0;
   padding: 0.125rem 0.5rem;
   font-size: 0.75rem;
-  background: rgba(255, 255, 255, 0.8);
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
 
   a {
     color: inherit;
@@ -145,6 +147,14 @@
   margin: 0;
   padding: 1rem;
   text-align: center;
-  background: #f2f4f7;
-  color: #b42318;
+  background: var(--color-surface-2);
+  color: var(--color-danger);
+}
+
+.compass__north {
+  fill: var(--map-marker-end);
+}
+
+.compass__south {
+  fill: var(--color-text-2);
 }

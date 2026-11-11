@@ -10,10 +10,10 @@
   width: min(18rem, calc(100% - 9rem));
   box-sizing: border-box;
   padding: 0.75rem;
-  background: #fff;
-  border: 1px solid #1570ef;
+  background: var(--color-surface);
+  border: 1px solid var(--color-accent);
   border-radius: 0.5rem;
-  box-shadow: 0 1px 4px rgb(0 0 0 / 15%);
+  box-shadow: var(--shadow-1);
   font-size: 0.875rem;
 
   h2 {
@@ -31,12 +31,12 @@
 }
 
 .meta {
-  color: #475467;
+  color: var(--color-text-2);
   font-size: 0.75rem;
 }
 
 .error {
-  color: #b42318;
+  color: var(--color-danger);
 }
 
 .keep,
