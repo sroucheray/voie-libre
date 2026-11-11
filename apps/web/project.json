@@ -26,7 +26,11 @@
             "output": "maplibre"
           }
         ],
+        "loader": {
+          ".css": "text"
+        },
         "styles": [
+          "apps/web/src/design-tokens.css",
           "apps/web/src/styles.scss",
           "node_modules/maplibre-gl/dist/maplibre-gl.css"
         ]

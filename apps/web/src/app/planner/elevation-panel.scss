@@ -64,7 +64,7 @@
 
   .line {
     fill: none;
-    stroke: #1570ef;
+    stroke: var(--map-route);
     stroke-width: 2;
     vector-effect: non-scaling-stroke;
   }
@@ -72,28 +72,28 @@
 
 // One colour per grade band, from nearly flat to very steep (chart and legend).
 .area--0 {
-  fill: #d1e9ff;
-  background: #d1e9ff;
+  fill: var(--grade-0);
+  background: var(--grade-0);
 }
 
 .area--1 {
-  fill: #a6e3b8;
-  background: #a6e3b8;
+  fill: var(--grade-1);
+  background: var(--grade-1);
 }
 
 .area--2 {
-  fill: #fde272;
-  background: #fde272;
+  fill: var(--grade-2);
+  background: var(--grade-2);
 }
 
 .area--3 {
-  fill: #fdb022;
-  background: #fdb022;
+  fill: var(--grade-3);
+  background: var(--grade-3);
 }
 
 .area--4 {
-  fill: #f97066;
-  background: #f97066;
+  fill: var(--grade-4);
+  background: var(--grade-4);
 }
 
 .selection {

@@ -1,0 +1,72 @@
+/*
+ * Design tokens (see BRIEF-design.md and docs/design-tokens.md); loaded before styles.scss. Components read these; no hex value
+ * belongs in a component stylesheet. The `--map-*`, `--way-*`, `--surface-*` and `--grade-*` values
+ * are also in `core/map/palette.ts` (MapLibre cannot read custom properties); `palette.spec.ts`
+ * keeps the two in step.
+ */
+:root {
+  /* Colour: neutrals with a green tint, one deep green accent. Light theme only. */
+  --color-bg: #f3f6f5;
+  --color-surface: #fff;
+  --color-surface-2: #eef3f1;
+  --color-border: #d3dcd8;
+  --color-text: #0f2420;
+  --color-text-2: #46605a;
+  --color-accent: #0f766e;
+  --color-accent-hover: #0b5f58;
+  --color-accent-ink: #fff;
+  --color-accent-soft: #e1f4f1;
+  --color-danger: #b42318;
+  --color-danger-soft: #fef3f2;
+  --color-header: var(--color-accent);
+  --color-header-ink: #fff;
+  --color-overlay: rgb(15 36 32 / 35%);
+  --color-tooltip: rgb(15 36 32 / 88%);
+
+  /* Map and charts (mirrored in core/map/palette.ts). */
+  --map-route: #0e7490;
+  --map-route-alternative: #98a2b3;
+  --map-route-highlight: #0f2420;
+  --map-route-preview: #f79009;
+  --map-location: #1a73e8;
+  --map-marker-start: #067647;
+  --map-marker-end: #b42318;
+  --map-marker-waypoint: #0e7490;
+  --way-good: #039855;
+  --way-fair: #fec84b;
+  --way-avoid: #b42318;
+  --surface-paved: #667085;
+  --surface-cycleway: #2e90fa;
+  --surface-unpaved: #f79009;
+  --surface-path: #7a2e0e;
+  --surface-unknown: #d0d5dd;
+  --grade-0: #d1e9ff;
+  --grade-1: #a6e3b8;
+  --grade-2: #fde272;
+  --grade-3: #f79009;
+  --grade-4: #b42318;
+
+  /* Type: rounded system font, no web font (the app calls no external domain). */
+  --font-sans: ui-rounded, system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-base: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+
+  /* Space, radius, shadow, size. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --radius-sm: 0.625rem;
+  --radius-md: 0.875rem;
+  --radius-pill: 999px;
+  --shadow-1: 0 1px 2px rgb(15 36 32 / 8%), 0 3px 10px rgb(15 36 32 / 12%);
+  --shadow-2: 0 2px 4px rgb(15 36 32 / 8%), 0 8px 24px rgb(15 36 32 / 16%);
+  --target-min: 2.75rem;
+  --focus-ring: 0.1875rem solid var(--map-route);
+}

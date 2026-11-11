@@ -14,6 +14,15 @@
 
 body {
   margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+/* A visible keyboard focus everywhere; components may refine it, never remove it. */
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
 }
 
 /* Markers are created by MapLibre outside Angular's view encapsulation. */
@@ -22,34 +31,36 @@ body {
   place-items: center;
   width: 1.75rem;
   height: 1.75rem;
-  border: 2px solid #fff;
+  border: 2px solid var(--color-surface);
   border-radius: 50%;
   box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
-  color: #fff;
-  font:
-    700 0.75rem system-ui,
-    sans-serif;
+  color: var(--color-accent-ink);
+  font: 700 var(--font-size-xs) var(--font-sans);
   cursor: grab;
 
   &--start {
-    background: #067647;
+    background: var(--map-marker-start);
   }
 
   /* Shapes differ as well as colours: round start, square end, small round waypoints. */
   &--end {
-    background: #b42318;
+    background: var(--map-marker-end);
     border-radius: 0.25rem;
   }
 
   &--waypoint {
-    background: #1570ef;
+    background: var(--map-marker-waypoint);
     width: 1.375rem;
     height: 1.375rem;
   }
 
   /* Start and end on the same place: half green, half red. */
   &--loop {
-    background: linear-gradient(90deg, #067647 50%, #b42318 50%);
+    background: linear-gradient(
+      90deg,
+      var(--map-marker-start) 50%,
+      var(--map-marker-end) 50%
+    );
     font-size: 1rem;
   }
 }
@@ -76,7 +87,7 @@ body {
     transform: translateX(-50%) scale(calc(1 / 1.35));
     padding: 0.125rem 0.5rem;
     border-radius: 0.25rem;
-    background: rgb(16 24 40 / 90%);
+    background: var(--color-tooltip);
     font-weight: 500;
     white-space: nowrap;
   }
@@ -109,11 +120,9 @@ body {
   &__text {
     padding: 0.125rem 0.5rem;
     border-radius: 0.25rem;
-    background: rgb(16 24 40 / 85%);
-    color: #fff;
-    font:
-      500 0.75rem system-ui,
-      sans-serif;
+    background: var(--color-tooltip);
+    color: var(--color-accent-ink);
+    font: 500 var(--font-size-xs) var(--font-sans);
     white-space: nowrap;
   }
 }
@@ -122,9 +131,9 @@ body {
 .planner-cursor {
   width: 0.875rem;
   height: 0.875rem;
-  border: 2px solid #fff;
+  border: 2px solid var(--color-surface);
   border-radius: 50%;
-  background: #1570ef;
+  background: var(--map-route);
   box-shadow: 0 1px 3px rgb(0 0 0 / 50%);
   pointer-events: none;
 }
@@ -134,9 +143,9 @@ body {
   position: relative;
   width: 1.125rem;
   height: 1.125rem;
-  border: 3px solid #fff;
+  border: 3px solid var(--color-surface);
   border-radius: 50%;
-  background: #1a73e8;
+  background: var(--map-location);
   box-shadow: 0 1px 4px rgb(0 0 0 / 55%);
   pointer-events: none;
 
@@ -148,7 +157,11 @@ body {
     width: 3.5rem;
     height: 3.5rem;
     margin-left: -1.75rem;
-    background: linear-gradient(to top, rgb(26 115 232 / 75%), transparent);
+    background: linear-gradient(
+      to top,
+      color-mix(in srgb, var(--map-location) 75%, transparent),
+      transparent
+    );
     clip-path: polygon(50% 100%, 0 0, 100% 0);
   }
 }
@@ -160,7 +173,7 @@ body {
   z-index: 3;
   display: grid;
   place-items: center;
-  background: rgb(16 24 40 / 35%);
+  background: var(--color-overlay);
 }
 
 /* The waypoint being dropped from a dragged route. */
