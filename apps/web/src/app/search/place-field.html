@@ -2,6 +2,8 @@
   @if (!bareMarker()) {
   <span
     class="field__marker"
+    [class.field__marker--start]="role() === 'start'"
+    [class.field__marker--end]="role() === 'end'"
     [class.field__marker--stop]="role() === 'stop'"
     aria-hidden="true"
     >{{ marker() }}</span

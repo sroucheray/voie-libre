@@ -1,61 +1,43 @@
 <span class="label" [id]="labelId"
   >{{ 'planner.profile.label' | transloco }}</span
 >
-<button
-  type="button"
-  class="control"
-  role="combobox"
-  aria-haspopup="listbox"
-  [attr.aria-expanded]="open()"
-  [attr.aria-controls]="listId"
-  [attr.aria-labelledby]="labelId + ' ' + valueId"
-  [attr.aria-activedescendant]="open() ? optionId(active()) : null"
-  (click)="toggle()"
-  (keydown)="onKeydown($event)"
-  (keyup)="onKeyup($event)"
-  (blur)="close()"
->
-  <span class="text" [id]="valueId">
-    <span class="title"
-      >{{ 'planner.profile.' + value() + '.title' | transloco }}</span
-    >
-    <span class="description"
-      >{{ 'planner.profile.' + value() + '.description' | transloco }}</span
-    >
-  </span>
-  <span class="chevron" aria-hidden="true">▾</span>
-</button>
-@if (open()) {
-<ul
-  class="options"
-  role="listbox"
-  [id]="listId"
+<div
+  class="sports"
+  role="radiogroup"
   [attr.aria-labelledby]="labelId"
+  [attr.aria-describedby]="descriptionId"
 >
-  @for (profile of profiles(); track profile; let index = $index) {
-  <!-- The keys are handled on the button, which keeps the focus. -->
-  <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
-  <li
-    role="option"
-    [id]="optionId(index)"
-    [class.options__active]="index === active()"
-    [attr.aria-selected]="profile === value()"
-    (mousedown)="$event.preventDefault()"
-    (mousemove)="active.set(index)"
+  @for (profile of profiles(); track profile) {
+  <button
+    type="button"
+    class="sport"
+    role="radio"
+    [attr.aria-checked]="profile === value()"
+    [tabindex]="profile === value() ? 0 : -1"
     (click)="pick(profile)"
+    (keydown)="onKeydown($event)"
   >
-    <span class="text">
-      <span class="title"
-        >{{ 'planner.profile.' + profile + '.title' | transloco }}</span
-      >
-      <span class="description"
-        >{{ 'planner.profile.' + profile + '.description' | transloco }}</span
-      >
-    </span>
-    @if (profile === value()) {
-    <span class="check" aria-hidden="true">✓</span>
-    }
-  </li>
+    <svg viewBox="0 0 40 24" aria-hidden="true">
+      @switch (profile) { @case ('road') {
+      <circle cx="8" cy="16" r="5.5" />
+      <circle cx="32" cy="16" r="5.5" />
+      <path d="M8 16 15 7h8l9 9M15 7l5 9h8M23 7l-2-3h-3" />
+      } @case ('gravel') {
+      <circle cx="8" cy="16" r="6.5" stroke-width="2.6" />
+      <circle cx="32" cy="16" r="6.5" stroke-width="2.6" />
+      <path d="M8 16 15 7h8l9 9M15 7l5 9h8M23 7l1-3h4M13 5h-3q-2 0-2 3" />
+      } @default {
+      <circle cx="22" cy="4.5" r="2.5" />
+      <path d="m21 8-4 5 5 3-2 6M17 13l-5 1M21 8l5 3 4-1M22 16l5 2" />
+      <path d="M2 22l6-5 4 3 4-6" stroke-dasharray="1 3" />
+      } }
+    </svg>
+    <span class="title"
+      >{{ 'planner.profile.' + profile + '.title' | transloco }}</span
+    >
+  </button>
   }
-</ul>
-}
+</div>
+<p class="description" [id]="descriptionId">
+  {{ 'planner.profile.' + value() + '.description' | transloco }}
+</p>

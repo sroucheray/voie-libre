@@ -16,9 +16,8 @@ async function setup(value: Profile = 'gravel') {
   );
   await fixture.whenStable();
   const root = fixture.nativeElement as HTMLElement;
-  const button = root.querySelector('button') as HTMLButtonElement;
-  const options = () =>
-    Array.from(root.querySelectorAll<HTMLElement>('[role=option]'));
+  const radios = () =>
+    Array.from(root.querySelectorAll<HTMLButtonElement>('[role=radio]'));
   const press = (key: string, init: KeyboardEventInit = {}) => {
     const event = new KeyboardEvent('keydown', {
       key,
@@ -26,112 +25,51 @@ async function setup(value: Profile = 'gravel') {
       cancelable: true,
       ...init,
     });
-    button.dispatchEvent(event);
-    fixture.detectChanges();
+    radios()[1].dispatchEvent(event);
     return event;
   };
-  return { fixture, root, button, options, press, changed };
+  return { fixture, root, radios, press, changed };
 }
 
 describe('ProfileSelect', () => {
-  it('shows the title and the description of the selected profile', async () => {
-    const { root, button, options } = await setup();
-    expect(button.getAttribute('role')).toBe('combobox');
-    expect(button.getAttribute('aria-expanded')).toBe('false');
-    expect(button.querySelector('.title')?.textContent).toBe('Gravel');
-    expect(button.querySelector('.description')?.textContent).toBe(
-      'Gravel bike: tracks and quiet roads',
+  it('shows one button per profile and the description of the selected one', async () => {
+    const { root, radios } = await setup();
+    expect(root.querySelector('[role=radiogroup]')).not.toBeNull();
+    expect(radios().map((r) => r.querySelector('.title')?.textContent)).toEqual(
+      ['Road', 'Gravel', 'Trail'],
     );
-    expect(root.querySelector('.label')?.textContent).toBe('Profile');
-    expect(options()).toHaveLength(0);
-  });
-
-  it('opens on a click and picks an option with its description', async () => {
-    const { fixture, root, button, options, changed } = await setup();
-    button.click();
-    fixture.detectChanges();
-    expect(button.getAttribute('aria-expanded')).toBe('true');
-    expect(root.querySelector('[role=listbox]')).not.toBeNull();
-    expect(
-      options().map((o) => o.querySelector('.title')?.textContent),
-    ).toEqual(['Road', 'Gravel', 'Trail']);
-    expect(options()[2].querySelector('.description')?.textContent).toBe(
-      'Running: footpaths and tracks first',
-    );
-    // The selected one is marked.
-    expect(options().map((o) => o.getAttribute('aria-selected'))).toEqual([
+    expect(radios().map((r) => r.getAttribute('aria-checked'))).toEqual([
       'false',
       'true',
       'false',
     ]);
-    expect(options()[1].querySelector('.check')).not.toBeNull();
-    options()[2].click();
-    fixture.detectChanges();
+    expect(radios().map((r) => r.tabIndex)).toEqual([-1, 0, -1]);
+    expect(root.querySelector('.description')?.textContent?.trim()).toBe(
+      'Gravel bike: tracks and quiet roads',
+    );
+    expect(root.querySelector('.label')?.textContent).toBe('Profile');
+  });
+
+  it('picks a profile on a click and says nothing for the selected one', async () => {
+    const { radios, changed } = await setup();
+    radios()[2].click();
+    radios()[1].click();
     expect(changed).toEqual(['trail']);
-    expect(options()).toHaveLength(0);
   });
 
-  it('says nothing when the selected profile is picked again', async () => {
-    const { fixture, button, options, changed } = await setup();
-    button.click();
-    fixture.detectChanges();
-    options()[1].click();
-    fixture.detectChanges();
-    expect(changed).toEqual([]);
-    expect(options()).toHaveLength(0);
-  });
-
-  it('is used with the keys', async () => {
-    const { button, options, press, changed } = await setup();
-    // Opens on the selected profile.
-    expect(press('ArrowDown').defaultPrevented).toBe(true);
-    expect(button.getAttribute('aria-activedescendant')).toBe(options()[1].id);
-    press('ArrowDown');
-    press('ArrowDown');
-    expect(button.getAttribute('aria-activedescendant')).toBe(options()[2].id);
+  it('moves the choice with the arrows, Home and End', async () => {
+    const { press, changed } = await setup();
+    expect(press('ArrowRight').defaultPrevented).toBe(true);
+    expect(press('ArrowLeft').defaultPrevented).toBe(true);
     press('Home');
-    expect(button.getAttribute('aria-activedescendant')).toBe(options()[0].id);
-    expect(options()[0].classList.contains('options__active')).toBe(true);
     press('End');
-    press('ArrowUp');
-    press('ArrowUp');
-    expect(press('Enter').defaultPrevented).toBe(true);
-    expect(changed).toEqual(['road']);
-    expect(options()).toHaveLength(0);
-    expect(button.getAttribute('aria-activedescendant')).toBeNull();
-
-    press(' ');
-    expect(options()).toHaveLength(3);
-    press('End');
-    press(' ');
-    expect(changed).toEqual(['road', 'trail']);
-  });
-
-  it('closes without a change on Escape, on a click outside and when it loses the focus', async () => {
-    const { fixture, button, options, press, changed } = await setup();
-    press('Enter');
-    press('ArrowDown');
-    expect(press('Escape').defaultPrevented).toBe(true);
-    expect(options()).toHaveLength(0);
-
-    button.click();
-    fixture.detectChanges();
-    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
-    fixture.detectChanges();
-    expect(options()).toHaveLength(0);
-
-    button.click();
-    fixture.detectChanges();
-    button.dispatchEvent(new FocusEvent('blur'));
-    fixture.detectChanges();
-    expect(options()).toHaveLength(0);
-    expect(changed).toEqual([]);
+    expect(changed).toEqual(['trail', 'road', 'road', 'trail']);
   });
 
   it('leaves the shortcuts of the page alone', async () => {
-    const { options, press } = await setup();
+    const { press, changed } = await setup();
     expect(press('z', { ctrlKey: true }).defaultPrevented).toBe(false);
     expect(press('a').defaultPrevented).toBe(false);
-    expect(options()).toHaveLength(0);
+    expect(changed).toEqual([]);
   });
 });

@@ -5,7 +5,6 @@ import {
   inject,
   input,
   output,
-  signal,
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { Profile } from './planner-store';
@@ -13,9 +12,9 @@ import type { Profile } from './planner-store';
 let nextId = 0;
 
 /**
- * The choice of the routing profile: a dropdown where each profile has a title and a short
- * description, which a native select cannot show. It behaves like a select: the focus stays on
- * the button, the arrows move in the list, Enter or Space picks, Escape closes without a change.
+ * The choice of the routing profile: one button with a pictogram per sport (a road bike, a gravel
+ * bike, a runner) and the description of the selected one under them. It is a radio group: one
+ * button is in the tab order, the arrows move the choice, Home and End go to the ends.
  */
 @Component({
   selector: 'vl-profile-select',
@@ -23,89 +22,51 @@ let nextId = 0;
   templateUrl: './profile-select.html',
   styleUrl: './profile-select.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(document:pointerdown)': 'onOutside($event)' },
 })
 export class ProfileSelect {
   readonly value = input.required<Profile>();
   readonly profiles = input.required<readonly Profile[]>();
   readonly changed = output<Profile>();
 
-  protected readonly open = signal(false);
-  /** The option the keys are on while the list is open. */
-  protected readonly active = signal(0);
-
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly id = `profile-select-${nextId++}`;
   protected readonly labelId = `${this.id}-label`;
-  protected readonly valueId = `${this.id}-value`;
-  protected readonly listId = `${this.id}-list`;
-
-  protected optionId(index: number): string {
-    return `${this.id}-option-${index}`;
-  }
-
-  protected toggle(): void {
-    if (this.open()) this.open.set(false);
-    else this.show();
-  }
-
-  protected close(): void {
-    this.open.set(false);
-  }
+  protected readonly descriptionId = `${this.id}-description`;
 
   protected pick(profile: Profile): void {
-    this.open.set(false);
     if (profile !== this.value()) this.changed.emit(profile);
   }
 
   protected onKeydown(event: KeyboardEvent): void {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
-    const last = this.profiles().length - 1;
-    if (!this.open()) {
-      if (!['Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(event.key)) return;
-      event.preventDefault();
-      this.show();
-      return;
-    }
+    const profiles = this.profiles();
+    const current = Math.max(profiles.indexOf(this.value()), 0);
+    let next: number;
     switch (event.key) {
+      case 'ArrowRight':
       case 'ArrowDown':
-        this.active.update((index) => Math.min(index + 1, last));
+        next = Math.min(current + 1, profiles.length - 1);
         break;
+      case 'ArrowLeft':
       case 'ArrowUp':
-        this.active.update((index) => Math.max(index - 1, 0));
+        next = Math.max(current - 1, 0);
         break;
       case 'Home':
-        this.active.set(0);
+        next = 0;
         break;
       case 'End':
-        this.active.set(last);
-        break;
-      case 'Enter':
-      case ' ':
-        this.pick(this.profiles()[this.active()]);
-        break;
-      case 'Escape':
-        this.open.set(false);
+        next = profiles.length - 1;
         break;
       default:
         return;
     }
     event.preventDefault();
-  }
-
-  /** A button is clicked when Space is released: the key was already handled when pressed. */
-  protected onKeyup(event: KeyboardEvent): void {
-    if (event.key === ' ') event.preventDefault();
-  }
-
-  protected onOutside(event: Event): void {
-    if (!this.open()) return;
-    if (!this.host.nativeElement.contains(event.target as Node | null))
-      this.open.set(false);
-  }
-
-  private show(): void {
-    this.active.set(Math.max(this.profiles().indexOf(this.value()), 0));
-    this.open.set(true);
+    this.pick(profiles[next]);
+    // The new choice is the one in the tab order: the focus follows it once it is drawn.
+    queueMicrotask(() =>
+      this.host.nativeElement
+        .querySelectorAll<HTMLElement>('[role=radio]')
+        [next]?.focus(),
+    );
   }
 }
