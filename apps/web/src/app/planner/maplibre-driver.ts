@@ -45,6 +45,9 @@ function accuracyData(fix: LocationFix | null): GeoJSON.GeoJSON {
 
 /** Pixels around a click that still count as hitting an alternative route. */
 const HIT_TOLERANCE = 6;
+/** Space kept between the ghost of the next point and a marker, so that it never touches one. */
+const GHOST_CLEARANCE_PX = 4;
+
 /** Pixels the mouse must move after a click before the ghost of the next point shows. */
 const GHOST_MOVE_PX = 30;
 
@@ -329,9 +332,31 @@ export async function createMapLibreDriver(
       return;
     }
     ghostElement.style.display = '';
-    setAiming(true);
-    // The ghost sits where the point will land: on the nearest way, for a profile that needs one.
     const landing = handlers.ghostAt([event.lngLat.lng, event.lngLat.lat]);
+    // The ghost sits where the point would land (on the nearest way, for a profile that needs one),
+    // to the right of it: a ghost that would cover a marker (the number of a stop) is not shown,
+    // whether or not the pointer itself is on that marker yet.
+    const at = map.project(landing.point);
+    const box = map.getContainer().getBoundingClientRect();
+    const ghostLeft = box.left + at.x + 16;
+    const ghostTop = box.top + at.y - ghostElement.offsetHeight / 2;
+    const ghostRight = ghostLeft + ghostElement.offsetWidth;
+    const ghostBottom = ghostTop + ghostElement.offsetHeight;
+    for (const marker of container.querySelectorAll<HTMLElement>(
+      '.planner-marker:not(.planner-ghost__dot)',
+    )) {
+      const m = marker.getBoundingClientRect();
+      if (
+        m.right > ghostLeft - GHOST_CLEARANCE_PX &&
+        m.left < ghostRight + GHOST_CLEARANCE_PX &&
+        m.bottom > ghostTop - GHOST_CLEARANCE_PX &&
+        m.top < ghostBottom + GHOST_CLEARANCE_PX
+      ) {
+        hideGhost();
+        return;
+      }
+    }
+    setAiming(true);
     ghostElement.classList.toggle('planner-ghost--refused', landing.refused);
     ghostMarker.setLngLat(landing.point);
   };
