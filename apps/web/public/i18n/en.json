@@ -222,17 +222,27 @@
   },
   "offline": {
     "title": "Offline map",
-    "download": "Download the map for offline use",
-    "downloading": "Downloading the map",
-    "progress": "{{done}} of {{total}}",
+    "keepRoute": "Keep this route offline",
+    "keepView": "Keep this view offline",
+    "estimating": "Estimating the size…",
+    "pending": "About {{size}} for {{tiles}} tiles.",
+    "keep": "Keep",
+    "downloading": "Downloading the area",
+    "progress": "{{done}} of about {{total}}",
     "cancel": "Cancel",
-    "ready": "Map available offline ({{size}})",
-    "remove": "Remove the downloaded map",
+    "areas": "Areas kept offline",
+    "remove": "Remove",
+    "removeArea": "Remove {{name}} from the device",
+    "names": {
+      "route": "Route {{distance}}, {{date}}",
+      "view": "View, {{date}}"
+    },
     "errors": {
       "unsupported": "This browser cannot keep the map offline.",
-      "network": "The map could not be downloaded. Check the connection and try again.",
-      "quota": "Not enough storage space on this device for the map.",
-      "unknown": "The map could not be saved for offline use."
+      "network": "The area could not be downloaded. Check the connection and try again.",
+      "quota": "Not enough storage space on this device for this area.",
+      "too_big": "This area is too big (more than 1 GB). Zoom in or pick a shorter route.",
+      "unknown": "The area could not be saved for offline use."
     }
   },
   "sharing": {

@@ -5,14 +5,17 @@ import { Injector } from '@angular/core';
 import { FakeCacheStorage } from '../../../testing/fake-cache-storage';
 import { BASEMAP_URL } from '../map/map-factory';
 import {
+  AREAS_KEY,
+  AREA_MAX_BYTES,
   OFFLINE_CACHE_NAME,
   OfflineBasemap,
   basemapAssetUrls,
   basemapFonts,
+  type AreaShape,
 } from './offline-basemap';
+import { AREA_CACHE_PREFIX } from './range-cache';
 
 const BASE = 'http://tiles.test:8081';
-const ARCHIVE = Uint8Array.from({ length: 5000 }, (_, i) => i % 251);
 
 describe('basemapFonts and basemapAssetUrls', () => {
   it('finds the fonts of the style, including those inside expressions', () => {
@@ -36,41 +39,108 @@ describe('basemapFonts and basemapAssetUrls', () => {
   });
 });
 
+/** A box of a few hundred tiles around Clermont-Ferrand, zooms 0 to 14. */
+const VIEW: AreaShape = { kind: 'view', box: [3.05, 45.76, 3.14, 45.82] };
+
+/**
+ * A stand-in for the `pmtiles` module: the "archive" answers any range with that many bytes, and
+ * `getZxy` reads one range per tile, the way the real reader does. Tests choose which tiles cost
+ * what and whether the relief archive exists.
+ */
+function fakePmtiles(options: {
+  tileBytes: () => number;
+  hasRelief: () => boolean;
+  failWith: () => Error | null;
+  onRead: (url: string) => void;
+}) {
+  class FetchSource {
+    constructor(private readonly url: string) {}
+    getKey() {
+      return this.url;
+    }
+    async getBytes(offset: number, length: number) {
+      options.onRead(this.url);
+      const failure = options.failWith();
+      if (failure) throw failure;
+      if (this.url.endsWith('/relief.pmtiles') && !options.hasRelief()) {
+        throw new Error('HTTP 404');
+      }
+      return { data: new Uint8Array(length).buffer };
+    }
+  }
+  class PMTiles {
+    constructor(
+      private readonly source: {
+        getBytes(o: number, l: number, s?: AbortSignal): Promise<unknown>;
+      },
+    ) {}
+    async getHeader() {
+      await this.source.getBytes(0, 16384);
+      return {};
+    }
+    async getZxy(z: number, x: number, y: number, signal?: AbortSignal) {
+      // The real reader gives up when the signal says so.
+      if (signal?.aborted) throw new DOMException('aborted', 'AbortError');
+      await this.source.getBytes(
+        z * 10_000_000 + x * 1000 + y,
+        options.tileBytes(),
+        signal,
+      );
+      return { data: new ArrayBuffer(0) };
+    }
+  }
+  return { PMTiles, FetchSource } as unknown as typeof import('pmtiles');
+}
+
 describe('OfflineBasemap', () => {
   let storage: FakeCacheStorage;
   let fetched: string[];
-  let failOn: ((url: string) => Response | Error | null) | null;
-  /** The relief archive on the server; `null` when it has none (404). */
-  let relief: Uint8Array<ArrayBuffer> | null;
+  let reads: string[];
+  let stored: Map<string, string>;
+  let tileBytes: number;
+  let hasRelief: boolean;
+  let failWith: Error | null;
+  let estimate: { quota: number; usage: number } | undefined;
 
   beforeEach(() => {
     storage = new FakeCacheStorage();
     fetched = [];
-    failOn = null;
-    relief = null;
+    reads = [];
+    stored = new Map();
+    tileBytes = 1000;
+    hasRelief = true;
+    failWith = null;
+    estimate = undefined;
     vi.stubGlobal('caches', storage);
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => stored.get(key) ?? null,
+      setItem: (key: string, value: string) => void stored.set(key, value),
+    });
     vi.stubGlobal('fetch', async (url: string) => {
       fetched.push(url);
-      const failure = failOn?.(url);
-      if (failure instanceof Error) throw failure;
-      if (failure) return failure;
-      if (url.endsWith('/relief.pmtiles')) {
-        return relief
-          ? new Response(relief, {
-              headers: { 'content-length': String(relief.length) },
-            })
-          : new Response(null, { status: 404 });
-      }
-      return url.endsWith('.pmtiles')
-        ? new Response(ARCHIVE, {
-            headers: { 'content-length': String(ARCHIVE.length) },
-          })
-        : new Response(new Uint8Array(10));
+      return new Response(new Uint8Array(10));
     });
+    vi.stubGlobal('navigator', {
+      storage: { estimate: async () => estimate },
+    });
+    vi.spyOn(
+      OfflineBasemap.prototype as unknown as {
+        pmtiles(): Promise<unknown>;
+      },
+      'pmtiles',
+    ).mockImplementation(async () =>
+      fakePmtiles({
+        tileBytes: () => tileBytes,
+        hasRelief: () => hasRelief,
+        failWith: () => failWith,
+        onRead: (url) => reads.push(url),
+      }),
+    );
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   /** A fresh service, like the one a page load creates. */
@@ -82,186 +152,220 @@ describe('OfflineBasemap', () => {
     return offline;
   }
 
-  it('starts empty and reads nothing', async () => {
+  it('starts with no area and reads nothing', async () => {
     const offline = await create();
-    expect(offline.state()).toBe('none');
+    expect(offline.state()).toBe('idle');
+    expect(offline.areas()).toEqual([]);
     expect(await offline.read(0, 10)).toBeNull();
+    expect(await offline.has(`${BASE}/clermont.pmtiles`)).toBe(false);
   });
 
-  it('downloads the glyphs, the sprites and the archive, then serves byte ranges from it', async () => {
-    const offline = await create();
-    await offline.download();
-
-    expect(offline.state()).toBe('ready');
-    expect(offline.progress()).toBe(1);
-    expect(offline.sizeBytes()).toBe(ARCHIVE.length);
-    expect(offline.totalBytes()).toBe(ARCHIVE.length);
-    expect(fetched.filter((url) => url.endsWith('.pbf'))).toHaveLength(768);
-    // The relief is asked for too; this server has none, which is not a failure.
-    expect(fetched.filter((url) => url.endsWith('.pmtiles'))).toEqual([
-      `${BASE}/clermont.pmtiles`,
-      `${BASE}/relief.pmtiles`,
-    ]);
-    expect(storage.caches.get(OFFLINE_CACHE_NAME)?.entries.size).toBe(1);
-
-    const slice = await offline.read(100, 16);
-    expect(Array.from(new Uint8Array(slice!))).toEqual(
-      Array.from(ARCHIVE.slice(100, 116)),
-    );
-  });
-
-  describe('with a relief archive on the server', () => {
-    const RELIEF = Uint8Array.from({ length: 3000 }, (_, i) => (i * 7) % 256);
-    const RELIEF_URL = `${BASE}/relief.pmtiles`;
-
-    beforeEach(() => {
-      relief = RELIEF;
-    });
-
-    it('downloads both archives and reads each one by its URL', async () => {
-      const offline = await create();
-      expect(await offline.has(RELIEF_URL)).toBe(false);
-      await offline.download();
-
-      expect(offline.state()).toBe('ready');
-      expect(offline.progress()).toBe(1);
-      expect(offline.totalBytes()).toBe(ARCHIVE.length + RELIEF.length);
-      expect(offline.downloadedBytes()).toBe(ARCHIVE.length + RELIEF.length);
-      expect(offline.sizeBytes()).toBe(ARCHIVE.length + RELIEF.length);
-      expect(storage.caches.get(OFFLINE_CACHE_NAME)?.entries.size).toBe(2);
-      expect(await offline.has(RELIEF_URL)).toBe(true);
-
-      const fromRelief = await offline.readerFor(RELIEF_URL).read(10, 8);
-      expect(Array.from(new Uint8Array(fromRelief!))).toEqual(
-        Array.from(RELIEF.slice(10, 18)),
-      );
-      const fromBasemap = await offline
-        .readerFor(`${BASE}/clermont.pmtiles`)
-        .read(10, 8);
-      expect(Array.from(new Uint8Array(fromBasemap!))).toEqual(
-        Array.from(ARCHIVE.slice(10, 18)),
-      );
-      expect(Array.from(new Uint8Array((await offline.read(10, 8))!))).toEqual(
-        Array.from(ARCHIVE.slice(10, 18)),
-      );
-    });
-
-    it('finds both again after a reload, and removes both', async () => {
-      await (await create()).download();
-      const reloaded = await create();
-      expect(reloaded.state()).toBe('ready');
-      expect(reloaded.sizeBytes()).toBe(ARCHIVE.length + RELIEF.length);
-      expect(await reloaded.has(RELIEF_URL)).toBe(true);
-
-      await reloaded.remove();
-      expect(reloaded.sizeBytes()).toBe(0);
-      expect(await reloaded.has(RELIEF_URL)).toBe(false);
-      expect(await reloaded.readerFor(RELIEF_URL).read(0, 4)).toBeNull();
-    });
-
-    it('drops the relief kept before when the server no longer has it', async () => {
-      const offline = await create();
-      await offline.download();
-      relief = null;
-      await offline.download();
-      expect(offline.state()).toBe('ready');
-      expect(offline.sizeBytes()).toBe(ARCHIVE.length);
-      expect(await offline.has(RELIEF_URL)).toBe(false);
-    });
-
-    it('fails, keeping nothing new, when the network drops on the relief', async () => {
-      failOn = (url) =>
-        url === RELIEF_URL ? new TypeError('Failed to fetch') : null;
-      const offline = await create();
-      await offline.download();
-      expect(offline.state()).toBe('error');
-      expect(offline.errorCode()).toBe('network');
-      expect(storage.caches.get(OFFLINE_CACHE_NAME)?.entries.size ?? 0).toBe(0);
-    });
-  });
-
-  it('finds the archive again after a reload', async () => {
-    await (await create()).download();
-    const reloaded = await create();
-    expect(reloaded.state()).toBe('ready');
-    expect(reloaded.sizeBytes()).toBe(ARCHIVE.length);
-    expect((await reloaded.read(0, 4))!.byteLength).toBe(4);
-  });
-
-  it('removes the archive', async () => {
-    const offline = await create();
-    await offline.download();
-    await offline.remove();
-    expect(offline.state()).toBe('none');
-    expect(offline.sizeBytes()).toBe(0);
-    expect(await offline.read(0, 4)).toBeNull();
+  it('deletes the cache of the first version, which held the whole archive', async () => {
+    await storage.open(OFFLINE_CACHE_NAME);
+    await create();
     expect(storage.caches.has(OFFLINE_CACHE_NAME)).toBe(false);
   });
 
-  it('is not ready, and keeps nothing, when a glyph file is missing', async () => {
-    failOn = (url) =>
-      url.includes('Italic/256-511') ? new Response('', { status: 404 }) : null;
+  it('estimates an area from a sample of its tiles, and waits for the answer', async () => {
+    tileBytes = 2000;
     const offline = await create();
-    await offline.download();
-    expect(offline.state()).toBe('error');
-    expect(offline.errorCode()).toBe('unknown');
-    expect(storage.caches.has(OFFLINE_CACHE_NAME)).toBe(false);
-    expect(fetched.some((url) => url.endsWith('.pmtiles'))).toBe(false);
+    await offline.plan(VIEW);
+    const plan = offline.pending()!;
+    expect(plan.tiles.length).toBeGreaterThan(40);
+    expect(plan.reliefTiles.length).toBeGreaterThan(0);
+    // 2000 bytes a tile, give or take the one read of the header and the root directory.
+    // The relief tiles of the area count too, at the same price in this test.
+    const all = plan.tiles.length + plan.reliefTiles.length;
+    expect(plan.bytes).toBeGreaterThan(all * 2000 * 0.9);
+    expect(plan.bytes).toBeLessThan(all * 2000 * 1.5);
+    expect(plan.fits).toBe(true);
+    // Only a sample was read: nothing is kept yet.
+    expect(reads.length).toBeLessThan(60);
+    expect(offline.areas()).toEqual([]);
+    expect(offline.state()).toBe('idle');
+    offline.discard();
+    expect(offline.pending()).toBeNull();
   });
 
-  it('reports a network failure', async () => {
-    failOn = () => new TypeError('Failed to fetch');
+  it('refuses an area above the limit, with a code the UI translates', async () => {
+    tileBytes = Math.ceil(AREA_MAX_BYTES / 20);
     const offline = await create();
-    await offline.download();
-    expect(offline.state()).toBe('error');
-    expect(offline.errorCode()).toBe('network');
+    await offline.plan(VIEW);
+    expect(offline.pending()).toBeNull();
+    expect(offline.errorCode()).toBe('too_big');
   });
 
-  it('reports a full device', async () => {
-    storage.putError = new DOMException('full', 'QuotaExceededError');
+  it('refuses a view that lists far too many tiles without reading any', async () => {
     const offline = await create();
-    await offline.download();
-    expect(offline.state()).toBe('error');
+    await offline.plan({ kind: 'view', box: [-5, 41, 10, 51] });
+    expect(offline.errorCode()).toBe('too_big');
+    expect(reads).toEqual([]);
+  });
+
+  it('says when the device has no room for the area', async () => {
+    estimate = { quota: 1_000_000, usage: 999_000 };
+    const offline = await create();
+    await offline.plan(VIEW);
+    expect(offline.pending()?.fits).toBe(false);
+    await offline.keep('Too big');
     expect(offline.errorCode()).toBe('quota');
-    expect(await offline.read(0, 4)).toBeNull();
+    expect(offline.areas()).toEqual([]);
   });
 
-  it('keeps an existing copy when a new download fails', async () => {
+  it('keeps an area: the glyphs, then every tile in a cache of its own, readable by range', async () => {
     const offline = await create();
-    await offline.download();
-    failOn = () => new TypeError('Failed to fetch');
-    await offline.download();
-    expect(offline.state()).toBe('ready');
-    expect(offline.errorCode()).toBe('network');
-    expect((await offline.read(0, 4))!.byteLength).toBe(4);
-  });
+    await offline.plan(VIEW);
+    const plan = offline.pending()!;
+    await offline.keep('Clermont');
 
-  it('can be cancelled, leaving nothing behind', async () => {
-    const offline = await create();
-    vi.stubGlobal(
-      'fetch',
-      (_url: string, init: { signal: AbortSignal }) =>
-        new Promise((_resolve, reject) => {
-          init.signal.addEventListener('abort', () =>
-            reject(new DOMException('aborted', 'AbortError')),
-          );
-        }),
+    expect(offline.state()).toBe('idle');
+    expect(offline.progress()).toBe(1);
+    expect(offline.pending()).toBeNull();
+    const [area] = offline.areas();
+    expect(area).toMatchObject({
+      name: 'Clermont',
+      kind: 'view',
+      relief: true,
+    });
+    expect(area.tiles).toBe(plan.tiles.length + plan.reliefTiles.length);
+    expect(area.bytes).toBeGreaterThan(plan.tiles.length * 1000);
+    expect(offline.sizeBytes()).toBe(area.bytes);
+    expect(fetched.filter((url) => url.endsWith('.pbf'))).toHaveLength(768);
+    const cacheName = `${AREA_CACHE_PREFIX}${area.id}`;
+    expect(storage.caches.has(cacheName)).toBe(true);
+    // The list is kept for the next visit.
+    expect(JSON.parse(stored.get(AREAS_KEY)!)).toHaveLength(1);
+
+    // The map reads exactly the ranges that were kept.
+    const tile = plan.tiles[plan.tiles.length - 1];
+    const range = await offline.read(
+      tile.z * 10_000_000 + tile.x * 1000 + tile.y,
+      1000,
     );
-    const download = offline.download();
-    await Promise.resolve();
-    expect(offline.state()).toBe('downloading');
-    offline.cancel();
-    await download;
-    expect(offline.state()).toBe('none');
-    expect(offline.errorCode()).toBeNull();
+    expect(range?.byteLength).toBe(1000);
+    expect(await offline.read(123, 456)).toBeNull();
+    expect(await offline.has(`${BASE}/relief.pmtiles`)).toBe(true);
   });
 
-  it('says so when the browser has no Cache Storage', async () => {
+  it('keeps no relief when the server has none, which is not a failure', async () => {
+    hasRelief = false;
+    const offline = await create();
+    await offline.plan(VIEW);
+    const plan = offline.pending()!;
+    await offline.keep('No relief');
+    expect(offline.errorCode()).toBeNull();
+    expect(offline.areas()[0].relief).toBe(false);
+    expect(plan.reliefTiles).toEqual([]);
+    expect(await offline.has(`${BASE}/relief.pmtiles`)).toBe(false);
+    expect(await offline.has(`${BASE}/clermont.pmtiles`)).toBe(true);
+  });
+
+  it('keeps the corridor of a route, much smaller than its box', async () => {
+    const offline = await create();
+    const line: [number, number][] = [
+      [3.0, 45.5],
+      [3.4, 45.9],
+    ];
+    await offline.plan({ kind: 'route', line });
+    const route = offline.pending()!.tiles.length;
+    offline.discard();
+    await offline.plan({
+      kind: 'view',
+      box: [3.0 - 0.07, 45.5 - 0.05, 3.4 + 0.07, 45.9 + 0.05],
+    });
+    expect(route).toBeLessThan(offline.pending()!.tiles.length);
+  });
+
+  it('fetches the glyphs and sprites only for the first area', async () => {
+    const offline = await create();
+    await offline.plan(VIEW);
+    await offline.keep('One');
+    const first = fetched.length;
+    expect(first).toBeGreaterThan(700);
+    await offline.plan({ kind: 'view', box: [3.2, 45.7, 3.25, 45.73] });
+    await offline.keep('Two');
+    expect(fetched.length).toBe(first);
+    expect(offline.areas().map((a) => a.name)).toEqual(['Two', 'One']);
+  });
+
+  it('removes an area and its space, and no longer reads its tiles', async () => {
+    const offline = await create();
+    await offline.plan(VIEW);
+    const tile = offline.pending()!.tiles[0];
+    await offline.keep('Gone soon');
+    const { id } = offline.areas()[0];
+    const key = tile.z * 10_000_000 + tile.x * 1000 + tile.y;
+    expect(await offline.read(key, 1000)).not.toBeNull();
+
+    await offline.removeArea(id);
+    expect(offline.areas()).toEqual([]);
+    expect(offline.sizeBytes()).toBe(0);
+    expect(storage.caches.has(`${AREA_CACHE_PREFIX}${id}`)).toBe(false);
+    expect(await offline.read(key, 1000)).toBeNull();
+    expect(JSON.parse(stored.get(AREAS_KEY)!)).toEqual([]);
+  });
+
+  it('forgets an area whose cache the browser evicted', async () => {
+    const offline = await create();
+    await offline.plan(VIEW);
+    await offline.keep('Evicted');
+    const { id } = offline.areas()[0];
+    storage.caches.delete(`${AREA_CACHE_PREFIX}${id}`);
+    const again = await create();
+    expect(again.areas()).toEqual([]);
+  });
+
+  it('reads the list of areas back on the next visit', async () => {
+    const offline = await create();
+    await offline.plan(VIEW);
+    await offline.keep('Back again');
+    const again = await create();
+    expect(again.areas().map((a) => a.name)).toEqual(['Back again']);
+  });
+
+  it('keeps nothing when the network fails, and says why', async () => {
+    const offline = await create();
+    await offline.plan(VIEW);
+    failWith = new TypeError('Failed to fetch');
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    await offline.keep('Failing');
+    expect(offline.errorCode()).toBe('network');
+    expect(offline.state()).toBe('idle');
+    expect(offline.areas()).toEqual([]);
+    expect(
+      [...storage.caches.keys()].filter((n) => n.startsWith(AREA_CACHE_PREFIX)),
+    ).toEqual([]);
+  });
+
+  it('reports a full storage as such, and keeps nothing', async () => {
+    const offline = await create();
+    await offline.plan(VIEW);
+    failWith = new DOMException('full', 'QuotaExceededError');
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    await offline.keep('Full');
+    expect(offline.errorCode()).toBe('quota');
+    expect(offline.areas()).toEqual([]);
+  });
+
+  it('keeps nothing when the download is cancelled', async () => {
+    const offline = await create();
+    await offline.plan(VIEW);
+    const running = offline.keep('Cancelled');
+    offline.cancel();
+    await running;
+    expect(offline.state()).toBe('idle');
+    expect(offline.errorCode()).toBeNull();
+    expect(offline.areas()).toEqual([]);
+    expect(
+      [...storage.caches.keys()].filter((n) => n.startsWith(AREA_CACHE_PREFIX)),
+    ).toEqual([]);
+  });
+
+  it('does nothing without Cache Storage, and says so', async () => {
     vi.stubGlobal('caches', undefined);
     const offline = await create();
     expect(offline.supported()).toBe(false);
-    await offline.download();
+    await offline.plan(VIEW);
     expect(offline.errorCode()).toBe('unsupported');
-    expect(offline.state()).toBe('error');
   });
 });

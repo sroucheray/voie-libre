@@ -221,18 +221,28 @@
     "summaryNoClimb": "{{distance}}, enregistré le {{date}}"
   },
   "offline": {
-    "title": "Carte hors-ligne",
-    "download": "Télécharger la carte pour l'utiliser hors-ligne",
-    "downloading": "Téléchargement de la carte",
-    "progress": "{{done}} sur {{total}}",
+    "title": "Carte hors ligne",
+    "keepRoute": "Garder ce parcours hors ligne",
+    "keepView": "Garder cette vue hors ligne",
+    "estimating": "Estimation de la taille…",
+    "pending": "Environ {{size}} pour {{tiles}} tuiles.",
+    "keep": "Garder",
+    "downloading": "Téléchargement de la zone",
+    "progress": "{{done}} sur environ {{total}}",
     "cancel": "Annuler",
-    "ready": "Carte disponible hors-ligne ({{size}})",
-    "remove": "Supprimer la carte téléchargée",
+    "areas": "Zones gardées hors ligne",
+    "remove": "Supprimer",
+    "removeArea": "Supprimer {{name}} de l'appareil",
+    "names": {
+      "route": "Parcours {{distance}}, {{date}}",
+      "view": "Vue, {{date}}"
+    },
     "errors": {
-      "unsupported": "Ce navigateur ne peut pas conserver la carte hors-ligne.",
-      "network": "La carte n'a pas pu être téléchargée. Vérifiez la connexion et réessayez.",
-      "quota": "Espace de stockage insuffisant sur cet appareil pour la carte.",
-      "unknown": "La carte n'a pas pu être enregistrée pour une utilisation hors-ligne."
+      "unsupported": "Ce navigateur ne peut pas garder la carte hors ligne.",
+      "network": "La zone n'a pas pu être téléchargée. Vérifiez la connexion et réessayez.",
+      "quota": "Pas assez d'espace de stockage sur cet appareil pour cette zone.",
+      "too_big": "Cette zone est trop grande (plus de 1 Go). Zoomez ou choisissez un parcours plus court.",
+      "unknown": "La zone n'a pas pu être enregistrée pour le hors ligne."
     }
   },
   "sharing": {

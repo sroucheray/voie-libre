@@ -23,6 +23,8 @@ import {
   reliefTilesUrl,
 } from './basemap-style';
 import { MapLayers, RELIEF_PROBE } from './map-layers';
+import { MapViewport } from './map-viewport';
+import { viewBox } from '../offline/area-tiles';
 import { WAY_COLORS, WAY_LEVELS } from './way-levels';
 import {
   SURFACE_COLORS,
@@ -82,6 +84,7 @@ export class MapView {
   private readonly map = signal<MapLike | null>(null);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly probeRelief = inject(RELIEF_PROBE);
+  private readonly viewport = inject(MapViewport);
   protected readonly layers = inject(MapLayers);
   /** True once the archive of elevation tiles is known to exist. */
   protected readonly reliefAvailable = signal(false);
@@ -144,10 +147,24 @@ export class MapView {
         return;
       }
       created = map;
+      const publishView = () => {
+        const { lng, lat } = map.getCenter();
+        const host = this.container().nativeElement;
+        this.viewport.box.set(
+          viewBox(
+            [lng, lat],
+            map.getZoom(),
+            host.clientWidth || 1,
+            host.clientHeight || 1,
+          ),
+        );
+      };
+      publishView();
       map.on('moveend', () => {
         const { lng, lat } = map.getCenter();
         this.center.set([lng, lat]);
         this.zoom.set(map.getZoom());
+        publishView();
       });
       map.on('rotate', () => this.bearingState.set(map.getBearing()));
       this.map.set(map);

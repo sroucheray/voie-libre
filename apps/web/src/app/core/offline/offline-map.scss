@@ -23,3 +23,26 @@
 .error {
   color: #b42318;
 }
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+}
+
+.pending {
+  margin: 0;
+}
+
+.areas {
+  flex-basis: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}

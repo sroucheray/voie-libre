@@ -1,20 +1,79 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { RELIEF_MAX_ZOOM, RELIEF_MIN_ZOOM } from '@voie-libre/shared';
 import {
   basemapTilesUrl,
   buildBasemapStyle,
   reliefTilesUrl,
 } from '../map/basemap-style';
-import { BASEMAP_URL } from '../map/map-factory';
+import { BASEMAP_URL, type LngLat } from '../map/map-factory';
+import {
+  OFFLINE_MAX_ZOOM,
+  boxAround,
+  boxTiles,
+  corridorTiles,
+  countBoxTiles,
+  type Box,
+  type TileId,
+} from './area-tiles';
+import {
+  AREA_CACHE_PREFIX,
+  RecordingSource,
+  readKeptRange,
+  rangeUrl,
+} from './range-cache';
 import type { OfflineTilesReader } from './tiles-source';
 
-/** Name of the Cache Storage cache holding the downloaded PMTiles archive. */
+/** The cache of the first version, which held the whole archive: deleted when found. */
 export const OFFLINE_CACHE_NAME = 'voie-libre-basemap-v1';
 
-export type OfflineState =
-  'checking' | 'none' | 'downloading' | 'ready' | 'error';
+/** Where the list of kept areas is remembered (only a list: the tiles are in Cache Storage). */
+export const AREAS_KEY = 'voie-libre.offline-areas';
 
-/** Why a download failed; the UI translates these under `offline.errors.*`. */
-export type OfflineErrorCode = 'unsupported' | 'network' | 'quota' | 'unknown';
+/** Width of the corridor kept around a route, on each side. */
+export const AREA_BUFFER_METERS = 5000;
+/** The largest area that can be kept: above this the user is asked for a smaller one. */
+export const AREA_MAX_BYTES = 1_000_000_000;
+/** The most tiles an area may list, so that a view of a whole country is refused without a pass. */
+export const AREA_MAX_TILES = 150_000;
+/** Tiles fetched to estimate the size of an area. */
+const SAMPLE_TILES = 24;
+
+export type OfflineState = 'checking' | 'idle' | 'planning' | 'downloading';
+
+/** Why an area was refused or failed; the UI translates these under `offline.errors.*`. */
+export type OfflineErrorCode =
+  'unsupported' | 'network' | 'quota' | 'too_big' | 'unknown';
+
+/** What the user asks to keep: the rectangle on screen, or the corridor around a route. */
+export type AreaShape =
+  { kind: 'view'; box: Box } | { kind: 'route'; line: readonly LngLat[] };
+
+/** What keeping a shape would take, shown before the user agrees. */
+export interface AreaPlan {
+  shape: AreaShape;
+  /** Tiles of the basemap, from zoom 0 to 14. */
+  tiles: TileId[];
+  /** Tiles of the relief that the server has for the same area (empty without relief). */
+  reliefTiles: TileId[];
+  /** Estimated bytes, from a sample of the tiles. */
+  bytes: number;
+  /** The device has room for it. */
+  fits: boolean;
+}
+
+/** An area kept on the device. */
+export interface OfflineArea {
+  id: string;
+  name: string;
+  kind: AreaShape['kind'];
+  box: Box;
+  tiles: number;
+  bytes: number;
+  /** Milliseconds since the epoch. */
+  createdAt: number;
+  /** The relief of the area is kept too. */
+  relief: boolean;
+}
 
 /** Glyph ranges are 256 code points each, up to U+FFFF. */
 const GLYPH_RANGES = Array.from(
@@ -75,11 +134,13 @@ export function basemapAssetUrls(baseUrl: string): string[] {
 }
 
 /**
- * The basemap on the device. The user downloads the PMTiles archive of the region on request; it
- * is kept in Cache Storage and read by byte ranges (see {@link OfflineFirstSource}). The same
+ * The basemap on the device, by area. The archive is far too big to copy, so the user keeps the
+ * places they need: the corridor around a route, or the view on screen. Keeping an area reads all
+ * its tiles from the archive through a {@link RecordingSource}, which stores every byte range it
+ * got in a Cache Storage cache of its own (one cache per area, so removing it is deleting the
+ * cache). The map reads those ranges before the network (see {@link OfflineFirstSource}). The same
  * action fetches every glyph and sprite file, which the service worker keeps (`dataGroups` in
- * `ngsw-config.json`), and the archive of relief tiles when the server has one. The state is
- * `ready` only once everything is in place; the relief alone never makes it so.
+ * `ngsw-config.json`), and the relief tiles of the area when the server has a relief archive.
  */
 @Injectable({ providedIn: 'root' })
 export class OfflineBasemap implements OfflineTilesReader {
@@ -92,61 +153,70 @@ export class OfflineBasemap implements OfflineTilesReader {
   private readonly progressSignal = signal(0);
   private readonly downloadedSignal = signal(0);
   private readonly totalSignal = signal(0);
-  private readonly sizeSignal = signal(0);
   private readonly errorSignal = signal<OfflineErrorCode | null>(null);
+  private readonly areasSignal = signal<OfflineArea[]>([]);
+  private readonly planSignal = signal<AreaPlan | null>(null);
 
   readonly state = this.stateSignal.asReadonly();
   /** 0 to 1 while downloading. */
   readonly progress = this.progressSignal.asReadonly();
   readonly downloadedBytes = this.downloadedSignal.asReadonly();
-  /** Size announced by the server; 0 while unknown. */
+  /** Estimated size of the area being downloaded. */
   readonly totalBytes = this.totalSignal.asReadonly();
-  /** Size of the archives on the device. */
-  readonly sizeBytes = this.sizeSignal.asReadonly();
   readonly errorCode = this.errorSignal.asReadonly();
+  /** The areas kept on the device, the newest first. */
+  readonly areas = this.areasSignal.asReadonly();
+  /** The area the user is asked to confirm, once {@link plan} has estimated it. */
+  readonly pending = this.planSignal.asReadonly();
+  /** Bytes of all the kept areas (an overlap is counted twice). */
+  readonly sizeBytes = computed(() =>
+    this.areasSignal().reduce((sum, area) => sum + area.bytes, 0),
+  );
   readonly supported = computed(() => this.cacheStorage() !== undefined);
 
-  /** The archives read from the cache, by URL; a failed read is forgotten and tried again. */
-  private readonly blobs = new Map<string, Promise<Blob | null>>();
   private controller: AbortController | null = null;
 
   constructor() {
     void this.refresh();
   }
 
-  /** Reads the cache again to learn whether an archive is already on the device. */
+  /** Reads which areas are on the device: the list, checked against the caches that exist. */
   async refresh(): Promise<void> {
-    if (!this.cacheStorage()) {
-      this.stateSignal.set('none');
+    const caches = this.cacheStorage();
+    if (!caches) {
+      this.stateSignal.set('idle');
       return;
     }
     try {
-      const blob = await this.blob(this.tilesUrl);
-      const relief = blob ? await this.blob(this.reliefUrl) : null;
-      this.sizeSignal.set((blob?.size ?? 0) + (relief?.size ?? 0));
-      this.stateSignal.set(blob ? 'ready' : 'none');
+      // The first version kept the whole archive in one cache: it is of no use any more.
+      await caches.delete(OFFLINE_CACHE_NAME);
+      const stored = this.readAreas();
+      const kept: OfflineArea[] = [];
+      for (const area of stored) {
+        if (await caches.has(this.cacheName(area.id))) kept.push(area);
+      }
+      if (kept.length !== stored.length) this.writeAreas(kept);
+      this.areasSignal.set(kept);
     } catch {
-      this.stateSignal.set('none');
+      // The list stays as it was: the next refresh shows the real state.
     }
+    if (this.stateSignal() === 'checking') this.stateSignal.set('idle');
   }
 
-  /** Reads the basemap's archive. */
+  /** Reads a range of the basemap's archive kept on the device. */
   read(offset: number, length: number): Promise<ArrayBuffer | null> {
     return this.readFrom(this.tilesUrl, offset, length);
   }
 
-  /** A reader of the downloaded copy of the archive at `url` (the basemap's or the relief's). */
+  /** A reader of the ranges kept for the archive at `url` (the basemap's or the relief's). */
   readerFor(url: string): OfflineTilesReader {
     return { read: (offset, length) => this.readFrom(url, offset, length) };
   }
 
-  /** True when the archive at `url` is on the device. */
+  /** True when an area on the device holds the archive at `url` (the relief's only if kept). */
   async has(url: string): Promise<boolean> {
-    try {
-      return (await this.blob(url)) !== null;
-    } catch {
-      return false;
-    }
+    if (url === this.reliefUrl) return this.areasSignal().some((a) => a.relief);
+    return this.areasSignal().length > 0;
   }
 
   private async readFrom(
@@ -154,63 +224,73 @@ export class OfflineBasemap implements OfflineTilesReader {
     offset: number,
     length: number,
   ): Promise<ArrayBuffer | null> {
-    let blob: Blob | null;
+    const caches = this.cacheStorage();
+    if (!caches || this.areasSignal().length === 0) return null;
     try {
-      blob = await this.blob(url);
+      return await readKeptRange(caches, url, offset, length);
     } catch {
       return null;
     }
-    return blob ? blob.slice(offset, offset + length).arrayBuffer() : null;
   }
 
-  /** Downloads the archive and the small files. Does nothing while a download is running. */
-  async download(): Promise<void> {
-    if (this.stateSignal() === 'downloading') return;
-    const caches = this.cacheStorage();
-    if (!caches) {
+  /**
+   * Works out what keeping `shape` would take: the tiles, an estimate of the bytes from a sample
+   * of them, and whether the device has room. The result waits in {@link pending} for the user's
+   * yes ({@link keep}) or no ({@link discard}). An area above {@link AREA_MAX_BYTES} is refused.
+   */
+  async plan(shape: AreaShape): Promise<void> {
+    if (
+      this.stateSignal() === 'planning' ||
+      this.stateSignal() === 'downloading'
+    ) {
+      return;
+    }
+    if (!this.cacheStorage()) {
       this.fail('unsupported');
       return;
     }
     this.errorSignal.set(null);
-    this.progressSignal.set(0);
-    this.downloadedSignal.set(0);
-    this.totalSignal.set(0);
-    this.stateSignal.set('downloading');
+    this.planSignal.set(null);
+    this.stateSignal.set('planning');
     const controller = (this.controller = new AbortController());
     try {
-      // Ask the browser not to evict the archive under storage pressure. Best effort.
-      void navigator.storage?.persist?.().catch(() => undefined);
-      await this.waitForServiceWorker();
-      await this.fetchAssets(controller.signal);
-      const archives = await this.fetchArchives(controller.signal);
-      const cache = await caches.open(OFFLINE_CACHE_NAME);
-      let size = 0;
-      for (const [url, archive] of archives) {
-        await cache.put(
-          url,
-          new Response(archive, {
-            headers: {
-              'content-type': 'application/octet-stream',
-              'content-length': String(archive.size),
-            },
-          }),
-        );
-        this.blobs.set(url, Promise.resolve(archive));
-        size += archive.size;
+      const tiles = this.tilesOf(shape, 0, OFFLINE_MAX_ZOOM);
+      if (!tiles) {
+        this.fail('too_big');
+        return;
       }
-      if (!archives.some(([url]) => url === this.reliefUrl)) {
-        // A relief kept from before and gone from the server would no longer match the map.
-        await cache.delete(this.reliefUrl);
-        this.blobs.delete(this.reliefUrl);
+      const wanted =
+        this.tilesOf(shape, RELIEF_MIN_ZOOM, RELIEF_MAX_ZOOM) ?? [];
+      // A server without a relief archive answers 404: the area has no relief, and that is fine.
+      const relief = await this.estimate(
+        this.reliefUrl,
+        wanted,
+        controller.signal,
+        0,
+      ).catch((error: unknown) => {
+        if (controller.signal.aborted) throw error;
+        return null;
+      });
+      const reliefTiles = relief === null ? [] : wanted;
+      const basemap = await this.estimate(
+        this.tilesUrl,
+        tiles,
+        controller.signal,
+      );
+      const bytes = basemap + (relief ?? 0);
+      if (controller.signal.aborted) return;
+      if (bytes > AREA_MAX_BYTES) {
+        this.fail('too_big');
+        return;
       }
-      this.sizeSignal.set(size);
-      this.progressSignal.set(1);
-      this.stateSignal.set('ready');
+      const fits = await this.hasRoomFor(bytes);
+      this.planSignal.set({ shape, tiles, reliefTiles, bytes, fits });
+      this.stateSignal.set('idle');
     } catch (error) {
       if (controller.signal.aborted) {
-        this.stateSignal.set(this.sizeSignal() > 0 ? 'ready' : 'none');
+        this.stateSignal.set('idle');
       } else {
-        console.error('Downloading the basemap failed', error);
+        console.error('Estimating the area failed', error);
         this.fail(this.codeOf(error));
       }
     } finally {
@@ -218,47 +298,212 @@ export class OfflineBasemap implements OfflineTilesReader {
     }
   }
 
-  /** Stops a running download; nothing partial is kept. */
+  /** The user said no to the area waiting in {@link pending}. */
+  discard(): void {
+    this.planSignal.set(null);
+    this.errorSignal.set(null);
+  }
+
+  /**
+   * Keeps the area of `plan` under `name`: the small files first, then every tile of the area
+   * (the relief's too), all of them stored. Does nothing while another run is going. A failure or
+   * a cancel leaves nothing of the area behind.
+   */
+  async keep(name: string): Promise<void> {
+    const plan = this.planSignal();
+    const caches = this.cacheStorage();
+    if (!plan || !caches || this.stateSignal() === 'downloading') return;
+    if (!plan.fits) {
+      this.fail('quota');
+      return;
+    }
+    this.errorSignal.set(null);
+    this.progressSignal.set(0);
+    this.downloadedSignal.set(0);
+    this.totalSignal.set(plan.bytes);
+    this.stateSignal.set('downloading');
+    const controller = (this.controller = new AbortController());
+    const id = this.newId();
+    const cacheName = this.cacheName(id);
+    try {
+      // Ask the browser not to evict the tiles under storage pressure. Best effort.
+      void navigator.storage?.persist?.().catch(() => undefined);
+      if (this.areasSignal().length === 0) {
+        await this.waitForServiceWorker();
+        await this.fetchAssets(controller.signal);
+      }
+      const cache = await caches.open(cacheName);
+      const { PMTiles, FetchSource } = await this.pmtiles();
+      const record = (url: string) =>
+        new PMTiles(
+          new RecordingSource(
+            new FetchSource(url),
+            async (offset, length, data) => {
+              await cache.put(
+                rangeUrl(url, offset, length),
+                new Response(data.slice(0)),
+              );
+              this.downloadedSignal.update((n) => n + data.byteLength);
+            },
+          ),
+        );
+      const basemap = record(this.tilesUrl);
+      const relief = record(this.reliefUrl);
+      // A server without relief answers 404 for its header: the map works without.
+      const hasRelief =
+        plan.reliefTiles.length > 0 &&
+        (await relief.getHeader().then(
+          () => true,
+          () => false,
+        ));
+      const jobs: [InstanceType<typeof PMTiles>, TileId][] = [
+        ...plan.tiles.map((t): [InstanceType<typeof PMTiles>, TileId] => [
+          basemap,
+          t,
+        ]),
+        ...(hasRelief
+          ? plan.reliefTiles.map(
+              (t): [InstanceType<typeof PMTiles>, TileId] => [relief, t],
+            )
+          : []),
+      ];
+      let done = 0;
+      let next = 0;
+      const worker = async () => {
+        while (next < jobs.length) {
+          const [archive, tile] = jobs[next++];
+          await archive.getZxy(tile.z, tile.x, tile.y, controller.signal);
+          done++;
+          this.progressSignal.set(
+            ASSETS_SHARE + (done / jobs.length) * (1 - ASSETS_SHARE),
+          );
+        }
+      };
+      await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+
+      const area: OfflineArea = {
+        id,
+        name,
+        kind: plan.shape.kind,
+        box: this.boxOf(plan.shape),
+        tiles: jobs.length,
+        bytes: this.downloadedSignal(),
+        createdAt: Date.now(),
+        relief: hasRelief,
+      };
+      const areas = [area, ...this.areasSignal()];
+      this.areasSignal.set(areas);
+      this.writeAreas(areas);
+      this.planSignal.set(null);
+      this.progressSignal.set(1);
+      this.stateSignal.set('idle');
+    } catch (error) {
+      await caches.delete(cacheName).catch(() => false);
+      if (controller.signal.aborted) {
+        this.stateSignal.set('idle');
+      } else {
+        console.error('Keeping the area failed', error);
+        this.fail(this.codeOf(error));
+      }
+    } finally {
+      this.controller = null;
+    }
+  }
+
+  /** Stops a running estimate or download; nothing partial is kept. */
   cancel(): void {
     this.controller?.abort();
   }
 
   /**
-   * Deletes the downloaded archives. The glyphs and sprites stay in the service worker cache
+   * Removes an area and frees its space. The glyphs and sprites stay in the service worker cache
    * (about 14 MB the browser may evict): they are shared with the online map.
    */
-  async remove(): Promise<void> {
+  async removeArea(id: string): Promise<void> {
     const caches = this.cacheStorage();
-    if (!caches) return;
     try {
-      await caches.delete(OFFLINE_CACHE_NAME);
+      await caches?.delete(this.cacheName(id));
     } catch {
-      // Nothing more to do: the next refresh shows the real state.
+      // The list below is what the user sees; the next refresh checks the caches again.
     }
-    this.blobs.clear();
-    this.sizeSignal.set(0);
+    const areas = this.areasSignal().filter((area) => area.id !== id);
+    this.areasSignal.set(areas);
+    this.writeAreas(areas);
     this.errorSignal.set(null);
-    this.stateSignal.set('none');
   }
 
-  private blob(url: string): Promise<Blob | null> {
-    let blob = this.blobs.get(url);
-    if (!blob) {
-      blob = this.loadBlob(url).catch((error: unknown) => {
-        this.blobs.delete(url);
-        throw error;
-      });
-      this.blobs.set(url, blob);
+  /** The tiles of a shape between two zooms; `null` when the shape lists too many to be kept. */
+  private tilesOf(
+    shape: AreaShape,
+    minZoom: number,
+    maxZoom: number,
+  ): TileId[] | null {
+    if (shape.kind === 'view') {
+      if (countBoxTiles(shape.box, minZoom, maxZoom) > AREA_MAX_TILES)
+        return null;
+      return boxTiles(shape.box, minZoom, maxZoom);
     }
-    return blob;
+    // A corridor lists at most the tiles of its box: refuse before building a huge list.
+    const box = boxAround(shape.line, AREA_BUFFER_METERS);
+    if (countBoxTiles(box, maxZoom, maxZoom) > AREA_MAX_TILES) return null;
+    const tiles = corridorTiles(
+      shape.line,
+      AREA_BUFFER_METERS,
+      minZoom,
+      maxZoom,
+    );
+    return tiles.length > AREA_MAX_TILES ? null : tiles;
   }
 
-  private async loadBlob(url: string): Promise<Blob | null> {
-    const caches = this.cacheStorage();
-    if (!caches || !(await caches.has(OFFLINE_CACHE_NAME))) return null;
-    const cache = await caches.open(OFFLINE_CACHE_NAME);
-    const response = await cache.match(url);
-    return response ? response.blob() : null;
+  private boxOf(shape: AreaShape): Box {
+    return shape.kind === 'view'
+      ? shape.box
+      : boxAround(shape.line, AREA_BUFFER_METERS);
+  }
+
+  /**
+   * Bytes the tiles of an archive will take, from the bytes of a sample of its tiles from zoom
+   * `deepFrom` on (the shallow ones are few). Throws when the archive cannot be read.
+   */
+  private async estimate(
+    url: string,
+    tiles: TileId[],
+    signal: AbortSignal,
+    deepFrom = 10,
+  ): Promise<number> {
+    const deep = tiles.filter((tile) => tile.z >= deepFrom);
+    const pool = deep.length > 0 ? deep : tiles;
+    if (pool.length === 0) return 0;
+    const stride = Math.max(1, Math.floor(pool.length / SAMPLE_TILES));
+    const sample = pool
+      .filter((_, i) => i % stride === 0)
+      .slice(0, SAMPLE_TILES);
+    const { PMTiles, FetchSource } = await this.pmtiles();
+    let bytes = 0;
+    const archive = new PMTiles(
+      new RecordingSource(new FetchSource(url), async (_offset, length) => {
+        bytes += length;
+      }),
+    );
+    for (const tile of sample)
+      await archive.getZxy(tile.z, tile.x, tile.y, signal);
+    return Math.round((bytes / sample.length) * tiles.length);
+  }
+
+  /** PMTiles is large and loaded on demand; tests replace this to read a fake archive. */
+  protected pmtiles(): Promise<typeof import('pmtiles')> {
+    return import('pmtiles');
+  }
+
+  /** Room left on the device for `bytes`, with a margin; unknown counts as room. */
+  private async hasRoomFor(bytes: number): Promise<boolean> {
+    try {
+      const { quota, usage } = (await navigator.storage?.estimate?.()) ?? {};
+      if (quota === undefined || usage === undefined) return true;
+      return quota - usage > bytes * 1.2;
+    } catch {
+      return true;
+    }
   }
 
   /**
@@ -295,57 +540,10 @@ export class OfflineBasemap implements OfflineTilesReader {
     await Promise.all(Array.from({ length: CONCURRENCY }, worker));
   }
 
-  /**
-   * Downloads the basemap's archive, and the relief's when the server has it (a missing relief is
-   * not a failure: the map works without). Both are asked for first, so that the progress counts
-   * the bytes of the two.
-   */
-  private async fetchArchives(signal: AbortSignal): Promise<[string, Blob][]> {
-    const basemap = await fetch(this.tilesUrl, { signal });
-    if (!basemap.ok || !basemap.body) {
-      throw new Error(`${this.tilesUrl}: HTTP ${basemap.status}`);
-    }
-    const relief = await fetch(this.reliefUrl, { signal });
-    const responses: [string, Response][] = [[this.tilesUrl, basemap]];
-    if (relief.ok && relief.body) responses.push([this.reliefUrl, relief]);
-    else void relief.body?.cancel().catch(() => undefined);
-
-    const total = responses.reduce(
-      (sum, [, response]) =>
-        sum + (Number(response.headers.get('content-length')) || 0),
-      0,
-    );
-    this.totalSignal.set(total);
-    let received = 0;
-    const archives: [string, Blob][] = [];
-    for (const [url, response] of responses) {
-      const reader = (response.body as ReadableStream<Uint8Array>).getReader();
-      const chunks: Uint8Array<ArrayBuffer>[] = [];
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value as Uint8Array<ArrayBuffer>);
-        received += value.byteLength;
-        this.downloadedSignal.set(received);
-        if (total > 0) {
-          this.progressSignal.set(
-            ASSETS_SHARE + (received / total) * (1 - ASSETS_SHARE),
-          );
-        }
-      }
-      archives.push([
-        url,
-        new Blob(chunks, { type: 'application/octet-stream' }),
-      ]);
-    }
-    return archives;
-  }
-
   private fail(code: OfflineErrorCode): void {
     this.errorSignal.set(code);
-    this.stateSignal.set(this.sizeSignal() > 0 ? 'ready' : 'error');
-    if (this.sizeSignal() > 0) return;
     this.progressSignal.set(0);
+    this.stateSignal.set('idle');
   }
 
   private codeOf(error: unknown): OfflineErrorCode {
@@ -353,6 +551,31 @@ export class OfflineBasemap implements OfflineTilesReader {
     if (name === 'QuotaExceededError') return 'quota';
     if (error instanceof TypeError) return 'network';
     return 'unknown';
+  }
+
+  private cacheName(id: string): string {
+    return `${AREA_CACHE_PREFIX}${id}`;
+  }
+
+  private newId(): string {
+    return Math.random().toString(36).slice(2, 12);
+  }
+
+  private readAreas(): OfflineArea[] {
+    try {
+      const stored = JSON.parse(localStorage.getItem(AREAS_KEY) ?? '[]');
+      return Array.isArray(stored) ? (stored as OfflineArea[]) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private writeAreas(areas: OfflineArea[]): void {
+    try {
+      localStorage.setItem(AREAS_KEY, JSON.stringify(areas));
+    } catch {
+      // Storage refused: the list holds until the page is closed.
+    }
   }
 
   private cacheStorage(): CacheStorage | undefined {

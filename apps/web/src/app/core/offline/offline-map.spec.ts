@@ -1,30 +1,56 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideTestTransloco } from '../../../testing/transloco-testing';
+import { PlannerStore } from '../../planner/planner-store';
 import { LanguageService } from '../i18n/language.service';
-import { OfflineBasemap, type OfflineState } from './offline-basemap';
+import { MapViewport } from '../map/map-viewport';
+import {
+  OfflineBasemap,
+  type AreaPlan,
+  type AreaShape,
+  type OfflineArea,
+  type OfflineState,
+} from './offline-basemap';
 import { OfflineMap } from './offline-map';
 
+type ErrorCode = 'unsupported' | 'network' | 'quota' | 'too_big' | 'unknown';
+
 class FakeOffline {
-  state = signal<OfflineState>('none');
+  state = signal<OfflineState>('idle');
   progress = signal(0);
   downloadedBytes = signal(0);
   totalBytes = signal(0);
-  sizeBytes = signal(0);
-  errorCode = signal<'unsupported' | 'network' | 'quota' | 'unknown' | null>(
-    null,
-  );
-  calls: string[] = [];
-  download() {
-    this.calls.push('download');
+  errorCode = signal<ErrorCode | null>(null);
+  areas = signal<OfflineArea[]>([]);
+  pending = signal<AreaPlan | null>(null);
+  calls: unknown[] = [];
+  plan(shape: AreaShape) {
+    this.calls.push(['plan', shape]);
+  }
+  keep(name: string) {
+    this.calls.push(['keep', name]);
+  }
+  discard() {
+    this.calls.push('discard');
   }
   cancel() {
     this.calls.push('cancel');
   }
-  remove() {
-    this.calls.push('remove');
+  removeArea(id: string) {
+    this.calls.push(['removeArea', id]);
   }
 }
+
+const area = (id: string, name: string, bytes: number): OfflineArea => ({
+  id,
+  name,
+  kind: 'route',
+  box: [3, 45, 3.1, 45.1],
+  tiles: 100,
+  bytes,
+  createdAt: 0,
+  relief: true,
+});
 
 describe('OfflineMap', () => {
   let offline: FakeOffline;
@@ -55,23 +81,105 @@ describe('OfflineMap', () => {
         fixture.detectChanges();
       },
       text: () => root.textContent!.replace(/\s+/g, ' ').trim(),
+      button: (selector: string) =>
+        root.querySelector<HTMLButtonElement>(selector)!,
     };
   }
 
-  it('offers the download when nothing is on the device', async () => {
+  const showRoute = () =>
+    TestBed.inject(PlannerStore).setRoutes([
+      {
+        geometry: [
+          [3.0, 45.0, 0],
+          [3.1, 45.1, 0],
+        ],
+        distanceMeters: 41_000,
+        ascentMeters: 100,
+        durationSeconds: 100,
+      },
+    ]);
+
+  it('offers the view only until a route is on screen, and the view needs a map', async () => {
     const view = render();
     await view.update();
-    const button = view.root.querySelector('button')!;
-    expect(button.textContent).toContain('Download the map for offline use');
-    button.click();
-    expect(offline.calls).toEqual(['download']);
+    expect(view.button('.keep-route').disabled).toBe(true);
+    expect(view.button('.keep-view').disabled).toBe(true);
+    TestBed.inject(MapViewport).box.set([3, 45, 3.1, 45.1]);
+    showRoute();
+    await view.update();
+    expect(view.button('.keep-route').disabled).toBe(false);
+    expect(view.button('.keep-view').disabled).toBe(false);
   });
 
-  it('disables the button while it checks what is on the device', async () => {
-    offline.state.set('checking');
+  it('asks to keep the corridor of the route, named after it, then waits for the yes', async () => {
+    showRoute();
     const view = render();
     await view.update();
-    expect(view.root.querySelector('button')!.disabled).toBe(true);
+    view.button('.keep-route').click();
+    expect(offline.calls).toEqual([
+      [
+        'plan',
+        {
+          kind: 'route',
+          line: [
+            [3.0, 45.0],
+            [3.1, 45.1],
+          ],
+        },
+      ],
+    ]);
+    // The service estimates, then the user sees what it takes.
+    offline.pending.set({
+      shape: { kind: 'route', line: [] },
+      tiles: Array.from({ length: 3912 }, () => ({ z: 14, x: 0, y: 0 })),
+      reliefTiles: [],
+      bytes: 148_000_000,
+      fits: true,
+    });
+    await view.update();
+    expect(view.text()).toContain('About 148 MB for 3,912 tiles.');
+    expect(view.button('.keep-route').disabled).toBe(true);
+    view.button('.confirm').click();
+    const keep = offline.calls.at(-1) as [string, string];
+    expect(keep[0]).toBe('keep');
+    expect(keep[1]).toMatch(/^Route 41 km, /);
+    view.button('.discard').click();
+    expect(offline.calls.at(-1)).toBe('discard');
+  });
+
+  it('asks to keep the view on screen', async () => {
+    TestBed.inject(MapViewport).box.set([3, 45, 3.1, 45.1]);
+    const view = render();
+    await view.update();
+    view.button('.keep-view').click();
+    expect(offline.calls).toEqual([
+      ['plan', { kind: 'view', box: [3, 45, 3.1, 45.1] }],
+    ]);
+  });
+
+  it('does not let the user confirm an area that does not fit', async () => {
+    offline.pending.set({
+      shape: { kind: 'view', box: [0, 0, 1, 1] },
+      tiles: [{ z: 0, x: 0, y: 0 }],
+      reliefTiles: [],
+      bytes: 5_000_000_000,
+      fits: false,
+    });
+    const view = render();
+    await view.update();
+    expect(view.button('.confirm').disabled).toBe(true);
+    expect(view.root.querySelector('[role="alert"]')?.textContent).toContain(
+      'Not enough storage space',
+    );
+  });
+
+  it('shows the estimate and a cancel button while it estimates', async () => {
+    offline.state.set('planning');
+    const view = render();
+    await view.update();
+    expect(view.text()).toContain('Estimating the size');
+    view.button('.cancel').click();
+    expect(offline.calls).toEqual(['cancel']);
   });
 
   it('shows the progress and a cancel button while downloading', async () => {
@@ -81,30 +189,37 @@ describe('OfflineMap', () => {
     offline.totalBytes.set(40_000_000);
     const view = render();
     await view.update();
-    const progress = view.root.querySelector('progress')!;
-    expect(progress.value).toBe(50);
-    expect(view.text()).toContain('20 MB of 40 MB');
-    view.root.querySelector('button')!.click();
+    expect(view.root.querySelector('progress')!.value).toBe(50);
+    expect(view.text()).toContain('20 MB of about 40 MB');
+    view.button('.cancel').click();
     expect(offline.calls).toEqual(['cancel']);
   });
 
-  it('shows the size and a remove button when the map is on the device', async () => {
-    offline.state.set('ready');
-    offline.sizeBytes.set(42_680_958);
+  it('lists the areas kept, each with its size and a remove button', async () => {
+    offline.areas.set([
+      area('a', 'Route 41 km', 148_000_000),
+      area('b', 'View', 12_000_000),
+    ]);
     const view = render();
     await view.update();
-    expect(view.text()).toContain('Map available offline (42.7 MB)');
-    view.root.querySelector('button')!.click();
-    expect(offline.calls).toEqual(['remove']);
+    const items = [...view.root.querySelectorAll('.areas li')];
+    expect(items).toHaveLength(2);
+    expect(items[0].textContent).toContain('Route 41 km');
+    expect(items[0].textContent).toContain('148 MB');
+    items[1].querySelector<HTMLButtonElement>('.remove')!.click();
+    expect(offline.calls).toEqual([['removeArea', 'b']]);
+    expect(items[1].querySelector('.remove')!.getAttribute('aria-label')).toBe(
+      'Remove View from the device',
+    );
   });
 
   it.each([
-    ['unsupported', 'cannot keep the map offline', 'ne peut pas conserver'],
+    ['unsupported', 'cannot keep the map offline', 'ne peut pas garder'],
     ['network', 'could not be downloaded', "n'a pas pu être téléchargée"],
-    ['quota', 'Not enough storage space', 'Espace de stockage insuffisant'],
+    ['quota', 'Not enough storage space', 'Pas assez'],
+    ['too_big', 'too big', 'trop grande'],
     ['unknown', 'could not be saved', "n'a pas pu être enregistrée"],
   ] as const)('translates the %s error', async (code, english, french) => {
-    offline.state.set('error');
     offline.errorCode.set(code);
     const view = render();
     await view.update();

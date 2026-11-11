@@ -1,37 +1,82 @@
 <section class="offline" [attr.aria-label]="'offline.title' | transloco">
-  @switch (offline.state()) { @case ('downloading') {
+  <div class="actions">
+    <button
+      type="button"
+      class="keep-route"
+      [disabled]="busy() || !canKeepRoute()"
+      (click)="keepRoute()"
+    >
+      {{ 'offline.keepRoute' | transloco }}
+    </button>
+    <button
+      type="button"
+      class="keep-view"
+      [disabled]="busy() || !canKeepView()"
+      (click)="keepView()"
+    >
+      {{ 'offline.keepView' | transloco }}
+    </button>
+  </div>
+
+  @switch (offline.state()) { @case ('planning') {
+  <span class="status">{{ 'offline.estimating' | transloco }}</span>
+  <button type="button" class="cancel" (click)="offline.cancel()">
+    {{ 'offline.cancel' | transloco }}
+  </button>
+  } @case ('downloading') {
   <label class="progress">
     {{ 'offline.downloading' | transloco }}
     <progress max="100" [value]="percent()">{{ percent() }} %</progress>
     <span class="detail">
-      @if (offline.totalBytes() > 0) { {{ 'offline.progress' | transloco : {
-      done: format.bytes(offline.downloadedBytes()), total:
-      format.bytes(offline.totalBytes()) } }} }
+      {{ 'offline.progress' | transloco : { done:
+      format.bytes(offline.downloadedBytes()), total:
+      format.bytes(offline.totalBytes()) } }}
     </span>
   </label>
-  <button type="button" (click)="offline.cancel()">
+  <button type="button" class="cancel" (click)="offline.cancel()">
     {{ 'offline.cancel' | transloco }}
   </button>
-  } @case ('ready') {
-  <span class="ready">
-    {{ 'offline.ready' | transloco : { size: format.bytes(offline.sizeBytes()) }
-    }}
-  </span>
-  <button type="button" (click)="offline.remove()">
-    {{ 'offline.remove' | transloco }}
-  </button>
-  } @default {
+  } @default { @if (offline.pending(); as plan) {
+  <p class="pending">
+    {{ 'offline.pending' | transloco : { tiles: format.number(plan.tiles.length
+    + plan.reliefTiles.length), size: format.bytes(plan.bytes) } }} @if
+    (!plan.fits) {
+    <span class="error" role="alert"
+      >{{ 'offline.errors.quota' | transloco }}</span
+    >
+    }
+  </p>
   <button
     type="button"
-    class="download"
-    [disabled]="offline.state() === 'checking'"
-    (click)="offline.download()"
+    class="confirm"
+    [disabled]="!plan.fits"
+    (click)="confirm()"
   >
-    {{ 'offline.download' | transloco }}
+    {{ 'offline.keep' | transloco }}
   </button>
-  } } @if (offline.errorCode(); as code) {
+  <button type="button" class="discard" (click)="offline.discard()">
+    {{ 'offline.cancel' | transloco }}
+  </button>
+  } } } @if (offline.errorCode(); as code) {
   <span class="error" role="alert"
     >{{ 'offline.errors.' + code | transloco }}</span
   >
+  } @if (offline.areas().length > 0) {
+  <ul class="areas" [attr.aria-label]="'offline.areas' | transloco">
+    @for (area of offline.areas(); track area.id) {
+    <li>
+      <span class="area-name">{{ area.name }}</span>
+      <span class="detail"> {{ format.bytes(area.bytes) }} </span>
+      <button
+        type="button"
+        class="remove"
+        [attr.aria-label]="'offline.removeArea' | transloco : { name: area.name }"
+        (click)="offline.removeArea(area.id)"
+      >
+        {{ 'offline.remove' | transloco }}
+      </button>
+    </li>
+    }
+  </ul>
   }
 </section>

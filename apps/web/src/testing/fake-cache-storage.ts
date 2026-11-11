@@ -35,6 +35,19 @@ export class FakeCacheStorage {
     return this.caches.has(name);
   }
 
+  /** Looks through every cache, like `caches.match`. */
+  async match(url: string) {
+    for (const cache of this.caches.values()) {
+      const response = await cache.match(url);
+      if (response) return response;
+    }
+    return undefined;
+  }
+
+  async keys() {
+    return [...this.caches.keys()];
+  }
+
   async open(name: string) {
     let cache = this.caches.get(name);
     if (!cache) {
