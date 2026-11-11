@@ -448,24 +448,29 @@
           }
         </select>
       </label>
-      } } @if (canClose()) {
-      <button
-        type="button"
-        class="loop"
-        aria-describedby="loop-hint"
-        (click)="openLoopDialog()"
-      >
-        {{ loopLabelKey() | transloco }}
-      </button>
-      }
-      <button type="button" class="clear" (click)="store.clear()">
-        {{ 'planner.clear' | transloco }}
-      </button>
-      @if (canClose()) {
-      <p id="loop-hint" class="loop-hint">
-        {{ loopLabelKey() + 'Hint' | transloco }}
-      </p>
-      } } @if (store.status() === 'loading') {
+      } }
+      <!-- The two buttons stay on one row (their text wraps instead); the hint of the loop button is under that row. -->
+      <div class="panel-actions">
+        @if (canClose()) {
+        <button
+          type="button"
+          class="loop"
+          aria-describedby="loop-hint"
+          (click)="openLoopDialog()"
+        >
+          {{ loopLabelKey() | transloco }}
+        </button>
+        }
+        <button type="button" class="clear" (click)="store.clear()">
+          {{ 'planner.clear' | transloco }}
+        </button>
+        @if (canClose()) {
+        <p id="loop-hint" class="loop-hint">
+          {{ loopLabelKey() + 'Hint' | transloco }}
+        </p>
+        }
+      </div>
+      } @if (store.status() === 'loading') {
       <p role="status">{{ 'planner.status.loading' | transloco }}</p>
       } @if (store.errorCode(); as code) {
       <p class="error" role="alert">

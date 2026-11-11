@@ -207,6 +207,13 @@ describe('Planner', () => {
       expect(hint()).toBe('Draw a loop of a set length from the start.');
       // The hint is the button's description, for screen readers.
       expect(button().getAttribute('aria-describedby')).toBe('loop-hint');
+      // Both buttons and the hint share one container, so that the hint stays under that row.
+      const actions = view.root.querySelector('.panel-actions')!;
+      expect(actions.contains(button())).toBe(true);
+      expect(actions.querySelector('.clear')).not.toBeNull();
+      expect(actions.contains(view.root.querySelector('#loop-hint'))).toBe(
+        true,
+      );
       button().click();
       view.fixture.detectChanges();
       expect(
