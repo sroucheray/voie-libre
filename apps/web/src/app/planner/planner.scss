@@ -156,6 +156,11 @@
     border-radius: 1rem;
     user-select: none;
     cursor: grab;
+    // The finger moves the stop: the panel must not scroll under it.
+    touch-action: none;
+    border: 0;
+    background: none;
+    font: inherit;
 
     &:hover {
       background: #f2f4f7;
@@ -187,15 +192,19 @@
     padding: 0 0.375rem;
   }
 
+  // The stop being moved, already at the place it would take.
   &.dragging {
-    opacity: 0.4;
-  }
-
-  // Where the dragged step would land.
-  &.drop-target {
     background: #eff8ff;
-    box-shadow: inset 0 2px 0 #1570ef;
+    border-radius: 0.5rem;
+    box-shadow:
+      0 0 0 2px #1570ef,
+      0 4px 12px rgb(16 24 40 / 18%);
   }
+}
+
+// While a stop moves, the rows are ordered by their future place and the "+" are out of the way.
+.points--reordering .points__gap {
+  display: none;
 }
 
 .clear {

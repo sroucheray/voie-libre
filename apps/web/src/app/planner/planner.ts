@@ -99,6 +99,7 @@ export class Planner {
   protected readonly helpKey = computed(() => {
     const count = this.store.points().length;
     if (this.store.dragging()) return 'planner.hint.dragging';
+    if (this.reorder()) return 'planner.hint.reordering';
     if (count === 0) return 'planner.hint.start';
     if (count === 1) return 'planner.hint.end';
     return this.store.isLoop() ? 'planner.hint.loop' : 'planner.hint.route';
@@ -162,6 +163,7 @@ export class Planner {
   /** The field waiting for the user's position, until the device gives it or fails. */
   private readonly positionTarget = signal<PositionTarget | null>(null);
   private readonly injector = inject(Injector);
+  private readonly document = inject(DOCUMENT);
   /** The menu opened by a right click or a long press: where, and at which pixel. */
   protected readonly menu = signal<{
     point: LngLat;
@@ -235,9 +237,10 @@ export class Planner {
     const document = inject(DOCUMENT);
     const onKeydown = (event: KeyboardEvent) => this.onHistoryKey(event);
     document.addEventListener('keydown', onKeydown);
-    inject(DestroyRef).onDestroy(() =>
-      document.removeEventListener('keydown', onKeydown),
-    );
+    inject(DestroyRef).onDestroy(() => {
+      document.removeEventListener('keydown', onKeydown);
+      this.stopReorderListening?.();
+    });
 
     inject(DestroyRef).onDestroy(() => {
       this.destroyed = true;
@@ -630,43 +633,102 @@ export class Planner {
     this.store.cursor.set(profile ? sampleNearest(profile, point).index : null);
   }
 
-  /** "Start", "Waypoint 2" or "End", in the UI language. */
-  /** Index of the point being dragged in the list, and of the row it would take the place of. */
-  protected readonly dragFrom = signal<number | null>(null);
-  protected readonly dragOver = signal<number | null>(null);
+  /**
+   * A stop being moved in the list: the point it started from and the place it would take (both
+   * indexes in the points). The rows show the future order at once; the store changes on release.
+   */
+  protected readonly reorder = signal<{ from: number; to: number } | null>(
+    null,
+  );
+  /** What a screen reader hears after a stop moved by keyboard. */
+  protected readonly moveAnnouncement = signal('');
+  private stopReorderListening: (() => void) | null = null;
 
-  protected onPointDragStart(event: DragEvent, index: number): void {
-    this.dragFrom.set(index);
-    if (event.dataTransfer) {
-      event.dataTransfer.effectAllowed = 'move';
-      // Firefox starts no drag without data.
-      event.dataTransfer.setData('text/plain', String(index));
-      // The whole row follows the pointer, not the grip alone.
-      const row = (event.target as Element | null)?.closest?.('li');
-      if (row) event.dataTransfer.setDragImage?.(row, 0, 0);
+  /** The place a row takes in the list while a stop is being moved. */
+  protected numberOf(index: number): number {
+    const move = this.reorder();
+    if (!move) return index;
+    const { from, to } = move;
+    if (index === from) return to;
+    if (from < to && index > from && index <= to) return index - 1;
+    if (from > to && index >= to && index < from) return index + 1;
+    return index;
+  }
+
+  protected onGripDown(event: PointerEvent, index: number): void {
+    if (event.button !== 0 || this.reorder()) return;
+    event.preventDefault();
+    this.newStopAt.set(null);
+    this.reorder.set({ from: index, to: index });
+    const document = this.document;
+    const onMove = (move: PointerEvent) => this.moveReorderTo(move.clientY);
+    const onUp = () => this.endReorder(true);
+    const onCancel = () => this.endReorder(false);
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onCancel);
+    this.stopReorderListening = () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onCancel);
+    };
+  }
+
+  /** The stop takes the place after the rows whose middle is above the pointer. */
+  private moveReorderTo(y: number): void {
+    const move = this.reorder();
+    if (!move) return;
+    const rows = Array.from(
+      this.host.nativeElement.querySelectorAll<HTMLElement>('.points__stop'),
+    );
+    let above = 0;
+    rows.forEach((row, i) => {
+      if (i + 1 === move.from) return;
+      const box = row.getBoundingClientRect();
+      if (box.top + box.height / 2 < y) above++;
+    });
+    const to = above + 1;
+    if (to !== move.to) this.reorder.set({ from: move.from, to });
+  }
+
+  /** Release keeps the new order (one recompute); Escape and a cancelled pointer drop it. */
+  private endReorder(keep: boolean): void {
+    const move = this.reorder();
+    this.stopReorderListening?.();
+    this.stopReorderListening = null;
+    this.reorder.set(null);
+    if (keep && move && move.from !== move.to) {
+      this.store.reorderPoint(move.from, move.to);
     }
   }
 
-  protected onPointDragOver(event: DragEvent, index: number): void {
-    if (this.dragFrom() === null) return;
-    // Allows the drop here.
+  /** The keyboard moves a stop one place up or down, at once. */
+  protected onGripKey(event: KeyboardEvent, index: number): void {
+    const step =
+      event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : 0;
+    if (!step) return;
     event.preventDefault();
-    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
-    this.dragOver.set(index);
-  }
-
-  protected onPointDrop(event: DragEvent, index: number): void {
-    event.preventDefault();
-    // A place dropped as text must not end up in the field of the stop.
-    event.stopPropagation();
-    const from = this.dragFrom();
-    this.endPointDrag();
-    if (from !== null) this.store.reorderPoint(from, index);
-  }
-
-  protected endPointDrag(): void {
-    this.dragFrom.set(null);
-    this.dragOver.set(null);
+    const to = index + step;
+    const total = this.stops().length;
+    if (to < 1 || to > total) return;
+    this.store.reorderPoint(index, to);
+    const language = this.loadedLanguage();
+    if (language) {
+      this.moveAnnouncement.set(
+        this.transloco.translate(
+          'planner.points.moved',
+          { name: this.pointName(to), n: to, total },
+          language,
+        ),
+      );
+    }
+    afterNextRender(
+      () =>
+        this.host.nativeElement
+          .querySelectorAll<HTMLElement>('.points__stop .point-grip')
+          [to - 1]?.focus(),
+      { injector: this.injector },
+    );
   }
 
   protected pointName(index: number): string {
@@ -821,6 +883,13 @@ export class Planner {
 
   /** `Ctrl/Cmd+Z` undo, `Ctrl/Cmd+Shift+Z` and `Ctrl+Y` redo. A field keeps its own undo. */
   private onHistoryKey(event: KeyboardEvent): void {
+    if (this.reorder()) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        this.endReorder(false);
+      }
+      return;
+    }
     if (this.store.dragging()) {
       if (event.key === 'Escape') {
         event.preventDefault();

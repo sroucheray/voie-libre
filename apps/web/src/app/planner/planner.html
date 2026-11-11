@@ -240,6 +240,7 @@
         @if (stops().length > 0 || canAddStop()) {
         <ol
           class="points"
+          [class.points--reordering]="reorder()"
           [attr.aria-label]="'planner.points.label' | transloco"
         >
           @for (stop of stops(); track stop.index) {
@@ -249,28 +250,26 @@
           />
           <li
             class="points__stop"
-            [class.dragging]="dragFrom() === stop.index"
-            [class.drop-target]="dragOver() === stop.index && dragFrom() !== stop.index"
-            (dragover)="onPointDragOver($event, stop.index)"
-            (drop)="onPointDrop($event, stop.index)"
+            [class.dragging]="reorder()?.from === stop.index"
+            [style.order]="reorder() ? numberOf(stop.index) : null"
           >
-            <!-- Only the handle starts a drag, so that the text of the field can be selected. -->
-            <span
+            <!-- Only the handle moves the stop, so that the text of the field can be selected. -->
+            <button
+              type="button"
               class="point-grip"
-              draggable="true"
-              aria-hidden="true"
-              (dragstart)="onPointDragStart($event, stop.index)"
-              (dragend)="endPointDrag()"
+              [attr.aria-label]="'planner.points.move' | transloco : { name: pointName(stop.index) }"
+              (pointerdown)="onGripDown($event, stop.index)"
+              (keydown)="onGripKey($event, stop.index)"
             >
-              <span class="point-grip__dots">⋮⋮</span>
-              <span class="point-grip__number"
-                >{{ format.number(stop.index) }}</span
+              <span class="point-grip__dots" aria-hidden="true">⋮⋮</span>
+              <span class="point-grip__number" aria-hidden="true"
+                >{{ format.number(numberOf(stop.index)) }}</span
               >
-            </span>
+            </button>
             <vl-place-field
               role="stop"
               [bareMarker]="true"
-              [number]="stop.index"
+              [number]="numberOf(stop.index)"
               [label]="pointText(stop.point)"
               [near]="stop.point"
               (picked)="pickStop(stop.index, $event)"
@@ -291,6 +290,9 @@
             [ngTemplateOutletContext]="{ $implicit: stops().length + 1 }"
           />
         </ol>
+        <p class="visually-hidden" aria-live="polite">
+          {{ moveAnnouncement() }}
+        </p>
         }
         <!-- Between two fields: a "+" that opens an empty field there, for a stop to search. -->
         <ng-template #gap let-at>

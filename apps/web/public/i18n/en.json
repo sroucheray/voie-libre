@@ -39,7 +39,8 @@
       "start": "Click the map to set the start.",
       "end": "Click the map to set the end.",
       "route": "Click to add a stop. Drag a marker to move it, drag the route to add a stop there. Right-click or long-press a marker to remove it.",
-      "loop": "Loop closed. Click to add a stop, drag a marker to move it, right-click or long-press it to remove it."
+      "loop": "Loop closed. Click to add a stop, drag a marker to move it, right-click or long-press it to remove it.",
+      "reordering": "Release to move the stop here. The route is computed again. Press Escape to cancel."
     },
     "profile": {
       "label": "Profile",
@@ -64,7 +65,9 @@
       "start": "Start",
       "end": "End",
       "waypoint": "Waypoint {{n}}",
-      "remove": "Remove {{name}}"
+      "remove": "Remove {{name}}",
+      "move": "Move {{name}}: drag, or use the up and down arrow keys",
+      "moved": "{{name}} moved to position {{n}} of {{total}}"
     },
     "search": {
       "start": "Start",

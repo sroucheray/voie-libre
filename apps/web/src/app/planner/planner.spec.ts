@@ -833,7 +833,7 @@ describe('Planner', () => {
     // The start and the end have their fields: only the stops are listed.
     expect(view.root.querySelectorAll('.points__stop')).toHaveLength(1);
     const remove = view.root.querySelector(
-      '.points__stop button',
+      '.points__stop .point-remove',
     ) as HTMLButtonElement;
     expect(remove.getAttribute('aria-label')).toBe('Remove Waypoint 1');
     remove.click();
@@ -860,53 +860,124 @@ describe('Planner', () => {
   });
 
   describe('reordering the steps', () => {
-    const drag = (row: Element, type: string) => {
-      const event = new Event(type, { bubbles: true, cancelable: true });
-      row.dispatchEvent(event);
+    const pointer = (target: EventTarget, type: string, clientY = 0) => {
+      const event = new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        clientY,
+      });
+      target.dispatchEvent(event);
       return event;
     };
 
-    it('drags a stop onto another one: the list and the map follow', async () => {
+    /** Three rows 40 px high, one after the other, as the layout would put them. */
+    const layOut = (rows: NodeListOf<Element>) =>
+      rows.forEach((row, i) => {
+        row.getBoundingClientRect = () =>
+          ({ top: i * 40, height: 40 }) as DOMRect;
+      });
+
+    const threeStops = async () => {
       const view = await render();
       view.click(3.0, 45.0);
       view.click(3.1, 45.1);
       view.click(3.2, 45.2);
       view.click(3.3, 45.3);
+      view.click(3.4, 45.4);
       view.fixture.detectChanges();
-      // The points are the start, two stops, and the end.
-      expect(TestBed.inject(PlannerStore).points()).toEqual([
-        [3.0, 45.0],
-        [3.2, 45.2],
-        [3.3, 45.3],
-        [3.1, 45.1],
-      ]);
+      return view;
+    };
+
+    it('shows the new order while a stop is dragged and computes once on release', async () => {
+      const view = await threeStops();
+      const store = TestBed.inject(PlannerStore);
+      const before = store.points();
+      // The points are the start, three stops, and the end.
+      expect(before).toHaveLength(5);
       const rows = () => view.root.querySelectorAll('.points__stop');
-      expect(rows()).toHaveLength(2);
-      // Only the grip drags, so that the text of the field can still be selected.
+      layOut(rows());
       const grip = rows()[0].querySelector('.point-grip') as HTMLElement;
-      expect(grip.getAttribute('draggable')).toBe('true');
-      // It sits before the field and holds the number of the stop, which the field leaves out.
+      // A button, before the field, with the number of the stop (the field leaves it out).
+      expect(grip.tagName).toBe('BUTTON');
       expect(rows()[0].firstElementChild).toBe(grip);
       expect(grip.textContent).toContain('1');
-      expect(rows()[0].querySelector('.field__marker')).toBeNull();
-      expect(rows()[0].getAttribute('draggable')).toBeNull();
-      drag(grip, 'dragstart');
+      pointer(grip, 'pointerdown', 20);
       view.fixture.detectChanges();
       expect(rows()[0].classList.contains('dragging')).toBe(true);
-      expect(drag(rows()[1], 'dragover').defaultPrevented).toBe(true);
+      expect(view.text()).toContain('Release to move the stop here');
+      // The pointer goes below the middle of the second row: the first stop takes place 2.
+      pointer(document, 'pointermove', 70);
       view.fixture.detectChanges();
-      expect(rows()[1].classList.contains('drop-target')).toBe(true);
-      drag(rows()[1], 'drop');
+      expect(grip.textContent).toContain('2');
+      expect(rows()[1].querySelector('.point-grip')?.textContent).toContain(
+        '1',
+      );
+      // Nothing changed in the store yet.
+      expect(store.points()).toEqual(before);
+      pointer(document, 'pointerup', 70);
       TestBed.tick();
       view.fixture.detectChanges();
-      expect(view.driver.markers.map((m) => m.lngLat)).toEqual([
-        [3.0, 45.0],
-        [3.3, 45.3],
-        [3.2, 45.2],
-        [3.1, 45.1],
+      expect(store.points()).toEqual([
+        before[0],
+        before[2],
+        before[1],
+        before[3],
+        before[4],
       ]);
       expect(view.root.querySelector('.dragging')).toBeNull();
-      expect(view.root.querySelector('.drop-target')).toBeNull();
+      expect(view.text()).not.toContain('Release to move the stop here');
+    });
+
+    it('puts the stop back on Escape, with no change', async () => {
+      const view = await threeStops();
+      const store = TestBed.inject(PlannerStore);
+      const before = store.points();
+      const rows = () => view.root.querySelectorAll('.points__stop');
+      layOut(rows());
+      pointer(rows()[0].querySelector('.point-grip')!, 'pointerdown', 20);
+      pointer(document, 'pointermove', 110);
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.dragging')).not.toBeNull();
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      );
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.dragging')).toBeNull();
+      // A release after the cancel does nothing.
+      pointer(document, 'pointerup', 110);
+      expect(store.points()).toEqual(before);
+    });
+
+    it('moves a stop with the arrow keys and says where it went', async () => {
+      const view = await threeStops();
+      const store = TestBed.inject(PlannerStore);
+      const before = store.points();
+      const rows = () => view.root.querySelectorAll('.points__stop');
+      const grip = rows()[1].querySelector('.point-grip') as HTMLElement;
+      grip.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'ArrowUp',
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+      TestBed.tick();
+      view.fixture.detectChanges();
+      expect(store.points().slice(1, 3)).toEqual([before[2], before[1]]);
+      expect(
+        view.root.querySelector('.visually-hidden[aria-live]')?.textContent,
+      ).toContain('moved to position 1 of 3');
+      // The first stop cannot go higher.
+      const first = rows()[0].querySelector('.point-grip') as HTMLElement;
+      const upper = new KeyboardEvent('keydown', {
+        key: 'ArrowUp',
+        bubbles: true,
+        cancelable: true,
+      });
+      const points = store.points();
+      first.dispatchEvent(upper);
+      expect(store.points()).toEqual(points);
     });
 
     it('lists no stops while there are only a start and an end', async () => {
