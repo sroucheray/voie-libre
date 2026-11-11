@@ -110,7 +110,7 @@ body {
   height: 1.75rem;
   border: 2px solid var(--color-surface);
   border-radius: 50%;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-text) 40%, transparent);
   color: var(--color-accent-ink);
   font: 700 var(--font-size-xs) var(--font-sans);
   cursor: grab;
@@ -211,7 +211,7 @@ body {
   border: 2px solid var(--color-surface);
   border-radius: 50%;
   background: var(--map-route);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 50%);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-text) 50%, transparent);
   pointer-events: none;
 }
 
@@ -223,7 +223,7 @@ body {
   border: 3px solid var(--color-surface);
   border-radius: 50%;
   background: var(--map-location);
-  box-shadow: 0 1px 4px rgb(0 0 0 / 55%);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--color-text) 55%, transparent);
   pointer-events: none;
 
   &--heading::before {
