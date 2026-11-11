@@ -1,3 +1,4 @@
+import { httpGet } from './http-get';
 import {
   type AvoidZone,
   MAX_ALTERNATIVES,
@@ -118,7 +119,7 @@ export class BRouterProvider implements RoutingProvider {
 
   constructor(
     baseUrl: string,
-    private readonly fetchImpl: FetchLike = (url) => fetch(url),
+    private readonly fetchImpl: FetchLike = httpGet,
     maxConcurrent = DEFAULT_MAX_CONCURRENT,
   ) {
     this.baseUrl = baseUrl.replace(/\/+$/, '');
