@@ -2,15 +2,16 @@
  * Builds the elevation tiles of the map's hillshade: data/basemap/relief.pmtiles (not committed),
  * from the Copernicus GLO-30 GeoTIFFs of data/relief (see scripts/download-relief.sh).
  *
- * Tiles are 512 px PNG images in the "terrarium" encoding, zooms 6 to 11, over the area of the
- * basemap. Places without elevation data are at sea level. The tiles go to an MBTiles file first
- * (SQLite), which the `pmtiles` command line turns into one archive; without it, its Docker image
- * is used, like in scripts/download-basemap.sh.
+ * Tiles are 512 px PNG images in the "terrarium" encoding, zooms 6 to 11, over the area the files
+ * cover (or RELIEF_BBOX). Places without elevation data (open sea) are at sea level. The files are
+ * read when a tile needs them, a dozen at a time (a 1 degree square is 52 MB in memory, France is
+ * 133 of them). The tiles go to an MBTiles file first (SQLite), which the `pmtiles` command line
+ * turns into one archive; without it, its Docker image is used, like in scripts/download-basemap.sh.
  *
  * Usage: npm run build-relief
  * Environment:
- *   RELIEF_BBOX    min_lon,min_lat,max_lon,max_lat   default: 2.6,45.3,3.7,46.1 (the Copernicus
- *                  files in data/relief decide how far it can go)
+ *   RELIEF_BBOX    min_lon,min_lat,max_lon,max_lat   default: the squares of the files in RELIEF_DIR
+ *                  (France with `scripts/download-relief.sh france`: about 9,000 tiles, 1.8 GB)
  *   RELIEF_DIR     where the GeoTIFFs are            default: data/relief
  *   BASEMAP_DIR    where the archive goes            default: data/basemap
  *   PMTILES_BIN    pmtiles CLI to use; default: `pmtiles` if installed, else the Docker image
@@ -25,6 +26,11 @@ import { DatabaseSync } from 'node:sqlite';
 import { crc32, deflateSync } from 'node:zlib';
 import { fromFile } from 'geotiff';
 import {
+  CellStore,
+  cellKey,
+  type Cell,
+} from '../libs/shared/src/lib/cell-store';
+import {
   RELIEF_MAX_ZOOM,
   RELIEF_MIN_ZOOM,
   RELIEF_TILE_SIZE,
@@ -38,88 +44,50 @@ import {
 const root = join(__dirname, '..');
 const reliefDir = resolve(root, process.env['RELIEF_DIR'] ?? 'data/relief');
 const outDir = resolve(root, process.env['BASEMAP_DIR'] ?? 'data/basemap');
-const bbox = (process.env['RELIEF_BBOX'] ?? '2.6,45.3,3.7,46.1')
-  .split(',')
-  .map(Number) as unknown as BoundingBox;
 
-/** One GeoTIFF in memory: a grid of elevations over a box of longitudes and latitudes. */
-interface Cell {
-  west: number;
-  north: number;
-  /** Degrees per pixel. */
-  stepX: number;
-  stepY: number;
-  width: number;
-  height: number;
-  data: Float32Array;
+/** `Copernicus_DSM_COG_10_N45_00_E003_00_DEM.tif`: the square whose south-west corner is 45, 3. */
+const FILE_NAME =
+  /^Copernicus_DSM_COG_10_([NS])(\d{2})_00_([EW])(\d{3})_00_DEM\.tif$/;
+
+/** The elevation files of `reliefDir` by square, and the box they cover. */
+function indexFiles(): { files: Map<string, string>; box: BoundingBox } {
+  const files = new Map<string, string>();
+  let west = Infinity;
+  let south = Infinity;
+  let east = -Infinity;
+  let north = -Infinity;
+  for (const name of existsSync(reliefDir) ? readdirSync(reliefDir) : []) {
+    const match = FILE_NAME.exec(name);
+    if (!match) continue;
+    const lat = (match[1] === 'S' ? -1 : 1) * Number(match[2]);
+    const lon = (match[3] === 'W' ? -1 : 1) * Number(match[4]);
+    files.set(cellKey(lat, lon), join(reliefDir, name));
+    west = Math.min(west, lon);
+    east = Math.max(east, lon + 1);
+    south = Math.min(south, lat);
+    north = Math.max(north, lat + 1);
+  }
+  return { files, box: [west, south, east, north] };
 }
 
-async function loadCells(): Promise<Cell[]> {
-  const files = existsSync(reliefDir)
-    ? readdirSync(reliefDir).filter((name) => name.endsWith('.tif'))
-    : [];
-  const cells: Cell[] = [];
-  for (const name of files) {
-    const image = await (await fromFile(join(reliefDir, name))).getImage();
-    const [west, south, east, north] = image.getBoundingBox();
-    // Skip the files that do not touch the area.
-    if (
-      east <= bbox[0] ||
-      west >= bbox[2] ||
-      north <= bbox[1] ||
-      south >= bbox[3]
-    ) {
-      continue;
-    }
-    const width = image.getWidth();
-    const height = image.getHeight();
-    const [data] = (await image.readRasters({
-      samples: [0],
-    })) as unknown as [Float32Array];
-    cells.push({
-      west,
-      north,
-      stepX: (east - west) / width,
-      stepY: (north - south) / height,
-      width,
-      height,
-      data: Float32Array.from(data),
-    });
-    console.log(`Read ${name} (${width} x ${height})`);
-  }
-  return cells;
-}
-
-/** Elevation at a place, between the four pixels around it; 0 where no file has it. */
-function elevationAt(cells: readonly Cell[], lon: number, lat: number): number {
-  for (const cell of cells) {
-    // Pixel centres are half a pixel inside the box.
-    const fx = (lon - cell.west) / cell.stepX - 0.5;
-    const fy = (cell.north - lat) / cell.stepY - 0.5;
-    if (
-      fx < -0.5 ||
-      fy < -0.5 ||
-      fx > cell.width - 0.5 ||
-      fy > cell.height - 0.5
-    ) {
-      continue;
-    }
-    const x0 = Math.max(0, Math.min(cell.width - 1, Math.floor(fx)));
-    const y0 = Math.max(0, Math.min(cell.height - 1, Math.floor(fy)));
-    const x1 = Math.min(cell.width - 1, x0 + 1);
-    const y1 = Math.min(cell.height - 1, y0 + 1);
-    const tx = Math.max(0, Math.min(1, fx - x0));
-    const ty = Math.max(0, Math.min(1, fy - y0));
-    const at = (x: number, y: number) => {
-      const value = cell.data[y * cell.width + x];
-      return Number.isFinite(value) ? value : 0;
-    };
-    return (
-      (at(x0, y0) * (1 - tx) + at(x1, y0) * tx) * (1 - ty) +
-      (at(x0, y1) * (1 - tx) + at(x1, y1) * tx) * ty
-    );
-  }
-  return 0;
+/** Reads one GeoTIFF into memory as a {@link Cell}. */
+async function loadCell(file: string): Promise<Cell> {
+  const image = await (await fromFile(file)).getImage();
+  const [west, south, east, north] = image.getBoundingBox();
+  const width = image.getWidth();
+  const height = image.getHeight();
+  const [data] = (await image.readRasters({
+    samples: [0],
+  })) as unknown as [Float32Array];
+  return {
+    west,
+    north,
+    stepX: (east - west) / width,
+    stepY: (north - south) / height,
+    width,
+    height,
+    data: Float32Array.from(data),
+  };
 }
 
 /** A PNG chunk: length, type, data, CRC of the type and the data. */
@@ -152,7 +120,7 @@ function encodePng(rgb: Uint8Array, size: number): Buffer {
   return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     chunk('IHDR', header),
-    chunk('IDAT', deflateSync(raw, { level: 9 })),
+    chunk('IDAT', deflateSync(raw, { level: 6 })),
     chunk('IEND', Buffer.alloc(0)),
   ]);
 }
@@ -162,7 +130,7 @@ function encodePng(rgb: Uint8Array, size: number): Buffer {
  * takes the mean of several places inside it, so that ridges do not flicker in and out.
  */
 function renderTile(
-  cells: readonly Cell[],
+  elevationAt: (lon: number, lat: number) => number,
   x: number,
   y: number,
   zoom: number,
@@ -182,13 +150,26 @@ function renderTile(
             px + (sx + 0.5) / samples,
             py + (sy + 0.5) / samples,
           );
-          sum += elevationAt(cells, lon, lat);
+          sum += elevationAt(lon, lat);
         }
       }
       rgb.set(toTerrarium(sum / (samples * samples)), (py * size + px) * 3);
     }
   }
   return encodePng(rgb, size);
+}
+
+/** `[west, south, east, north]` of a tile. */
+function tileBox(x: number, y: number, zoom: number): BoundingBox {
+  const [west, north] = tilePixelToLngLat(x, y, zoom, 0, 0);
+  const [east, south] = tilePixelToLngLat(
+    x,
+    y,
+    zoom,
+    RELIEF_TILE_SIZE,
+    RELIEF_TILE_SIZE,
+  );
+  return [west, south, east, north];
 }
 
 function convert(mbtiles: string, archive: string): void {
@@ -219,13 +200,20 @@ function convert(mbtiles: string, archive: string): void {
 }
 
 async function main() {
-  const cells = await loadCells();
-  if (cells.length === 0) {
+  const { files, box } = indexFiles();
+  if (files.size === 0) {
     console.error(
-      `No elevation file for the area in ${reliefDir}: run scripts/download-relief.sh first.`,
+      `No elevation file in ${reliefDir}: run scripts/download-relief.sh first.`,
     );
     process.exit(1);
   }
+  const bbox = process.env['RELIEF_BBOX']
+    ? (process.env['RELIEF_BBOX']
+        .split(',')
+        .map(Number) as unknown as BoundingBox)
+    : box;
+  console.log(`${files.size} files, building ${bbox.join(',')}`);
+  const store = new CellStore(files, loadCell);
   mkdirSync(outDir, { recursive: true });
   const mbtiles = join(outDir, 'relief.mbtiles');
   const part = join(outDir, `${RELIEF_TILES_FILE}.part`);
@@ -252,20 +240,42 @@ async function main() {
     meta.run(name, value);
   }
   const insert = db.prepare('INSERT INTO tiles VALUES (?, ?, ?, ?)');
-  let count = 0;
+  let total = 0;
   for (let zoom = RELIEF_MIN_ZOOM; zoom <= RELIEF_MAX_ZOOM; zoom++) {
     const range = tileRange(bbox, zoom);
-    db.exec('BEGIN');
+    total += (range.maxX - range.minX + 1) * (range.maxY - range.minY + 1);
+  }
+  const started = Date.now();
+  let count = 0;
+  db.exec('BEGIN');
+  for (let zoom = RELIEF_MIN_ZOOM; zoom <= RELIEF_MAX_ZOOM; zoom++) {
+    const range = tileRange(bbox, zoom);
     for (let x = range.minX; x <= range.maxX; x++) {
       for (let y = range.minY; y <= range.maxY; y++) {
+        const elevation = await store.sampler(tileBox(x, y, zoom));
         // MBTiles counts rows from the south.
-        insert.run(zoom, x, 2 ** zoom - 1 - y, renderTile(cells, x, y, zoom));
+        insert.run(
+          zoom,
+          x,
+          2 ** zoom - 1 - y,
+          renderTile(elevation, x, y, zoom),
+        );
         count++;
+        if (count % 200 === 0) {
+          db.exec('COMMIT');
+          db.exec('BEGIN');
+        }
+        if (count % 250 === 0) {
+          const seconds = (Date.now() - started) / 1000;
+          const left = Math.round(((seconds / count) * (total - count)) / 60);
+          console.log(
+            `Zoom ${zoom}: ${count} of ${total} tiles, about ${left} min left`,
+          );
+        }
       }
     }
-    db.exec('COMMIT');
-    console.log(`Zoom ${zoom}: tiles up to ${count}`);
   }
+  db.exec('COMMIT');
   db.close();
 
   convert(mbtiles, part);
