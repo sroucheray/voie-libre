@@ -23,13 +23,19 @@
     [attr.aria-label]="'planner.search.' + role() | transloco : { n: number() }"
     [attr.aria-expanded]="open()"
     [attr.aria-controls]="listId"
+    [attr.aria-busy]="searching()"
     [attr.aria-activedescendant]="active() >= 0 ? optionId(active()) : null"
     (focus)="onFocus($event)"
     (input)="onInput($event)"
     (keydown)="onKeydown($event)"
     (blur)="onBlur()"
   />
-  @if (open()) {
+  @if (searching()) {
+  <span class="spinner" aria-hidden="true"></span>
+  <span class="visually-hidden" role="status"
+    >{{ 'planner.search.searching' | transloco }}</span
+  >
+  } @if (open()) {
   <!-- The box rounds and clips; the list inside scrolls, so its scrollbar stays within the corners. -->
   <div
     class="suggestions-box"

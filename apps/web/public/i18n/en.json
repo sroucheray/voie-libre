@@ -99,7 +99,8 @@
         "rate_limited": "Too many searches. Wait a moment.",
         "unknown": "The search failed."
       },
-      "myPosition": "My position"
+      "myPosition": "My position",
+      "searching": "Searching…"
     },
     "stops": {
       "add": "Add a stop",

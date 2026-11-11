@@ -81,6 +81,8 @@ export class PlaceField {
   protected readonly shown = computed(() => this.query() ?? this.label() ?? '');
   protected readonly results = signal<FoundPlace[]>([]);
   protected readonly active = signal(-1);
+  /** A search is pending (typing paused, request on its way): the field shows a small spinner. */
+  protected readonly searching = signal(false);
   private readonly error = signal<SearchErrorCode | null>(null);
   /** The text an answer was received for, so "no result" is only said for a finished search. */
   private readonly answered = signal<string | null>(null);
@@ -189,7 +191,9 @@ export class PlaceField {
     this.results.set([]);
     this.cancel();
     const trimmed = text.trim();
+    this.searching.set(false);
     if (trimmed.length < MIN_QUERY_LENGTH) return;
+    this.searching.set(true);
     this.timer = setTimeout(
       () => void this.search(trimmed),
       SEARCH_DEBOUNCE_MS,
@@ -244,6 +248,7 @@ export class PlaceField {
     this.active.set(-1);
     this.error.set(null);
     this.answered.set(null);
+    this.searching.set(false);
   }
 
   private cancel(): void {
@@ -263,6 +268,7 @@ export class PlaceField {
     );
     if (!result || controller.signal.aborted) return;
     this.controller = null;
+    this.searching.set(false);
     this.answered.set(text);
     if ('error' in result) {
       this.error.set(result.error);

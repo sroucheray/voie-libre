@@ -99,7 +99,8 @@
         "rate_limited": "Trop de recherches. Patientez un instant.",
         "unknown": "La recherche a échoué."
       },
-      "myPosition": "Ma position"
+      "myPosition": "Ma position",
+      "searching": "Recherche en cours…"
     },
     "stops": {
       "add": "Ajouter une étape",

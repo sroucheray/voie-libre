@@ -1257,6 +1257,21 @@ describe('Planner', () => {
       expect(options(view.root)).toHaveLength(0);
     });
 
+    it('shows a spinner from the first keystroke until the answer arrives', async () => {
+      const view = await render();
+      const [start] = inputs(view.root);
+      start.value = 'gare';
+      start.dispatchEvent(new Event('input'));
+      view.fixture.detectChanges();
+      // Typing paused, request not sent yet: already busy.
+      expect(view.root.querySelector('.spinner')).not.toBeNull();
+      expect(start.getAttribute('aria-busy')).toBe('true');
+      await vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS + 10);
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.spinner')).toBeNull();
+      expect(start.getAttribute('aria-busy')).toBe('false');
+    });
+
     it('picks a suggestion with the keyboard', async () => {
       const view = await render();
       const [start] = inputs(view.root);
