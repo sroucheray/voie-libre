@@ -9,7 +9,8 @@
  *
  * Usage: npm run build-relief
  * Environment:
- *   BASEMAP_BBOX   min_lon,min_lat,max_lon,max_lat   default: 2.6,45.3,3.7,46.1
+ *   RELIEF_BBOX    min_lon,min_lat,max_lon,max_lat   default: 2.6,45.3,3.7,46.1 (the Copernicus
+ *                  files in data/relief decide how far it can go)
  *   RELIEF_DIR     where the GeoTIFFs are            default: data/relief
  *   BASEMAP_DIR    where the archive goes            default: data/basemap
  *   PMTILES_BIN    pmtiles CLI to use; default: `pmtiles` if installed, else the Docker image
@@ -37,7 +38,7 @@ import {
 const root = join(__dirname, '..');
 const reliefDir = resolve(root, process.env['RELIEF_DIR'] ?? 'data/relief');
 const outDir = resolve(root, process.env['BASEMAP_DIR'] ?? 'data/basemap');
-const bbox = (process.env['BASEMAP_BBOX'] ?? '2.6,45.3,3.7,46.1')
+const bbox = (process.env['RELIEF_BBOX'] ?? '2.6,45.3,3.7,46.1')
   .split(',')
   .map(Number) as unknown as BoundingBox;
 

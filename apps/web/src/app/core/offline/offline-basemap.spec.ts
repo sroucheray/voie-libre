@@ -157,7 +157,7 @@ describe('OfflineBasemap', () => {
     expect(offline.state()).toBe('idle');
     expect(offline.areas()).toEqual([]);
     expect(await offline.read(0, 10)).toBeNull();
-    expect(await offline.has(`${BASE}/clermont.pmtiles`)).toBe(false);
+    expect(await offline.has(`${BASE}/basemap.pmtiles`)).toBe(false);
   });
 
   it('deletes the cache of the first version, which held the whole archive', async () => {
@@ -257,7 +257,7 @@ describe('OfflineBasemap', () => {
     expect(offline.areas()[0].relief).toBe(false);
     expect(plan.reliefTiles).toEqual([]);
     expect(await offline.has(`${BASE}/relief.pmtiles`)).toBe(false);
-    expect(await offline.has(`${BASE}/clermont.pmtiles`)).toBe(true);
+    expect(await offline.has(`${BASE}/basemap.pmtiles`)).toBe(true);
   });
 
   it('keeps the corridor of a route, much smaller than its box', async () => {

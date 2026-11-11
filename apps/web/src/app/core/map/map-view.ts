@@ -24,14 +24,20 @@ import {
 } from './basemap-style';
 import { MapLayers, RELIEF_PROBE } from './map-layers';
 import { MapViewport } from './map-viewport';
-import { viewBox } from '../offline/area-tiles';
+import { viewBox, type Box } from '../offline/area-tiles';
 import { WAY_COLORS, WAY_LEVELS } from './way-levels';
 import {
   SURFACE_COLORS,
   SURFACE_CODES,
   surfaceKey,
 } from './surface-categories';
-import { BASEMAP_URL, LngLat, MAP_FACTORY, MapLike } from './map-factory';
+import {
+  BASEMAP_COVERAGE,
+  BASEMAP_URL,
+  LngLat,
+  MAP_FACTORY,
+  MapLike,
+} from './map-factory';
 
 /** Clermont-Ferrand, the test region. */
 export const CLERMONT_CENTER: LngLat = [3.087, 45.777];
@@ -85,6 +91,17 @@ export class MapView {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly probeRelief = inject(RELIEF_PROBE);
   private readonly viewport = inject(MapViewport);
+  private readonly coverageOf = inject(BASEMAP_COVERAGE);
+  /** The box the basemap archive covers; `null` until known. */
+  private readonly coverage = signal<Box | null>(null);
+  /** The map is centred where the basemap has no data: grey, which this explains. */
+  protected readonly outsideCoverage = computed(() => {
+    const box = this.coverage();
+    const [lon, lat] = this.center();
+    return (
+      !!box && (lon < box[0] || lon > box[2] || lat < box[1] || lat > box[3])
+    );
+  });
   protected readonly layers = inject(MapLayers);
   /** True once the archive of elevation tiles is known to exist. */
   protected readonly reliefAvailable = signal(false);
@@ -169,6 +186,9 @@ export class MapView {
       map.on('rotate', () => this.bearingState.set(map.getBearing()));
       this.map.set(map);
       this.mapReady.emit(map);
+      void this.coverageOf(basemapTilesUrl(this.basemapUrl)).then((box) => {
+        if (!destroyed) this.coverage.set(box);
+      });
       // The copy on the device is enough: no network is needed to know.
       const available =
         (await this.offline.has(reliefUrl)) ||

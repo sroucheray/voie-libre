@@ -4,6 +4,7 @@ import {
   OfflineFirstSource,
   type OfflineTilesReader,
 } from '../offline/tiles-source';
+import type { Box } from '../offline/area-tiles';
 import { retryFailedTiles } from './failed-tiles';
 
 /** `[longitude, latitude]`. */
@@ -59,6 +60,35 @@ type TileReader = (
   y: number,
 ) => Promise<Uint8Array>;
 let tileReader: TileReader | null = null;
+/** The PMTiles archives of the map, by URL, once the map registered them. */
+const archives = new Map<string, { getHeader(): Promise<HeaderBounds> }>();
+
+interface HeaderBounds {
+  minLon: number;
+  minLat: number;
+  maxLon: number;
+  maxLat: number;
+}
+
+/**
+ * The box the basemap archive at `url` covers, from its header (the map reads it anyway); `null`
+ * while no map was created or when the header cannot be read.
+ */
+export async function basemapBounds(url: string): Promise<Box | null> {
+  const archive = archives.get(url);
+  if (!archive) return null;
+  try {
+    const { minLon, minLat, maxLon, maxLat } = await archive.getHeader();
+    return [minLon, minLat, maxLon, maxLat];
+  } catch {
+    return null;
+  }
+}
+
+/** Tells the box the basemap covers (a token so that tests can say). */
+export const BASEMAP_COVERAGE = new InjectionToken<
+  (url: string) => Promise<Box | null>
+>('BASEMAP_COVERAGE', { providedIn: 'root', factory: () => basemapBounds });
 
 /**
  * The reader of the basemap's tiles, the same the map uses (offline copy first), or `null` while
@@ -89,15 +119,15 @@ export const createMapLibreMap: MapFactory = async ({
     for (const tiles of offlineTiles ?? []) {
       // Registered under the URL the style uses: the map reads the downloaded copy when there is
       // one, and falls back to HTTP range requests.
-      protocol.add(
-        new PMTiles(
-          new OfflineFirstSource(
-            tiles.url,
-            tiles.reader,
-            new FetchSource(tiles.url),
-          ),
+      const archive = new PMTiles(
+        new OfflineFirstSource(
+          tiles.url,
+          tiles.reader,
+          new FetchSource(tiles.url),
         ),
       );
+      archives.set(tiles.url, archive);
+      protocol.add(archive);
     }
     maplibre.addProtocol('pmtiles', protocol.tile);
     tileReader = async (archiveUrl, z, x, y) => {

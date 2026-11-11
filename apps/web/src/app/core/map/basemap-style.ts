@@ -12,7 +12,7 @@ import { wayLayers } from './way-levels';
 export const BASEMAP_SOURCE = 'protomaps';
 
 /** The PMTiles archive of the region, relative to the basemap URL. */
-export const BASEMAP_TILES_FILE = 'clermont.pmtiles';
+export const BASEMAP_TILES_FILE = 'basemap.pmtiles';
 
 /** Full URL of the PMTiles archive; it is also the key the offline copy is stored under. */
 export function basemapTilesUrl(baseUrl: string): string {

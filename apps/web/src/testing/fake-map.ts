@@ -1,5 +1,7 @@
 import { RELIEF_PROBE } from '../app/core/map/map-layers';
+import type { Box } from '../app/core/offline/area-tiles';
 import {
+  BASEMAP_COVERAGE,
   MAP_FACTORY,
   MapCreateOptions,
   MapFactory,
@@ -71,7 +73,10 @@ export class FakeMap {
  */
 export function provideFakeMap(
   maps: FakeMap[] = [],
-  { relief = false }: { relief?: boolean } = {},
+  {
+    relief = false,
+    coverage = null,
+  }: { relief?: boolean; coverage?: Box | null } = {},
 ) {
   const factory: MapFactory = async (options) => {
     const map = new FakeMap(options);
@@ -81,5 +86,6 @@ export function provideFakeMap(
   return [
     { provide: MAP_FACTORY, useValue: factory },
     { provide: RELIEF_PROBE, useValue: async () => relief },
+    { provide: BASEMAP_COVERAGE, useValue: async () => coverage },
   ];
 }

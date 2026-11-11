@@ -44,7 +44,7 @@ describe('MapView', () => {
     expect(maps[0].options.center).toEqual([3.087, 45.777]);
     expect(maps[0].options.zoom).toBe(11);
     expect(maps[0].options.style.sources['protomaps']).toMatchObject({
-      url: 'pmtiles://http://tiles.test/clermont.pmtiles',
+      url: 'pmtiles://http://tiles.test/basemap.pmtiles',
     });
   });
 
@@ -138,14 +138,17 @@ describe('MapView', () => {
 
   describe('layers', () => {
     /** Configures the tests again, with or without the file of relief tiles on the server. */
-    async function renderWith(relief: boolean) {
+    async function renderWith(
+      relief: boolean,
+      coverage: [number, number, number, number] | null = null,
+    ) {
       TestBed.resetTestingModule();
       maps = [];
       await TestBed.configureTestingModule({
         imports: [MapView],
         providers: [
           provideTestTransloco(),
-          provideFakeMap(maps, { relief }),
+          provideFakeMap(maps, { relief, coverage }),
           { provide: BASEMAP_URL, useValue: 'http://tiles.test' },
         ],
       }).compileComponents();
@@ -365,6 +368,30 @@ describe('MapView', () => {
       expect(
         view.root.querySelector('.map-attribution')?.textContent,
       ).not.toContain('IGN');
+    });
+
+    it('says so when the map is centred where the basemap has no data', async () => {
+      const view = await renderWith(false, [2.6, 45.3, 3.7, 46.1]);
+      // The default view is on Clermont-Ferrand, inside the file.
+      expect(view.root.querySelector('.map-note')).toBeNull();
+      maps[0].center = { lng: 4.83, lat: 45.76 };
+      maps[0].emit('moveend');
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.map-note')?.textContent).toContain(
+        'No map data here',
+      );
+      maps[0].center = { lng: 3.1, lat: 45.7 };
+      maps[0].emit('moveend');
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.map-note')).toBeNull();
+    });
+
+    it('says nothing when the extent of the file is not known', async () => {
+      const view = await renderWith(false, null);
+      maps[0].center = { lng: 40, lat: 10 };
+      maps[0].emit('moveend');
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.map-note')).toBeNull();
     });
 
     it('leaves the map as it is without the relief file, and says why', async () => {

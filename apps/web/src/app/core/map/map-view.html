@@ -173,6 +173,10 @@
   </div>
 </div>
 
+@if (outsideCoverage()) {
+<p class="map-note" role="status">{{ 'map.outside' | transloco }}</p>
+}
+
 <p
   class="map-attribution"
   role="note"

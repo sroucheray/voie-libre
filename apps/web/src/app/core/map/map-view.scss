@@ -105,6 +105,24 @@
   border-top-style: dashed;
 }
 
+.map-note {
+  position: absolute;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0.375rem 0.75rem;
+  max-width: 24rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: #101828;
+  background: rgb(255 255 255 / 92%);
+  border: 1px solid #c9cdd3;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 20%);
+  pointer-events: none;
+}
+
 .map-attribution {
   position: absolute;
   right: 0;

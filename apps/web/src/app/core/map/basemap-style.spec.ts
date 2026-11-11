@@ -115,7 +115,7 @@ describe('buildBasemapStyle', () => {
   it('reads tiles from the local PMTiles file, whatever trailing slash the base has', () => {
     expect(style.sources[BASEMAP_SOURCE]).toEqual({
       type: 'vector',
-      url: 'pmtiles://http://tiles.test:8081/clermont.pmtiles',
+      url: 'pmtiles://http://tiles.test:8081/basemap.pmtiles',
     });
   });
 

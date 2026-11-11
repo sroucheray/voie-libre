@@ -41,7 +41,8 @@
       "relief": "Relief : Copernicus",
       "imagery": "Photos : IGN"
     },
-    "unavailable": "La carte n'a pas pu être affichée. Votre navigateur ne gère peut-être pas WebGL2."
+    "unavailable": "La carte n'a pas pu être affichée. Votre navigateur ne gère peut-être pas WebGL2.",
+    "outside": "Pas de carte ici : cet endroit est hors de la zone couverte par la carte."
   },
   "planner": {
     "title": "Planificateur de parcours",

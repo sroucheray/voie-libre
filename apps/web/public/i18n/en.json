@@ -41,7 +41,8 @@
       "relief": "Relief: Copernicus",
       "imagery": "Photos: IGN"
     },
-    "unavailable": "The map could not be displayed. Your browser may not support WebGL2."
+    "unavailable": "The map could not be displayed. Your browser may not support WebGL2.",
+    "outside": "No map data here: this place is outside the area the map covers."
   },
   "planner": {
     "title": "Route planner",

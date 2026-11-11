@@ -53,7 +53,7 @@ Click the map to set the start, then the end; further clicks add waypoints just 
 
 ### Basemap
 
-The map reads a PMTiles extract of OpenStreetMap data (Protomaps) plus fonts and sprites, all served locally by the `tiles` service on http://localhost:8081, so the map makes no request to an external domain. `./scripts/download-basemap.sh` writes them to `data/basemap` (not committed): it extracts the region `2.6,45.3,3.7,46.1` up to zoom 14 from the latest Protomaps planet build, downloading only the needed byte ranges (the `pmtiles` CLI is used if installed, otherwise its Docker image). Override with `BASEMAP_BBOX`, `BASEMAP_MAXZOOM` or `BASEMAP_BUILD`. The map needs a browser with WebGL2; without it the app shows a message instead of the map.
+The map reads a PMTiles extract of OpenStreetMap data (Protomaps) plus fonts and sprites, all served locally by the `tiles` service on http://localhost:8081, so the map makes no request to an external domain. `./scripts/download-basemap.sh` writes them to `data/basemap` (not committed): it extracts France (`-5.5,41.2,9.8,51.2`, about 4.7 GB) up to zoom 14 into `basemap.pmtiles` from the latest Protomaps planet build, downloading only the needed byte ranges (the `pmtiles` CLI is used if installed, otherwise its Docker image). Override with `BASEMAP_BBOX` (Angers to Lyon is 680 MB, Clermont-Ferrand alone 42 MB), `BASEMAP_MAXZOOM` or `BASEMAP_BUILD`. The app never copies the whole file: users keep the areas they need offline (the corridor of a route, or the view). The map needs a browser with WebGL2; without it the app shows a message instead of the map.
 
 To run the API in a container instead of `npm run dev`, use `docker compose --profile full up -d` and start only the web app (`npx nx serve web`).
 

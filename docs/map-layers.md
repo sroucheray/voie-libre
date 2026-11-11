@@ -102,7 +102,7 @@ Consequences:
 
 - A build to run and re-run (data ages), a second archive to serve and to download for offline use. Size to measure; expect a few MB for the test region and some hundreds of MB for France.
 - The snapping rule could read `surface` from it and stop putting a road bike on an unpaved "minor road".
-- The basemap extract (`BASEMAP_BBOX`) and this archive must cover the same area.
+- The relief archive (`RELIEF_BBOX`) need not cover the same area as the basemap: outside it the hillshade is simply absent.
 - ODbL credit, as for the basemap.
 
 A lighter alternative for signed routes only: the Waymarked Trails raster overlay, as an opt-in external layer (their tiles are meant for light use; check their terms). It shows routes but cannot be styled or queried.

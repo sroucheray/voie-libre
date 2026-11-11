@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 # Prepares the offline-ready basemap in data/basemap (not committed):
-#   clermont.pmtiles   the Clermont-Ferrand region, extracted from a Protomaps planet build
-#                      (only the needed byte ranges are downloaded)
+#   basemap.pmtiles    the area of BASEMAP_BBOX (France by default, about 4.7 GB at zoom 14),
+#                      extracted from a Protomaps planet build (only the needed byte ranges
+#                      are downloaded). The app reads only the bytes it shows, so a big file
+#                      costs nothing to the user: it is not copied to their device.
 #   fonts/ sprites/    glyphs and sprites for the map style, from protomaps/basemaps-assets
 # Each step is skipped when its output already exists. Delete a file or folder to fetch it again.
 # `docker compose up -d tiles` serves the folder to the web app (with Range requests and CORS).
 #
 # Usage: scripts/download-basemap.sh
 # Environment:
-#   BASEMAP_BBOX      min_lon,min_lat,max_lon,max_lat   default: 2.6,45.3,3.7,46.1
+#   BASEMAP_BBOX      min_lon,min_lat,max_lon,max_lat   default: -5.5,41.2,9.8,51.2 (France, Corsica
+#                     included). Measured at zoom 14: Angers to Lyon (-1.2,45.2,5.4,47.9) 680 MB,
+#                     Europe (-11,35,32,71) 22 GB. Clermont-Ferrand only: 2.6,45.3,3.7,46.1 (42 MB).
 #   BASEMAP_MAXZOOM   default: 14
 #   BASEMAP_BUILD     planet build file name, e.g. 20261105.pmtiles   default: latest listed
 #   PMTILES_BIN       pmtiles CLI to use; default: `pmtiles` if installed, else the Docker image
@@ -18,10 +22,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-BBOX="${BASEMAP_BBOX:-2.6,45.3,3.7,46.1}"
+BBOX="${BASEMAP_BBOX:--5.5,41.2,9.8,51.2}"
 MAXZOOM="${BASEMAP_MAXZOOM:-14}"
 OUT_DIR="data/basemap"
-TILES="$OUT_DIR/clermont.pmtiles"
+TILES="$OUT_DIR/basemap.pmtiles"
 # Pinned commit of protomaps/basemaps-assets, so the style and the glyphs always match.
 ASSETS_REF="028c18f713baecad011301ff7a69acc39bcc2ae7"
 mkdir -p "$OUT_DIR"
@@ -41,7 +45,7 @@ extract_tiles() {
   else
     # No local CLI: use the official image, writing as the current user.
     docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/$OUT_DIR:/out" protomaps/go-pmtiles \
-      extract "$source" "/out/clermont.pmtiles.part" --bbox="$BBOX" --maxzoom="$MAXZOOM"
+      extract "$source" "/out/basemap.pmtiles.part" --bbox="$BBOX" --maxzoom="$MAXZOOM"
   fi
   mv "$TILES.part" "$TILES"
 }
