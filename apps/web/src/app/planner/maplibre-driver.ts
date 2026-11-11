@@ -588,6 +588,31 @@ export async function createMapLibreDriver(
     });
   };
 
+  /** Shows all of `coordinates`, clear of the panel (a side panel, or the bottom sheet on a phone). */
+  const fitTo = (
+    coordinates: readonly (readonly number[])[],
+    duration: number,
+  ) => {
+    if (coordinates.length === 0) return;
+    const bounds = new maplibre.LngLatBounds();
+    for (const [lon, lat] of coordinates) bounds.extend([lon, lat]);
+    const width = map.getContainer().clientWidth;
+    // On a phone the panel is a bottom sheet (open or not): leave room under the route instead.
+    const phone = width <= 640;
+    map.fitBounds(bounds, {
+      padding: phone
+        ? { top: 50, bottom: 260, right: 40, left: 40 }
+        : {
+            top: 50,
+            bottom: 50,
+            right: 50,
+            left: Math.min(340, Math.round(width / 3)),
+          },
+      duration,
+      maxZoom: 16,
+    });
+  };
+
   return {
     setMarkers(next: MarkerSpec[]) {
       specs = next;
@@ -631,25 +656,10 @@ export async function createMapLibreDriver(
       pushHighlight();
     },
     fitRoute(geometry: LngLat3[]) {
-      if (geometry.length === 0) return;
-      const bounds = new maplibre.LngLatBounds();
-      for (const [lon, lat] of geometry) bounds.extend([lon, lat]);
-      // Keep the route clear of the panel, but never ask for more padding than the map has.
-      const width = map.getContainer().clientWidth;
-      // On a phone the panel is a bottom sheet (open or not): leave room under the route instead.
-      const phone = width <= 640;
-      map.fitBounds(bounds, {
-        padding: phone
-          ? { top: 50, bottom: 260, right: 40, left: 40 }
-          : {
-              top: 50,
-              bottom: 50,
-              right: 50,
-              left: Math.min(340, Math.round(width / 3)),
-            },
-        duration: 0,
-        maxZoom: 16,
-      });
+      fitTo(geometry, 0);
+    },
+    fitPoints(points: LngLat[]) {
+      fitTo(points, 500);
     },
     centerOn(point: LngLat) {
       const width = map.getContainer().clientWidth;

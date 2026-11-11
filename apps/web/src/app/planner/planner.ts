@@ -780,11 +780,21 @@ export class Planner {
     return this.store.labelOf(point) ?? this.coordinates(point[0], point[1]);
   }
 
+  /**
+   * Shows a place just picked or placed: the map goes to it when it is the only point, but once
+   * there is a route (two points or more) the view takes in all of it, not just the new point.
+   */
+  private showPlace(point: LngLat): void {
+    const points = this.store.points();
+    if (points.length >= 2) this.driver()?.fitPoints([...points]);
+    else this.driver()?.centerOn(point);
+  }
+
   /** A place picked in the start field: it becomes the start and the map goes there. */
   protected pickStart(place: FoundPlace): void {
     this.store.setStart(place.point);
     this.store.setLabel(place.point, place.label, place.short);
-    this.driver()?.centerOn(place.point);
+    this.showPlace(place.point);
   }
 
   /** A place picked in the end field. Without a start there is no end yet: the field is blocked. */
@@ -792,7 +802,7 @@ export class Planner {
     if (this.store.points().length === 0) return;
     this.store.setEnd(place.point);
     this.store.setLabel(place.point, place.label, place.short);
-    this.driver()?.centerOn(place.point);
+    this.showPlace(place.point);
   }
 
   /**
@@ -816,14 +826,14 @@ export class Planner {
     } else if (target > 0 && target < count - 1)
       this.store.movePoint(target, point);
     else return;
-    this.driver()?.centerOn(point);
+    this.showPlace(point);
   }
 
   /** A place picked in the field of a stop: the stop moves there. */
   protected pickStop(index: number, place: FoundPlace): void {
     this.store.movePoint(index, place.point);
     this.store.setLabel(place.point, place.label, place.short);
-    this.driver()?.centerOn(place.point);
+    this.showPlace(place.point);
   }
 
   /** Opens an empty field before the point at this place, for a stop to search. */
@@ -841,7 +851,7 @@ export class Planner {
     if (at === null) return;
     this.store.insertPoint(at, place.point);
     this.store.setLabel(place.point, place.label, place.short);
-    this.driver()?.centerOn(place.point);
+    this.showPlace(place.point);
   }
 
   /** Applies a choice of the map menu at the place where it was opened. */

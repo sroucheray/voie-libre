@@ -1352,6 +1352,22 @@ describe('Planner', () => {
       expect(start.getAttribute('aria-busy')).toBe('false');
     });
 
+    it('shows the whole route, not just the new point, when a place is added to a start', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.fixture.detectChanges();
+      const field = inputs(view.root).at(-1) as HTMLInputElement;
+      await type(view, field, 'gare de lyon');
+      options(view.root)[0].click();
+      view.fixture.detectChanges();
+      expect(TestBed.inject(PlannerStore).points()).toHaveLength(2);
+      expect(view.driver.pointsFitted.at(-1)).toEqual([
+        [3.087, 45.777],
+        [gare.lon, gare.lat],
+      ]);
+      expect(view.driver.centered).toEqual([]);
+    });
+
     it('picks a suggestion with the keyboard', async () => {
       const view = await render();
       const [start] = inputs(view.root);
@@ -1445,7 +1461,11 @@ describe('Planner', () => {
         [3.2, 45.2],
       ]);
       expect(stop().value).toBe(gare.label);
-      expect(view.driver.centered).toEqual([[gare.lon, gare.lat]]);
+      // The route is on screen: the view takes in all of it, not only the new place.
+      expect(view.driver.pointsFitted.at(-1)).toContainEqual([
+        gare.lon,
+        gare.lat,
+      ]);
     });
 
     it('adds a stop by search, just before the end', async () => {
