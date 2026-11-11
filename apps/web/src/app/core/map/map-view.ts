@@ -59,6 +59,8 @@ export class MapView {
   readonly mapReady = output<MapLike>();
   /** The route on screen does not say what it rides on (so there is nothing to colour). */
   readonly surfaceMissing = input(false);
+  /** The route can be calculated again (not a loop kept without its mode). */
+  readonly surfaceComputable = input(true);
   /** The user asks for the route to be calculated again, to get what it rides on. */
   readonly computeSurface = output<void>();
 

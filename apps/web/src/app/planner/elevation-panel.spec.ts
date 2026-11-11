@@ -110,6 +110,25 @@ describe('ElevationPanel', () => {
     expect(store.recomputeCount()).toBe(before + 1);
   });
 
+  it('says a loop from a place to itself cannot be calculated again, with no button', async () => {
+    const { store, fixture, root } = await setup(true);
+    store.loadSaved({
+      points: [
+        [3, 45],
+        [3, 45],
+      ],
+      profile: 'road',
+      geometry,
+      distanceMeters: 1110,
+      ascentMeters: 100,
+      durationSeconds: 300,
+    });
+    await fixture.whenStable();
+    const note = root.querySelector('.surface-missing')!;
+    expect(note.textContent).toContain('cannot be calculated again');
+    expect(note.querySelector('button')).toBeNull();
+  });
+
   it('shows no surface bar for a route that does not say, or whose codes do not fit', async () => {
     expect((await setup(true)).root.querySelector('.surface')).toBeNull();
     TestBed.resetTestingModule();

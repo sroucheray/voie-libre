@@ -649,6 +649,33 @@ describe('RoutePlanner', () => {
       expect(store.routes()[0].surfaces).toBeUndefined();
     });
 
+    it('keeps the route on screen when calculating it again fails', async () => {
+      store.loadSaved(saved);
+      await settle();
+      respond = async () =>
+        json({ code: 'provider_error', message: 'boom' }, 502);
+      store.recompute();
+      await settle();
+      expect(requests).toHaveLength(1);
+      expect(store.errorCode()).toBe('provider_error');
+      // The route that was saved is still there.
+      expect(store.routes()).toHaveLength(1);
+      expect(store.routes()[0].geometry).toEqual(saved.geometry);
+    });
+
+    it('cannot calculate again a loop from a place to itself that kept no loop mode', async () => {
+      const here: [number, number] = [3.0, 45.0];
+      store.loadSaved({ ...saved, points: [here, here] });
+      await settle();
+      expect(store.surfaceMissing()).toBe(true);
+      expect(store.canRecompute()).toBe(false);
+      store.recompute();
+      await settle();
+      expect(requests).toHaveLength(0);
+      expect(store.routes()).toHaveLength(1);
+      expect(store.status()).toBe('ready');
+    });
+
     it('does not offer to calculate the surface of a route that has it, or of none', async () => {
       expect(store.surfaceMissing()).toBe(false);
       store.loadSaved({

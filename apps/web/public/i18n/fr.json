@@ -329,6 +329,7 @@
     "s": "Sentier",
     "unknown": "Inconnu",
     "missing": "Ce parcours n'a pas d'information de revêtement (il a été enregistré ou importé sans). On peut le recalculer entre ses points ; le résultat peut différer, et Annuler rend le parcours enregistré.",
-    "compute": "Calculer le revêtement"
+    "compute": "Calculer le revêtement",
+    "missingFixed": "Ce parcours n'a pas d'information de revêtement (il a été enregistré ou importé sans) et ne peut pas être recalculé : une boucle à distance n'est pas conservée avec le parcours enregistré."
   }
 }

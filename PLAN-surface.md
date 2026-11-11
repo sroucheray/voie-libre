@@ -17,5 +17,5 @@ Not checked: touch; saving and reopening a route by hand (the spec does it); a r
 Left as it is:
 
 - Cobbles count as unpaved or rough though they are paved: a rough ride, which is what the category tells.
-- Imported files, shared links and routes saved before this change have no surface bar: they say so and offer "Calculate the surface", which computes the route again between its points (the result can differ from the stored track, an imported one included; Undo brings it back). Found when the author turned the layer on over a route saved earlier.
+- Imported files, shared links and routes saved before this change have no surface bar: they say so and offer "Calculate the surface", which computes the route again between its points (the result can differ from the stored track, an imported one included; Undo brings it back). Found when the author turned the layer on over a route saved earlier. A saved loop by distance (start = end, its mode is not stored) cannot be calculated again: it says so and offers no button; a failed recalculation keeps the saved route on screen (the first version of the button wiped it: found by the author, reproduced with a real click on a saved loop).
 - The surface is not carried to the GPX or FIT export.

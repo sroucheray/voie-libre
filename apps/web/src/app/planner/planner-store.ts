@@ -315,6 +315,19 @@ export class PlannerStore {
       this.selectedSurfaces() === null,
   );
 
+  /**
+   * True when the route can be asked for again from its points: not for a route from a place to
+   * itself that is no loop mode (a loop by distance is not kept with a saved route, and the engine
+   * cannot route from a place to the same place).
+   */
+  readonly canRecompute = computed(() => {
+    const points = this.pointsState();
+    if (points.length < 2) return false;
+    const [first, last] = [points[0], points[points.length - 1]];
+    const samePlace = first[0] === last[0] && first[1] === last[1];
+    return !(points.length === 2 && samePlace && !this.loop());
+  });
+
   /** Bumped by {@link recompute}: the planner reads it to compute although the inputs are the same. */
   readonly recomputeCount = signal(0);
 
@@ -324,13 +337,24 @@ export class PlannerStore {
    * previous route back without a request.
    */
   recompute(): void {
-    if (this.pointsState().length < 2) return;
+    if (!this.canRecompute()) return;
     this.record();
+    this.refreshing = true;
     this.lastEdit = null;
     this.lastEditRoute = null;
     this.restored = null;
     this.routesFor = null;
     this.recomputeCount.update((n) => n + 1);
+  }
+
+  /** A computation asked for by {@link recompute} is due: a failure must keep the route on screen. */
+  private refreshing = false;
+
+  /** True once after {@link recompute}: the computation that follows is that request. */
+  takeRefresh(): boolean {
+    const was = this.refreshing;
+    this.refreshing = false;
+    return was;
   }
 
   /** Picks the stretch between two points of the selected route, in either order; `null` clears it. */

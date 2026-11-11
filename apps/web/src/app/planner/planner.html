@@ -3,6 +3,7 @@
     class="map"
     [waysProfile]="store.profile()"
     [surfaceMissing]="store.surfaceMissing()"
+    [surfaceComputable]="store.canRecompute()"
     (computeSurface)="store.recompute()"
     (mapReady)="onMapReady($event)"
   />

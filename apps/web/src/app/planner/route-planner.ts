@@ -75,6 +75,7 @@ export class RoutePlanner {
       if (untracked(() => this.store.isRestored(signature))) return;
       untracked(() => this.store.forgetRestored());
       const local = untracked(() => this.localPlan(points));
+      const refresh = untracked(() => this.store.takeRefresh());
       untracked(() => this.store.startLoading());
       const controller = new AbortController();
       // A drag on the map paces its own changes (see `Planner`): no need to wait for it to stop.
@@ -91,6 +92,7 @@ export class RoutePlanner {
                 alternatives,
                 loop,
                 controller.signal,
+                refresh,
               )),
         delay,
       );
@@ -160,7 +162,11 @@ export class RoutePlanner {
     alternatives: number,
     loop: LoopMode | null,
     signal: AbortSignal,
+    refresh = false,
   ): Promise<void> {
+    // A route the user asked to be calculated again stays on screen if that fails.
+    const fail = (code: PlannerErrorCode) =>
+      refresh ? this.store.setLocalEditError(code) : this.store.setError(code);
     try {
       const { data, error, response } = await this.client.POST('/route', {
         body: {
@@ -182,11 +188,11 @@ export class RoutePlanner {
           })),
         );
       } else {
-        this.store.setError(errorCodeFrom(response.status, error));
+        fail(errorCodeFrom(response.status, error));
       }
     } catch {
       // An aborted request is superseded by a newer one: nothing to report.
-      if (!signal.aborted) this.store.setError('unavailable');
+      if (!signal.aborted) fail('unavailable');
     }
   }
 }

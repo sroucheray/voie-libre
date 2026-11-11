@@ -302,6 +302,19 @@ describe('MapView', () => {
       expect(asked).toEqual([1]);
     });
 
+    it('offers no button when the route cannot be calculated again', async () => {
+      const view = await renderWith(true);
+      view.open();
+      view.root.querySelector<HTMLInputElement>('.surface-checkbox')!.click();
+      view.fixture.componentRef.setInput('surfaceMissing', true);
+      view.fixture.componentRef.setInput('surfaceComputable', false);
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.layers-action')).toBeNull();
+      expect(view.root.querySelector('.layers-note')?.textContent).toContain(
+        'cannot be calculated again',
+      );
+    });
+
     it('leaves the map as it is without the relief file, and says why', async () => {
       const view = await renderWith(false);
       expect(maps[0].calls).not.toContain('setStyle');
