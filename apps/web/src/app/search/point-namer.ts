@@ -22,6 +22,8 @@ export class PointNamer {
   private readonly network = inject(NetworkStatus);
   /** Positions already asked for, so that none is asked twice. */
   private readonly asked = new Set<string>();
+  /** Requests running, by position: one is cancelled only when its place is no longer an end. */
+  private readonly inFlight = new Map<string, AbortController>();
 
   constructor() {
     effect((onCleanup) => {
@@ -31,30 +33,46 @@ export class PointNamer {
       if (this.store.dragging()) return;
       if (!this.network.online() || points.length === 0) return;
       const ends = [points[0], points[points.length - 1]];
+      // A place that is no longer an end (moved, removed) is not worth an answer any more. One
+      // that still is keeps its request: the answer for the other end must not cancel it.
+      const wanted = new Set(ends.map(keyOf));
+      for (const [key, controller] of this.inFlight) {
+        if (!wanted.has(key)) {
+          controller.abort();
+          this.inFlight.delete(key);
+        }
+      }
       const missing = ends.filter(
         (point, i) =>
           ends.findIndex((other) => keyOf(other) === keyOf(point)) === i &&
           !labels[keyOf(point)] &&
           this.store.lookupWanted(point) &&
-          !this.asked.has(keyOf(point)),
+          !this.asked.has(keyOf(point)) &&
+          !this.inFlight.has(keyOf(point)),
       );
       if (missing.length === 0) return;
-      const controller = new AbortController();
       const timer = setTimeout(() => {
-        for (const point of missing) void this.name(point, controller.signal);
+        for (const point of missing) {
+          const controller = new AbortController();
+          this.inFlight.set(keyOf(point), controller);
+          void this.name(point, controller);
+        }
       }, NAME_DEBOUNCE_MS);
-      onCleanup(() => {
-        clearTimeout(timer);
-        controller.abort();
-      });
+      onCleanup(() => clearTimeout(timer));
     });
   }
 
-  private async name(point: LngLat, signal: AbortSignal): Promise<void> {
+  private async name(
+    point: LngLat,
+    controller: AbortController,
+  ): Promise<void> {
     const key = keyOf(point);
     this.asked.add(key);
-    const label = await this.geocoding.reverse(point, signal);
-    if (label) untracked(() => this.store.setLabel(point, label));
+    const place = await this.geocoding.reverse(point, controller.signal);
+    if (this.inFlight.get(key) === controller) this.inFlight.delete(key);
+    if (place) {
+      untracked(() => this.store.setLabel(point, place.label, place.short));
+    }
     // A failure (or an abort) lets the next change of the points try again.
     else this.asked.delete(key);
   }

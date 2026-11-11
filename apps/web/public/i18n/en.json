@@ -227,7 +227,14 @@
       "gpx": "GPX",
       "fit": "FIT"
     },
-    "summaryNoClimb": "{{distance}}, saved {{date}}"
+    "summaryNoClimb": "{{distance}}, saved {{date}}",
+    "autoName": {
+      "trip": "{{from}} → {{to}}",
+      "tripVia": "{{from}} → {{to}} via {{via}}",
+      "tripStops": "{{from}} → {{to}} via {{count}} stops",
+      "loop": "Loop around {{place}}",
+      "within": "Around {{place}}"
+    }
   },
   "offline": {
     "title": "Offline map",

@@ -89,9 +89,19 @@ describe('GeocodingService', () => {
 
   it('reverses a position to a label, or null when there is none or it fails', async () => {
     respond = () =>
-      json({ place: { label: 'Rue de Bercy, Paris', lon: 2.37, lat: 48.84 } });
+      json({
+        place: {
+          label: 'Rue de Bercy, Paris',
+          short: 'Paris',
+          lon: 2.37,
+          lat: 48.84,
+        },
+      });
     const s = service();
-    expect(await s.reverse([2.37, 48.84])).toBe('Rue de Bercy, Paris');
+    expect(await s.reverse([2.37, 48.84])).toEqual({
+      label: 'Rue de Bercy, Paris',
+      short: 'Paris',
+    });
     expect(new URL(urls[0]).pathname).toBe('/geocode/reverse');
     respond = () => json({ place: null });
     expect(await s.reverse([0, 0])).toBeNull();

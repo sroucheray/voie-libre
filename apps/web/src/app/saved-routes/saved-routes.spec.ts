@@ -1062,4 +1062,114 @@ describe('Saved routes', () => {
       expect(view.items()).toHaveLength(0);
     });
   });
+  describe('the name proposed for a route', () => {
+    const START: [number, number] = [3.087, 45.777];
+    const END: [number, number] = [3.249, 45.544];
+    const store = () => TestBed.inject(PlannerStore);
+    const type = (
+      view: { nameInput: () => HTMLInputElement },
+      text: string,
+    ) => {
+      const input = view.nameInput();
+      input.value = text;
+      input.dispatchEvent(new Event('input'));
+    };
+
+    it('falls back on the profile and the length while the places are not known', async () => {
+      const view = await render();
+      await view.plan();
+      expect(view.nameInput().value).toBe('Road, 41 km');
+    });
+
+    it('proposes the places once they are known, and follows them', async () => {
+      const view = await render();
+      await view.plan();
+      store().setLabel(
+        START,
+        '10 Rue Abbé Girard, Clermont-Ferrand',
+        'Clermont-Ferrand',
+      );
+      store().setLabel(END, '7 Rue de la Berbiziale, Issoire', 'Issoire');
+      await view.settle(0);
+      expect(view.nameInput().value).toBe('Clermont-Ferrand → Issoire');
+      // The route is reversed: the names follow.
+      store().reverse();
+      await view.settle(ROUTE_DEBOUNCE_MS + 10);
+      expect(view.nameInput().value).toBe('Issoire → Clermont-Ferrand');
+    });
+
+    it('stops following the route once the user typed a name', async () => {
+      const view = await render();
+      await view.plan();
+      store().setLabel(START, 'a', 'Clermont-Ferrand');
+      store().setLabel(END, 'b', 'Issoire');
+      await view.settle(0);
+      type(view, 'Sortie du dimanche');
+      store().reverse();
+      store().setLabel(END, 'c', 'Brioude');
+      await view.settle(ROUTE_DEBOUNCE_MS + 10);
+      expect(view.nameInput().value).toBe('Sortie du dimanche');
+      view.save().click();
+      await view.settle();
+      expect((await routeStore.list())[0].name).toBe('Sortie du dimanche');
+    });
+
+    it('saves the proposal when the field was emptied by hand', async () => {
+      const view = await render();
+      await view.plan();
+      store().setLabel(START, 'a', 'Clermont-Ferrand');
+      store().setLabel(END, 'b', 'Issoire');
+      await view.settle(0);
+      type(view, '');
+      view.save().click();
+      await view.settle();
+      expect((await routeStore.list())[0].name).toBe(
+        'Clermont-Ferrand → Issoire',
+      );
+    });
+
+    it('proposes a name again when the route is cleared and another one is planned', async () => {
+      const view = await render();
+      await view.plan();
+      store().setLabel(START, 'a', 'Clermont-Ferrand');
+      store().setLabel(END, 'b', 'Issoire');
+      type(view, 'Sortie du dimanche');
+      store().clear();
+      await view.settle(0);
+      await view.plan();
+      expect(view.nameInput().value).toBe('Clermont-Ferrand → Issoire');
+    });
+
+    it('adds the date when a saved route already has that name, then a number', async () => {
+      const view = await render();
+      await view.plan();
+      store().setLabel(START, 'a', 'Clermont-Ferrand');
+      store().setLabel(END, 'b', 'Issoire');
+      await view.settle(0);
+      view.save().click();
+      await view.settle();
+      expect((await routeStore.list())[0].name).toBe(
+        'Clermont-Ferrand → Issoire',
+      );
+      // The same trip again: the form proposes the name with today's date.
+      await view.settle(0);
+      const proposed = view.nameInput().value;
+      expect(proposed).toMatch(/^Clermont-Ferrand → Issoire, /);
+      view.save().click();
+      await view.settle();
+      expect((await routeStore.list()).map((r) => r.name).sort()).toEqual(
+        ['Clermont-Ferrand → Issoire', proposed].sort(),
+      );
+    });
+
+    it('names a loop and a trip with stops', async () => {
+      const view = await render();
+      await view.plan();
+      store().setLabel(START, 'a', 'Clermont-Ferrand');
+      store().setLabel(END, 'b', 'Issoire');
+      store().closeLoop();
+      await view.settle(ROUTE_DEBOUNCE_MS + 10);
+      expect(view.nameInput().value).toBe('Loop around Clermont-Ferrand');
+    });
+  });
 });

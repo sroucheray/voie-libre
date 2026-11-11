@@ -62,7 +62,7 @@ describe('Planner', () => {
   }[];
   let respond: (count: number) => Response;
   let geocoded: string[];
-  let geocode: (url: URL) => Response;
+  let geocode: (url: URL) => Response | Promise<Response>;
 
   beforeEach(async () => {
     vi.useFakeTimers();
@@ -82,7 +82,12 @@ describe('Planner', () => {
         const url = new URL(request.url);
         if (url.pathname.startsWith('/geocode')) {
           geocoded.push(`${url.pathname}${url.search}`);
-          return geocode(url);
+          const answer = await geocode(url);
+          // A request cancelled while it waited gets no answer, like a real fetch.
+          if (request.signal.aborted) {
+            throw new DOMException('aborted', 'AbortError');
+          }
+          return answer;
         }
         const body = await request.clone().json();
         requests.push(body);
@@ -1625,6 +1630,43 @@ describe('Planner', () => {
       view.click(3.15, 45.65);
       view.click(3.249, 45.544);
       await vi.advanceTimersByTimeAsync(NAME_DEBOUNCE_MS + 10);
+      expect(geocoded).toHaveLength(2);
+    });
+
+    it('names both ends even when one answer comes after the other', async () => {
+      const later: (() => void)[] = [];
+      geocode = (url) => {
+        const lon = url.searchParams.get('lon');
+        const answer = () =>
+          json({
+            place: {
+              label: `Rue ${lon}`,
+              short: `Ville ${lon}`,
+              lon: 0,
+              lat: 0,
+            },
+          });
+        // The start answers last: the answer for the end must not cancel it.
+        return lon === '3.087'
+          ? new Promise<Response>((resolve) =>
+              later.push(() => resolve(answer())),
+            )
+          : answer();
+      };
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.click(3.249, 45.544);
+      await vi.advanceTimersByTimeAsync(NAME_DEBOUNCE_MS + 10);
+      TestBed.tick();
+      expect(geocoded).toHaveLength(2);
+      const store = TestBed.inject(PlannerStore);
+      expect(store.shortOf([3.249, 45.544])).toBe('Ville 3.249');
+      later.forEach((answer) => answer());
+      await vi.advanceTimersByTimeAsync(NAME_DEBOUNCE_MS + 10);
+      TestBed.tick();
+      expect(store.shortOf([3.087, 45.777])).toBe('Ville 3.087');
+      expect(store.labelOf([3.087, 45.777])).toBe('Rue 3.087');
+      // Nothing was asked twice.
       expect(geocoded).toHaveLength(2);
     });
 

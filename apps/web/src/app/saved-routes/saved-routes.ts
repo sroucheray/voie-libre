@@ -6,8 +6,10 @@ import {
   Injector,
   afterNextRender,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import {
   TranslocoPipe,
@@ -15,6 +17,7 @@ import {
   translateSignal,
 } from '@jsverse/transloco';
 import { FormattingService } from '../core/format/formatting.service';
+import { autoRouteName, type AutoName } from '../planner/route-name';
 import { FILE_DOWNLOADER } from '../export/file-download';
 import { buildFit, fitFileName } from '../export/fit';
 import { buildGpx, gpxFileName } from '@voie-libre/shared';
@@ -106,20 +109,50 @@ export class SavedRoutes {
   /** The imported route (without elevation) the user is asked about: compute its climb? */
   protected readonly climbPromptId = signal<string | null>(null);
 
-  /** What the user typed in the name field; `null` while the proposed name applies. */
+  /**
+   * What the user typed in the name field; `null` while the proposed name applies. Once the user
+   * has typed, the proposal no longer follows the route: nothing they change in it renames it.
+   */
   private readonly draft = signal<string | null>(null);
 
-  /** "Road, 41 km": proposed until the user types another name. */
-  private readonly defaultName = translateSignal(
-    computed(() => `saved.defaultName.${this.savable()?.profile ?? 'road'}`),
-    computed(() => ({
-      distance: this.format.distance(this.savable()?.distanceMeters ?? 0),
-    })),
+  /** "Clermont-Ferrand → Issoire" when the places are known, else "Road, 41 km". */
+  private readonly proposal = computed<AutoName>(() => {
+    const route = this.savable();
+    const named = route
+      ? autoRouteName(route.points, (point) => this.planner.shortOf(point))
+      : null;
+    return (
+      named ?? {
+        key: `saved.defaultName.${route?.profile ?? 'road'}`,
+        params: { distance: this.format.distance(route?.distanceMeters ?? 0) },
+      }
+    );
+  });
+  private readonly proposed = translateSignal(
+    computed(() => this.proposal().key),
+    computed(() => this.proposal().params),
   );
+  /** The proposal, with the date added (then a number) when a saved route already has it. */
+  private readonly defaultName = computed(() => {
+    const name = this.proposed();
+    const taken = new Set(this.routes().map((route) => route.name));
+    if (!taken.has(name)) return name;
+    const dated = `${name}, ${this.format.date(Date.now())}`;
+    if (!taken.has(dated)) return dated;
+    for (let n = 2; ; n++) {
+      if (!taken.has(`${dated} (${n})`)) return `${dated} (${n})`;
+    }
+  });
   protected readonly name = computed(() => this.draft() ?? this.defaultName());
 
   constructor() {
     void this.refresh();
+    // A route cleared is a new route: its name is proposed again, whatever was typed for the last.
+    effect(() => {
+      if (this.planner.points().length === 0) {
+        untracked(() => this.draft.set(null));
+      }
+    });
     // A row can vanish under the pointer (delete, page change): no preview must stay behind.
     inject(DestroyRef).onDestroy(() => this.planner.preview.set(null));
   }

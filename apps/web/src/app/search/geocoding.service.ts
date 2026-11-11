@@ -7,6 +7,8 @@ import { errorCodeFrom } from '../planner/route-planner';
 /** A place found by the API: a label to show and where it is. */
 export interface FoundPlace {
   label: string;
+  /** A short name to call the place by (a route name, say); absent when the API gave none. */
+  short?: string;
   point: LngLat;
 }
 
@@ -53,6 +55,7 @@ export class GeocodingService {
       return {
         places: data.places.map((p) => ({
           label: p.label,
+          ...(p.short ? { short: p.short } : {}),
           point: [p.lon, p.lat] as LngLat,
         })),
       };
@@ -63,7 +66,10 @@ export class GeocodingService {
   }
 
   /** The address or place nearest to `point`, or `null` (nothing there, offline, or an error). */
-  async reverse(point: LngLat, signal?: AbortSignal): Promise<string | null> {
+  async reverse(
+    point: LngLat,
+    signal?: AbortSignal,
+  ): Promise<{ label: string; short?: string } | null> {
     try {
       const { data } = await this.client.GET('/geocode/reverse', {
         params: {
@@ -75,7 +81,12 @@ export class GeocodingService {
         },
         signal,
       });
-      return data?.place?.label ?? null;
+      const place = data?.place;
+      if (!place) return null;
+      return {
+        label: place.label,
+        ...(place.short ? { short: place.short } : {}),
+      };
     } catch {
       return null;
     }

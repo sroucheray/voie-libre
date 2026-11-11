@@ -216,6 +216,8 @@ export class PlannerStore {
    * part of the route inputs: setting one never recomputes anything.
    */
   private readonly labelsState = signal<Readonly<Record<string, string>>>({});
+  /** Short names of the same places (see {@link shortOf}), kept the same way. */
+  private readonly shortsState = signal<Readonly<Record<string, string>>>({});
   readonly labels = this.labelsState.asReadonly();
   /** Positions of a route that was opened, not planned: nothing is asked about them. */
   private readonly noLookup = new Set<string>();
@@ -609,11 +611,24 @@ export class PlannerStore {
   }
 
   /** Names the place at `point`, e.g. with the address the user picked or one found for a click. */
-  setLabel(point: LngLat, label: string): void {
+  setLabel(point: LngLat, label: string, short?: string): void {
     const key = labelKey(point);
     const { [key]: _old, ...rest } = this.labelsState();
     const entries = Object.entries({ ...rest, [key]: label });
     this.labelsState.set(Object.fromEntries(entries.slice(-MAX_LABELS)));
+    const { [key]: _oldShort, ...restShorts } = this.shortsState();
+    const shorts = Object.entries(
+      short ? { ...restShorts, [key]: short } : restShorts,
+    );
+    this.shortsState.set(Object.fromEntries(shorts.slice(-MAX_LABELS)));
+  }
+
+  /**
+   * A short name to call the place at `point` by, if one is known: its own name when it was
+   * searched, its town or village when it was found for a click. It never recomputes a route.
+   */
+  shortOf(point: LngLat): string | null {
+    return this.shortsState()[labelKey(point)] ?? null;
   }
 
   /**

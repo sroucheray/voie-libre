@@ -227,7 +227,14 @@
       "gpx": "GPX",
       "fit": "FIT"
     },
-    "summaryNoClimb": "{{distance}}, enregistré le {{date}}"
+    "summaryNoClimb": "{{distance}}, enregistré le {{date}}",
+    "autoName": {
+      "trip": "{{from}} → {{to}}",
+      "tripVia": "{{from}} → {{to}} via {{via}}",
+      "tripStops": "{{from}} → {{to}} via {{count}} étapes",
+      "loop": "Boucle autour de {{place}}",
+      "within": "Autour de {{place}}"
+    }
   },
   "offline": {
     "title": "Carte hors ligne",

@@ -770,7 +770,7 @@ export class Planner {
   /** A place picked in the start field: it becomes the start and the map goes there. */
   protected pickStart(place: FoundPlace): void {
     this.store.setStart(place.point);
-    this.store.setLabel(place.point, place.label);
+    this.store.setLabel(place.point, place.label, place.short);
     this.driver()?.centerOn(place.point);
   }
 
@@ -778,7 +778,7 @@ export class Planner {
   protected pickEnd(place: FoundPlace): void {
     if (this.store.points().length === 0) return;
     this.store.setEnd(place.point);
-    this.store.setLabel(place.point, place.label);
+    this.store.setLabel(place.point, place.label, place.short);
     this.driver()?.centerOn(place.point);
   }
 
@@ -809,7 +809,7 @@ export class Planner {
   /** A place picked in the field of a stop: the stop moves there. */
   protected pickStop(index: number, place: FoundPlace): void {
     this.store.movePoint(index, place.point);
-    this.store.setLabel(place.point, place.label);
+    this.store.setLabel(place.point, place.label, place.short);
     this.driver()?.centerOn(place.point);
   }
 
@@ -827,7 +827,7 @@ export class Planner {
     this.newStopAt.set(null);
     if (at === null) return;
     this.store.insertPoint(at, place.point);
-    this.store.setLabel(place.point, place.label);
+    this.store.setLabel(place.point, place.label, place.short);
     this.driver()?.centerOn(place.point);
   }
 
