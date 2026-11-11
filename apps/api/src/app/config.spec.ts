@@ -22,6 +22,11 @@ describe('loadConfig', () => {
     ]);
   });
 
+  it('trusts the proxy headers only when asked', () => {
+    expect(loadConfig({}).trustProxy).toBe(false);
+    expect(loadConfig({ TRUST_PROXY: 'true' }).trustProxy).toBe(true);
+  });
+
   it('rejects a non-numeric port', () => {
     expect(() => loadConfig({ PORT: 'abc' })).toThrow('PORT');
   });

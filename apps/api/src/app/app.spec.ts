@@ -40,6 +40,20 @@ describe('API', () => {
     });
   });
 
+  it('counts each visitor behind a trusted proxy on their own', async () => {
+    await start(true, { TRUST_PROXY: 'true', RATE_LIMIT_MAX: '1' });
+    const ask = (forwardedFor: string) =>
+      server.inject({
+        method: 'GET',
+        url: '/docs/json',
+        remoteAddress: '172.18.0.5',
+        headers: { 'x-forwarded-for': forwardedFor },
+      });
+    expect((await ask('203.0.113.1')).statusCode).toBe(200);
+    expect((await ask('203.0.113.2')).statusCode).toBe(200);
+    expect((await ask('203.0.113.1')).statusCode).toBe(429);
+  });
+
   it('GET /health answers 503 when the database is down', async () => {
     await start(false);
     const response = await server.inject({ method: 'GET', url: '/health' });

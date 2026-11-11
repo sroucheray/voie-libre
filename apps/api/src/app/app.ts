@@ -42,7 +42,10 @@ export async function buildApp({
   },
   logger = false,
 }: AppOptions): Promise<FastifyInstance> {
-  const fastify = Fastify({ logger }).withTypeProvider<TypeBoxTypeProvider>();
+  const fastify = Fastify({
+    logger,
+    trustProxy: config.trustProxy,
+  }).withTypeProvider<TypeBoxTypeProvider>();
 
   await fastify.register(cors, {
     origin: config.corsOrigins,

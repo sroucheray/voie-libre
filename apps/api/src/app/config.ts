@@ -26,6 +26,8 @@ export interface Config {
   brouterMaxConcurrent: number;
   /** Directory of the Copernicus GLO-30 tiles (see scripts/download-relief.sh). */
   reliefDir: string;
+  /** Believe `X-Forwarded-For`: set it only behind a reverse proxy that is the sole way in. */
+  trustProxy: boolean;
   logLevel: string;
 }
 
@@ -99,6 +101,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       2,
     ),
     reliefDir: env['RELIEF_DIR'] || 'data/relief',
+    trustProxy: env['TRUST_PROXY'] === 'true',
     logLevel: env['LOG_LEVEL'] || 'info',
   };
 }
