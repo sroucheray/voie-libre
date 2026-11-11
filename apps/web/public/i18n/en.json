@@ -237,7 +237,10 @@
       "tripStops": "{{from}} → {{to}} via {{count}} stops",
       "loop": "Loop around {{place}}",
       "within": "Around {{place}}"
-    }
+    },
+    "savedAs": "Saved: {{name}}",
+    "showInList": "Show in Saved",
+    "nameCount": "{{count}} / {{max}}"
   },
   "offline": {
     "title": "Offline map",

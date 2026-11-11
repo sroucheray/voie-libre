@@ -11,6 +11,7 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   untracked,
   viewChild,
@@ -66,6 +67,9 @@ class ExportError extends Error {}
  */
 /** The file formats a saved route exports to. */
 const EXPORT_FORMATS = ['gpx', 'fit'] as const;
+
+/** The longest name a route can be given. */
+export const NAME_MAX_LENGTH = 120;
 type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
 @Component({
@@ -77,7 +81,7 @@ type ExportFormat = (typeof EXPORT_FORMATS)[number];
 })
 export class SavedRoutes {
   protected readonly format = inject(FormattingService);
-  private readonly planner = inject(PlannerStore);
+  protected readonly planner = inject(PlannerStore);
   private readonly routeStore = inject(ROUTE_STORE);
   private readonly download = inject(FILE_DOWNLOADER);
   private readonly transloco = inject(TranslocoService);
@@ -93,6 +97,8 @@ export class SavedRoutes {
    * is only drawn in this list when `formElsewhere` is off.
    */
   readonly formElsewhere = input(false);
+  /** "Show in Saved" was pressed on the confirmation: the planner opens the list. */
+  readonly showSaved = output<string>();
   readonly saveForm = viewChild.required<TemplateRef<unknown>>('saveForm');
 
   protected readonly routes = signal<SavedRoute[]>([]);
@@ -165,12 +171,49 @@ export class SavedRoutes {
         untracked(() => this.draft.set(null));
       }
     });
+    // "Show in Saved": the row that was lit comes into view (the list may be longer than the panel).
+    effect(() => {
+      if (!this.planner.highlightedId()) return;
+      afterNextRender(
+        () =>
+          this.host.nativeElement
+            .querySelector('.fresh')
+            ?.scrollIntoView({ block: 'nearest' }),
+        { injector: this.injector },
+      );
+    });
     // A row can vanish under the pointer (delete, page change): no preview must stay behind.
     inject(DestroyRef).onDestroy(() => this.planner.preview.set(null));
   }
 
+  protected readonly nameMax = NAME_MAX_LENGTH;
+
+  /** A name is one line of text that wraps: a line break typed or pasted becomes a space. */
   protected onNameInput(event: Event): void {
-    this.draft.set((event.target as HTMLInputElement).value);
+    const field = event.target as HTMLTextAreaElement;
+    const clean = field.value.replace(/\s*[\r\n]+\s*/g, ' ');
+    if (clean !== field.value) field.value = clean;
+    this.draft.set(clean);
+    this.fit(field);
+  }
+
+  /** Enter saves (or renames): it never adds a line. True when the key was meant for the form. */
+  protected onNameEnter(event: Event): boolean {
+    if ((event as KeyboardEvent).isComposing) return false;
+    event.preventDefault();
+    return true;
+  }
+
+  /** Grows the field with its text where the browser cannot do it by itself (`field-sizing`). */
+  protected fit(field: HTMLTextAreaElement): void {
+    if (typeof CSS !== 'undefined' && CSS.supports?.('field-sizing', 'content'))
+      return;
+    field.style.height = 'auto';
+    field.style.height = `${field.scrollHeight}px`;
+  }
+
+  protected showInList(id: string): void {
+    this.showSaved.emit(id);
   }
 
   protected async save(): Promise<void> {
@@ -191,7 +234,7 @@ export class SavedRoutes {
         ...(route.loop ? { loop: route.loop } : {}),
       });
       this.routes.update((routes) => [saved, ...routes]);
-      this.planner.markSaved();
+      this.planner.markSaved({ id: saved.id, name: saved.name });
       this.draft.set(null);
     });
   }
@@ -225,6 +268,7 @@ export class SavedRoutes {
       });
       this.routes.update((routes) => [saved, ...routes]);
       this.planner.loadSaved(saved);
+      this.planner.markSaved({ id: saved.id, name: saved.name });
       this.climbPromptId.set(imported.ascentMeters === null ? saved.id : null);
       this.notice.set(
         imported.ascentMeters === null
@@ -252,7 +296,10 @@ export class SavedRoutes {
         'copernicus',
       );
       this.replace(updated);
-      if (show) this.planner.loadSaved(updated);
+      if (show) {
+        this.planner.loadSaved(updated);
+        this.planner.markSaved({ id: updated.id, name: updated.name });
+      }
       this.climbPromptId.set(null);
       this.notice.set(null);
     });
@@ -296,6 +343,7 @@ export class SavedRoutes {
         throw new RouteStoreError('not_found');
       }
       this.planner.loadSaved(saved);
+      this.planner.markSaved({ id: saved.id, name: saved.name });
     });
   }
 
@@ -433,7 +481,7 @@ export class SavedRoutes {
     afterNextRender(
       () =>
         this.host.nativeElement
-          .querySelector<HTMLInputElement>('.rename-input')
+          .querySelector<HTMLTextAreaElement>('.rename-input')
           ?.select(),
       { injector: this.injector },
     );
@@ -444,13 +492,14 @@ export class SavedRoutes {
   }
 
   protected async rename(id: string, value: string): Promise<void> {
-    const name = value.trim();
+    const name = value.replace(/\s*[\r\n]+\s*/g, ' ').trim();
     if (!name) return;
     await this.attempt(async () => {
       const renamed = await this.routeStore.rename(id, name);
       this.routes.update((routes) =>
         routes.map((r) => (r.id === id ? renamed : r)),
       );
+      this.planner.renameSaved(id, renamed.name);
       this.renamingId.set(null);
     });
   }
@@ -474,6 +523,7 @@ export class SavedRoutes {
         if (route?.share) await this.sharing.unshare(route);
         await this.routeStore.delete(id);
         this.planner.preview.set(null);
+        this.planner.forgetSaved(id);
         this.routes.update((routes) => routes.filter((r) => r.id !== id));
         this.confirmingId.set(null);
       } finally {

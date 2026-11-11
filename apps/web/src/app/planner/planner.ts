@@ -961,6 +961,12 @@ export class Planner {
     this.store.setLoopAscent(value.trim() === '' ? null : Number(value));
   }
 
+  /** "Show in Saved" on the confirmation: opens the list with the route that was saved lit. */
+  protected openSaved(id: string): void {
+    this.openTab('saved');
+    this.store.highlightSaved(id);
+  }
+
   protected openTab(tab: 'route' | 'saved'): void {
     this.tab.set(tab);
     this.sheetOpen.set(true);

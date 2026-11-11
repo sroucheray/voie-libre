@@ -831,9 +831,42 @@ export class PlannerStore {
       this.savedSignature() !== this.signature(),
   );
 
+  /** The saved route the inputs on screen belong to (just saved or opened), for the confirmation. */
+  private readonly savedRef = signal<{ id: string; name: string } | null>(null);
+
+  /**
+   * The saved route that is exactly what is on screen: set when it was just saved or opened,
+   * `null` as soon as the route is edited. The panel then says "Saved" instead of offering to save.
+   */
+  readonly savedAs = computed(() =>
+    this.pointsState().length > 0 && this.savedSignature() === this.signature()
+      ? this.savedRef()
+      : null,
+  );
+
+  /** The saved route to show lit in the list for a moment (after "Show in Saved"). */
+  readonly highlightedId = signal<string | null>(null);
+  private highlightTimer: ReturnType<typeof setTimeout> | null = null;
+
   /** The route on screen was just saved: it is no longer unsaved work. */
-  markSaved(): void {
+  markSaved(ref?: { id: string; name: string }): void {
     this.savedSignature.set(this.signature());
+    this.savedRef.set(ref ?? null);
+  }
+
+  /** A saved route was renamed or deleted: the confirmation follows. */
+  renameSaved(id: string, name: string): void {
+    this.savedRef.update((ref) => (ref?.id === id ? { id, name } : ref));
+  }
+
+  forgetSaved(id: string): void {
+    if (this.savedRef()?.id === id) this.savedRef.set(null);
+  }
+
+  highlightSaved(id: string): void {
+    if (this.highlightTimer) clearTimeout(this.highlightTimer);
+    this.highlightedId.set(id);
+    this.highlightTimer = setTimeout(() => this.highlightedId.set(null), 3000);
   }
 
   /** Remembers the state before a change, which also ends what could be redone. */

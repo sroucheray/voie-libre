@@ -2,20 +2,50 @@
   <h3>{{ 'saved.title' | transloco }}</h3>
 
   <ng-template #saveForm>
+    @if (planner.savedAs(); as saved) {
+    <!-- Nothing changed since it was saved (or opened): say so, instead of offering to save again. -->
+    <div class="saved-notice" role="status">
+      <span class="saved-notice__text">
+        <span class="saved-notice__tick" aria-hidden="true">✓</span>
+        {{ 'saved.savedAs' | transloco : { name: saved.name } }}
+      </span>
+      <button
+        type="button"
+        class="saved-notice__link"
+        (click)="showInList(saved.id)"
+      >
+        {{ 'saved.showInList' | transloco }}
+      </button>
+    </div>
+    } @else {
     <form class="save" (submit)="$event.preventDefault(); save()">
       <label>
         {{ 'saved.name' | transloco }}
-        <input
-          type="text"
+        <textarea
+          rows="1"
+          class="name-field"
+          spellcheck="false"
+          [attr.maxlength]="nameMax"
           [value]="name()"
           [disabled]="!savable()"
           (input)="onNameInput($event)"
-        />
+          (focus)="fit($any($event.target))"
+          (keydown.enter)="onNameEnter($event) && save()"
+        ></textarea>
       </label>
-      <button type="submit" [disabled]="!savable()">
-        {{ 'saved.save' | transloco }}
-      </button>
+      <div class="save__actions">
+        @if (name().length >= nameMax - 20) {
+        <span class="save__count">
+          {{ 'saved.nameCount' | transloco : { count: name().length, max:
+          nameMax } }}
+        </span>
+        }
+        <button type="submit" [disabled]="!savable()">
+          {{ 'saved.save' | transloco }}
+        </button>
+      </div>
     </form>
+    }
   </ng-template>
   @if (!formElsewhere()) {
   <ng-container [ngTemplateOutlet]="saveForm" />
@@ -62,6 +92,7 @@
   <ul class="list">
     @for (route of routes(); track route.id) {
     <li
+      [class.fresh]="planner.highlightedId() === route.id"
       (mouseenter)="preview(route.geometry)"
       (mouseleave)="preview(null)"
       (focusin)="preview(route.geometry)"
@@ -72,14 +103,18 @@
         class="rename"
         (submit)="$event.preventDefault(); rename(route.id, renameInput.value)"
       >
-        <input
+        <textarea
           #renameInput
-          class="rename-input"
-          type="text"
+          class="rename-input name-field"
+          rows="1"
+          spellcheck="false"
+          [attr.maxlength]="nameMax"
           [value]="route.name"
           [attr.aria-label]="'saved.name' | transloco"
+          (input)="fit(renameInput)"
+          (keydown.enter)="onNameEnter($event) && rename(route.id, renameInput.value)"
           (keydown.escape)="cancelRename()"
-        />
+        ></textarea>
         <button type="submit">{{ 'saved.confirmRename' | transloco }}</button>
         <button type="button" (click)="cancelRename()">
           {{ 'saved.cancel' | transloco }}
@@ -90,6 +125,7 @@
         type="button"
         class="name open"
         [attr.aria-label]="'saved.openNamed' | transloco : { name: route.name }"
+        [attr.title]="route.name"
         [textContent]="route.name"
         (click)="requestOpen(route.id)"
       ></button>

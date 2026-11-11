@@ -507,7 +507,11 @@
       }
     </div>
 
-    <vl-saved-routes [hidden]="tab() !== 'saved'" [formElsewhere]="true" />
+    <vl-saved-routes
+      [hidden]="tab() !== 'saved'"
+      [formElsewhere]="true"
+      (showSaved)="openSaved($event)"
+    />
   </section>
 </div>
 <vl-elevation-panel />

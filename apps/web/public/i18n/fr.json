@@ -237,7 +237,10 @@
       "tripStops": "{{from}} → {{to}} via {{count}} étapes",
       "loop": "Boucle autour de {{place}}",
       "within": "Autour de {{place}}"
-    }
+    },
+    "savedAs": "Enregistré : {{name}}",
+    "showInList": "Voir dans Enregistrés",
+    "nameCount": "{{count}} / {{max}}"
   },
   "offline": {
     "title": "Carte hors ligne",

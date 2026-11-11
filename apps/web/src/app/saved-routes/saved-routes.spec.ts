@@ -166,8 +166,15 @@ describe('Saved routes', () => {
         driver.handlers.onClick([3.249, 45.544]);
         await view.settle(ROUTE_DEBOUNCE_MS + 10);
       },
+      /** Changes the route being planned (the alternatives asked for), so that it can be saved again. */
+      async edit() {
+        const planner = TestBed.inject(PlannerStore);
+        planner.setAlternatives(planner.alternatives() === 1 ? 2 : 1);
+        await view.settle(ROUTE_DEBOUNCE_MS + 10);
+      },
       save: () => root.querySelector<HTMLButtonElement>('.save button')!,
-      nameInput: () => root.querySelector<HTMLInputElement>('.save input')!,
+      nameInput: () =>
+        root.querySelector<HTMLTextAreaElement>('.save textarea')!,
       items: () => Array.from(root.querySelectorAll('.list li')),
       button: (label: string) =>
         root.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!,
@@ -309,13 +316,55 @@ describe('Saved routes', () => {
       await view.settle();
       expect([...routeStore.records.values()][0].name).toBe('Sunday ride');
 
-      input.value = '   ';
-      input.dispatchEvent(new Event('input'));
+      // Saved: the form gives way to the confirmation until the route is edited.
+      expect(view.root.querySelector('.save')).toBeNull();
+      await view.edit();
+      const again = view.nameInput();
+      again.value = '   ';
+      again.dispatchEvent(new Event('input'));
       view.save().click();
       await view.settle();
       expect(
         view.items().map((li) => li.querySelector('.name')?.textContent),
       ).toEqual(['Road, 41 km', 'Sunday ride']);
+    });
+
+    it('says "Saved" instead of the form until the route is edited, and shows it in the list', async () => {
+      const view = await render();
+      await view.plan();
+      view.save().click();
+      await view.settle();
+      const notice = view.root.querySelector('.saved-notice') as HTMLElement;
+      expect(notice.textContent).toContain('Saved: Road, 41 km');
+      expect(view.root.querySelector('.save')).toBeNull();
+      // "Show in Saved" opens the list and lights the route.
+      (notice.querySelector('.saved-notice__link') as HTMLElement).click();
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.list li.fresh')).not.toBeNull();
+      // Editing the route brings the form back.
+      await view.edit();
+      expect(view.root.querySelector('.saved-notice')).toBeNull();
+      expect(view.root.querySelector('.save')).not.toBeNull();
+    });
+
+    it('keeps a name on one line: a line break becomes a space, Enter saves', async () => {
+      const view = await render();
+      await view.plan();
+      const input = view.nameInput();
+      input.value = 'Col de la\nCroix-Régis';
+      input.dispatchEvent(new Event('input'));
+      expect(input.value).toBe('Col de la Croix-Régis');
+      const enter = new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+      });
+      input.dispatchEvent(enter);
+      await view.settle();
+      expect(enter.defaultPrevented).toBe(true);
+      expect([...routeStore.records.values()][0].name).toBe(
+        'Col de la Croix-Régis',
+      );
     });
 
     it('proposes a name in the active language', async () => {
@@ -335,6 +384,7 @@ describe('Saved routes', () => {
         view.nameInput().dispatchEvent(new Event('input'));
         view.save().click();
         await view.settle();
+        await view.edit();
       }
       expect(
         view.items().map((li) => li.querySelector('.name')?.textContent),
@@ -527,7 +577,9 @@ describe('Saved routes', () => {
       expect(view.driver.fitted.at(-1)).toEqual(geometry);
       // Nothing is being computed (the profile has a status line of its own).
       expect(
-        view.root.querySelector('[role="status"]:not(.stretch)'),
+        view.root.querySelector(
+          '[role="status"]:not(.stretch):not(.saved-notice)',
+        ),
       ).toBeNull();
       expect(view.text()).toContain('Route 1');
       expect(view.alert()).toBeNull();
@@ -856,7 +908,8 @@ describe('Saved routes', () => {
       const view = await renderWithSavedRoute();
       view.button('Rename Road, 41 km').click();
       await view.settle();
-      const input = view.root.querySelector<HTMLInputElement>('.rename-input')!;
+      const input =
+        view.root.querySelector<HTMLTextAreaElement>('.rename-input')!;
       expect(input.value).toBe('Road, 41 km');
       input.value = 'Col de la Ventouse';
       (view.root.querySelector('.rename') as HTMLFormElement).dispatchEvent(
@@ -876,7 +929,8 @@ describe('Saved routes', () => {
       const view = await renderWithSavedRoute();
       view.button('Rename Road, 41 km').click();
       await view.settle();
-      const input = view.root.querySelector<HTMLInputElement>('.rename-input')!;
+      const input =
+        view.root.querySelector<HTMLTextAreaElement>('.rename-input')!;
       input.value = 'ignored';
       input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
       await view.settle();
@@ -890,7 +944,8 @@ describe('Saved routes', () => {
       const view = await renderWithSavedRoute();
       view.button('Rename Road, 41 km').click();
       await view.settle();
-      const input = view.root.querySelector<HTMLInputElement>('.rename-input')!;
+      const input =
+        view.root.querySelector<HTMLTextAreaElement>('.rename-input')!;
       input.value = '  ';
       (view.root.querySelector('.rename') as HTMLFormElement).dispatchEvent(
         new Event('submit'),
@@ -1152,7 +1207,7 @@ describe('Saved routes', () => {
     const END: [number, number] = [3.249, 45.544];
     const store = () => TestBed.inject(PlannerStore);
     const type = (
-      view: { nameInput: () => HTMLInputElement },
+      view: { nameInput: () => HTMLTextAreaElement },
       text: string,
     ) => {
       const input = view.nameInput();
@@ -1236,7 +1291,8 @@ describe('Saved routes', () => {
       expect((await routeStore.list())[0].name).toBe(
         'Clermont-Ferrand → Issoire',
       );
-      // The same trip again: the form proposes the name with today's date.
+      // The same trip again, once edited: the form proposes the name with today's date.
+      await view.edit();
       await view.settle(0);
       const proposed = view.nameInput().value;
       expect(proposed).toMatch(/^Clermont-Ferrand → Issoire, /);
