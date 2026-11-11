@@ -21,7 +21,10 @@
   left: var(--space-3);
   width: min(21rem, calc(100% - 4.5rem));
   max-height: calc(100% - 1.5rem);
-  overflow: auto;
+  // The sections scroll inside; the card itself keeps its rounded corners and the tabs stay put.
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   box-sizing: border-box;
   padding: 0;
   background: var(--color-surface);
@@ -42,14 +45,15 @@
 .tab-route,
 vl-saved-routes {
   display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   padding: var(--space-3);
 }
 
 // Sections of the panel: Route, Saved.
 .tabs {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  flex: none;
   display: flex;
   gap: var(--space-4);
   padding: 0 var(--space-3);
@@ -522,7 +526,6 @@ vl-saved-routes {
 
   .panel--open {
     max-height: min(75%, calc(100% - 3rem));
-    overflow: auto;
   }
 
   .panel:not(.panel--open) {
@@ -533,9 +536,7 @@ vl-saved-routes {
   }
 
   .sheet-handle {
-    position: sticky;
-    top: 0;
-    z-index: 2;
+    flex: none;
     display: grid;
     place-items: center;
     width: 100%;
@@ -551,10 +552,6 @@ vl-saved-routes {
       border-radius: var(--radius-pill);
       background: var(--color-border);
     }
-  }
-
-  .tabs {
-    top: 1.5rem;
   }
 
   // Everything that floats over the map stays above the closed sheet.
