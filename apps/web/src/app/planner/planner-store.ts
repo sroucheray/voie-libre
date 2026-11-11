@@ -14,6 +14,7 @@ export type RestorableRoute = Pick<
   | 'durationSeconds'
   | 'elevationSource'
   | 'surfaces'
+  | 'loop'
 >;
 
 export const PROFILES = ['road', 'gravel', 'trail'] as const;
@@ -175,6 +176,8 @@ interface Snapshot {
 export interface SavableRoute extends PlannedRoute {
   points: LngLat[];
   profile: Profile;
+  /** The loop mode the points were computed with, when there was one. */
+  loop?: LoopMode;
 }
 
 /** Ask the map to show a route, e.g. after opening a saved one. `id` makes each request new. */
@@ -396,7 +399,13 @@ export class PlannerStore {
     if (this.statusState() !== 'ready' || !route || points.length < 2) {
       return null;
     }
-    return { ...route, points, profile: this.profileState() };
+    const loop = this.loop();
+    return {
+      ...route,
+      points,
+      profile: this.profileState(),
+      ...(loop ? { loop } : {}),
+    };
   });
 
   /**
@@ -717,19 +726,16 @@ export class PlannerStore {
     this.preview.set(null);
     this.undoStack.set([]);
     this.redoStack.set([]);
-    this.loopState.set(null);
-    this.restored = this.routesFor = inputsSignature(
-      saved.points,
-      saved.profile,
-      1,
-    );
     this.pointsState.set(saved.points.map((p) => [p[0], p[1]] as LngLat));
+    // The loop mode kept with the route (routes saved before it was kept have none).
+    this.loopState.set(saved.loop ?? null);
     this.noLookup.clear();
     for (const p of [saved.points[0], saved.points[saved.points.length - 1]]) {
       if (p) this.noLookup.add(labelKey([p[0], p[1]]));
     }
     this.profileState.set(saved.profile);
     this.alternativesState.set(1);
+    this.restored = this.routesFor = this.currentSignature();
     this.routesState.set([
       {
         geometry: saved.geometry,

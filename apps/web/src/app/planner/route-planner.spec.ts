@@ -663,6 +663,39 @@ describe('RoutePlanner', () => {
       expect(store.routes()[0].geometry).toEqual(saved.geometry);
     });
 
+    it('keeps the loop mode with the route: opening it computes nothing, calculating it again uses it', async () => {
+      const here: [number, number] = [3.0, 45.0];
+      const loop = { mode: 'distance', distanceMeters: 20_000 } as const;
+      store.loadSaved({ ...saved, points: [here, here], loop });
+      await settle();
+      await vi.advanceTimersByTimeAsync(5 * ROUTE_DEBOUNCE_MS);
+      // Same inputs as the route restored, loop mode included: nothing to compute.
+      expect(requests).toHaveLength(0);
+      expect(store.loop()).toEqual(loop);
+      expect(store.savable()?.loop).toEqual(loop);
+      expect(store.surfaceMissing()).toBe(true);
+      expect(store.canRecompute()).toBe(true);
+
+      respond = async () =>
+        json({
+          routes: [
+            {
+              geometry: saved.geometry,
+              distanceMeters: 20_000,
+              ascentMeters: 100,
+              durationSeconds: 3600,
+              surfaces: 'p'.repeat(saved.geometry.length - 1),
+            },
+          ],
+        });
+      store.recompute();
+      await settle();
+      expect(requests).toHaveLength(1);
+      expect(requests[0].body).toMatchObject({ loop });
+      expect(store.surfaceMissing()).toBe(false);
+      expect(store.routes()[0].surfaces).toBeDefined();
+    });
+
     it('cannot calculate again a loop from a place to itself that kept no loop mode', async () => {
       const here: [number, number] = [3.0, 45.0];
       store.loadSaved({ ...saved, points: [here, here] });

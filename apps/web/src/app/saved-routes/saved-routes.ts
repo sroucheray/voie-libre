@@ -143,6 +143,7 @@ export class SavedRoutes {
         durationSeconds: route.durationSeconds,
         elevationSource: route.elevationSource,
         ...(route.surfaces === undefined ? {} : { surfaces: route.surfaces }),
+        ...(route.loop ? { loop: route.loop } : {}),
       });
       this.routes.update((routes) => [saved, ...routes]);
       this.draft.set(null);

@@ -1,5 +1,5 @@
 import type { LngLat } from '../core/map/map-factory';
-import type { PlannedRoute, Profile } from '../planner/planner-store';
+import type { LoopMode, PlannedRoute, Profile } from '../planner/planner-store';
 
 /**
  * Version of the stored record. Bump it when the shape changes and migrate older records when
@@ -30,6 +30,12 @@ export interface SavedRoute extends PlannedRoute {
   /** Milliseconds since the epoch. */
   createdAt: number;
   updatedAt: number;
+  /**
+   * The loop mode the route was computed with (loop by distance, avoiding the way out): without
+   * it a loop from a place to itself cannot be calculated again. Absent for other routes and for
+   * routes saved before it was kept.
+   */
+  loop?: LoopMode;
   /** Present while the route is shared by link. The shared copy is a snapshot, never updated. */
   share?: ShareInfo;
 }
@@ -46,4 +52,5 @@ export type NewSavedRoute = Pick<
   | 'durationSeconds'
   | 'elevationSource'
   | 'surfaces'
+  | 'loop'
 >;
