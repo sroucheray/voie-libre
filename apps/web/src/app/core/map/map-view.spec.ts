@@ -110,17 +110,33 @@ describe('MapView', () => {
     expect(maps[0].calls).toEqual(['zoomIn', 'zoomOut']);
   });
 
+  it('has a button for the whole route, disabled until there is one, that asks for it', async () => {
+    const fixture = await render();
+    const button = (
+      fixture.nativeElement as HTMLElement
+    ).querySelector<HTMLButtonElement>('.fit-route')!;
+    expect(button.getAttribute('aria-label')).toBe('Show the whole route');
+    expect(button.disabled).toBe(true);
+    let asked = 0;
+    fixture.componentInstance.fitRoute.subscribe(() => asked++);
+    fixture.componentRef.setInput('canFitRoute', true);
+    fixture.detectChanges();
+    expect(button.disabled).toBe(false);
+    button.click();
+    expect(asked).toBe(1);
+  });
+
   it('shows the compass only when the map is rotated, and resets north', async () => {
     const fixture = await render();
-    // Zoom in, zoom out and the layers.
-    expect(buttons(fixture)).toHaveLength(3);
+    // Zoom in, zoom out, the whole route and the layers.
+    expect(buttons(fixture)).toHaveLength(4);
     expect(
       (fixture.nativeElement as HTMLElement).querySelector('.compass'),
     ).toBeNull();
     maps[0].bearing = 40;
     maps[0].emit('rotate');
     fixture.detectChanges();
-    const compass = buttons(fixture)[2];
+    const compass = buttons(fixture)[3];
     expect(compass.getAttribute('aria-label')).toBe('Reset the map to north');
     compass.click();
     expect(maps[0].calls).toContain('resetNorth');

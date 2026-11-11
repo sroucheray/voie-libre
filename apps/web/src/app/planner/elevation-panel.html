@@ -95,8 +95,17 @@
         @if (stretch(); as s) { {{ 'profile.selection' | transloco : { distance:
         format.distance(s.stats.distance), ascent:
         format.elevation(s.stats.ascent), descent:
-        format.elevation(s.stats.descent), grade: grade(s.stats) } }} } @else {
-        {{ 'profile.selectHint' | transloco }} }
+        format.elevation(s.stats.descent), grade: grade(s.stats) } }}
+        <button
+          type="button"
+          class="stretch-zoom"
+          (click)="store.fitStretch()"
+          [attr.aria-label]="'profile.zoomOnStretchLabel' | transloco"
+        >
+          <vl-icon name="zoomIn" />
+          {{ 'profile.zoomOnStretch' | transloco }}
+        </button>
+        } @else { {{ 'profile.selectHint' | transloco }} }
       </p>
     </div>
     @if (surface(); as s) {

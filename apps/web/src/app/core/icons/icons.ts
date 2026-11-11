@@ -20,6 +20,24 @@ export const ICONS = {
     paths: ['m21 16-4 4-4-4', 'M17 20V4', 'm3 8 4-4 4 4', 'M7 4v16'],
   },
   chevronDown: { paths: ['m6 9 6 6 6-6'] },
+  // A frame with four corners: show the whole route.
+  fit: {
+    paths: [
+      'M8 3H5a2 2 0 0 0-2 2v3',
+      'M21 8V5a2 2 0 0 0-2-2h-3',
+      'M3 16v3a2 2 0 0 0 2 2h3',
+      'M16 21h3a2 2 0 0 0 2-2v-3',
+    ],
+  },
+  // A magnifier with a plus: zoom on the selected stretch.
+  zoomIn: {
+    paths: [
+      'M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0',
+      'm21 21-4.3-4.3',
+      'M11 8v6',
+      'M8 11h6',
+    ],
+  },
   grip: {
     dots: [
       [9, 12],

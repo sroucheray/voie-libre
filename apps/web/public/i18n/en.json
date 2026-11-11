@@ -42,7 +42,8 @@
       "imagery": "Photos: IGN"
     },
     "unavailable": "The map could not be displayed. Your browser may not support WebGL2.",
-    "outside": "No map data here: this place is outside the area the map covers."
+    "outside": "No map data here: this place is outside the area the map covers.",
+    "fitRoute": "Show the whole route"
   },
   "planner": {
     "title": "Route planner",
@@ -310,7 +311,9 @@
     "source": {
       "copernicus": "Elevation: Copernicus DEM GLO-30, provided under COPERNICUS by the European Union and ESA.",
       "srtm": "Elevation: SRTM (NASA, NGA) v4.1 via BRouter."
-    }
+    },
+    "zoomOnStretch": "Zoom on the map",
+    "zoomOnStretchLabel": "Zoom the map on the selected stretch"
   },
   "gpxImport": {
     "button": "Import a GPX file",

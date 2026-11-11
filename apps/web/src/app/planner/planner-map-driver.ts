@@ -70,7 +70,7 @@ export interface PlannerMapDriver {
    */
   setSurfaces(geometry: LngLat3[] | null, surfaces: string | null): void;
   /** Moves the view so that the whole route is visible. */
-  fitRoute(geometry: LngLat3[]): void;
+  fitRoute(geometry: LngLat3[], animate?: boolean): void;
   /** Moves the view so that all these points are visible (a new point was added to a route). */
   fitPoints(points: LngLat[]): void;
   /** Moves the view to a place (a search result), keeping it clear of the panel. */

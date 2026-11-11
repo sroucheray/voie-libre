@@ -5,6 +5,8 @@
     [surfaceMissing]="store.surfaceMissing()"
     [surfaceComputable]="store.canRecompute()"
     (computeSurface)="store.recompute()"
+    [canFitRoute]="store.routes().length > 0"
+    (fitRoute)="store.fitSelectedRoute()"
     (mapReady)="onMapReady($event)"
   />
 

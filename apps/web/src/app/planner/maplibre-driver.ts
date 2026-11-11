@@ -746,8 +746,8 @@ export async function createMapLibreDriver(
       highlight = geometry;
       pushHighlight();
     },
-    fitRoute(geometry: LngLat3[]) {
-      fitTo(geometry, 0);
+    fitRoute(geometry: LngLat3[], animate = false) {
+      fitTo(geometry, animate ? 600 : 0);
     },
     fitPoints(points: LngLat[]) {
       fitTo(points, 500);

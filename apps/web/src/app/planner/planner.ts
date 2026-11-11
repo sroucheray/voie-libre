@@ -370,7 +370,7 @@ export class Planner {
     effect(() => {
       const driver = this.driver();
       const view = this.store.viewRequest();
-      if (driver && view) driver.fitRoute(view.geometry);
+      if (driver && view) driver.fitRoute(view.geometry, view.animate);
     });
 
     // The user's own position, when they share it.

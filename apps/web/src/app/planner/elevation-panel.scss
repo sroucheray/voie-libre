@@ -233,6 +233,23 @@
   color: var(--color-text);
 }
 
+// The button that shows the selected stretch on the map, after the figures of the selection.
+.stretch-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  vertical-align: middle;
+
+  vl-icon {
+    --icon-size: 1rem;
+  }
+}
+
 .source {
   grid-column: 2;
   margin: 0.25rem 0 0;

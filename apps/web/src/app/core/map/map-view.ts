@@ -67,6 +67,10 @@ export class MapView {
   readonly zoom = model<number>(DEFAULT_ZOOM);
   /** Emits the map once it is created, for features that draw on it. */
   readonly mapReady = output<MapLike>();
+  /** There is a route to show whole: enables the "whole route" button. */
+  readonly canFitRoute = input(false);
+  /** The user asks for the whole route on screen. */
+  readonly fitRoute = output<void>();
   /** The route on screen does not say what it rides on (so there is nothing to colour). */
   readonly surfaceMissing = input(false);
   /** The route can be calculated again (not a loop kept without its mode). */

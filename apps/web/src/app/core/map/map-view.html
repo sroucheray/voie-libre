@@ -24,6 +24,16 @@
   >
     <vl-icon name="minus" />
   </button>
+  <button
+    type="button"
+    class="fit-route"
+    [disabled]="!canFitRoute()"
+    (click)="fitRoute.emit()"
+    [attr.aria-label]="'map.fitRoute' | transloco"
+    [title]="'map.fitRoute' | transloco"
+  >
+    <vl-icon name="fit" />
+  </button>
   @if (bearing() !== 0) {
   <button
     type="button"

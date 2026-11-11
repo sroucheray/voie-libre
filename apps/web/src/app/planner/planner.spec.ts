@@ -922,6 +922,45 @@ describe('Planner', () => {
     expect(view.driver.surfaces).toBeNull();
   });
 
+  describe('the buttons that show the route or a stretch of it on the map', () => {
+    it('shows the whole route, gliding, when the button of the map is pressed', async () => {
+      const view = await render();
+      const fit = () =>
+        view.root.querySelector<HTMLButtonElement>('.fit-route')!;
+      expect(fit().disabled).toBe(true);
+      view.click(3.087, 45.777);
+      view.click(3.249, 45.544);
+      await view.settle();
+      expect(fit().disabled).toBe(false);
+      const before = view.driver.fitted.length;
+      fit().click();
+      view.fixture.detectChanges();
+      TestBed.tick();
+      expect(view.driver.fitted.length).toBe(before + 1);
+      expect(view.driver.fitted.at(-1)).toHaveLength(3);
+      expect(view.driver.fittedAnimated.at(-1)).toBe(true);
+    });
+
+    it('shows the selected stretch of the profile, and only when asked', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.click(3.249, 45.544);
+      await view.settle();
+      const store = TestBed.inject(PlannerStore);
+      store.selectStretch([0, 1]);
+      view.fixture.detectChanges();
+      TestBed.tick();
+      const before = view.driver.fitted.length;
+      view.root.querySelector<HTMLButtonElement>('.stretch-zoom')!.click();
+      view.fixture.detectChanges();
+      TestBed.tick();
+      expect(view.driver.fitted.length).toBe(before + 1);
+      expect(view.driver.fitted.at(-1)).toEqual(
+        store.selectedGeometry().slice(0, 2),
+      );
+    });
+  });
+
   describe('a click on the map with a route on screen', () => {
     const straight = () => [
       {

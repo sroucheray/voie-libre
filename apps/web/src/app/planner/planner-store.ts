@@ -184,6 +184,8 @@ export interface SavableRoute extends PlannedRoute {
 export interface ViewRequest {
   id: number;
   geometry: [number, number, number][];
+  /** The user asked for it: the map glides there instead of jumping. */
+  animate?: boolean;
 }
 
 /**
@@ -360,6 +362,33 @@ export class PlannerStore {
     const was = this.refreshing;
     this.refreshing = false;
     return was;
+  }
+
+  /** The user asks for the whole route on screen: the map glides to it. */
+  fitSelectedRoute(): void {
+    const geometry = this.selectedGeometry();
+    if (geometry.length < 2) return;
+    this.viewState.update((view) => ({
+      id: (view?.id ?? 0) + 1,
+      geometry,
+      animate: true,
+    }));
+  }
+
+  /** The user asks for the stretch picked on the profile on screen: the map glides to it. */
+  fitStretch(): void {
+    const stretch = this.stretch();
+    if (!stretch) return;
+    const geometry = this.selectedGeometry().slice(
+      stretch.from,
+      stretch.to + 1,
+    );
+    if (geometry.length < 2) return;
+    this.viewState.update((view) => ({
+      id: (view?.id ?? 0) + 1,
+      geometry,
+      animate: true,
+    }));
   }
 
   /** Picks the stretch between two points of the selected route, in either order; `null` clears it. */

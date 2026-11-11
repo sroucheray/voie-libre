@@ -41,8 +41,11 @@ export class FakePlannerDriver implements PlannerMapDriver {
     this.routes = routes;
     this.selected = selected;
   }
-  fitRoute(geometry: LngLat3[]) {
+  /** Whether each `fitRoute` asked for a glide (the user did) or a jump. */
+  fittedAnimated: boolean[] = [];
+  fitRoute(geometry: LngLat3[], animate = false) {
     this.fitted.push(geometry);
+    this.fittedAnimated.push(animate);
   }
   fitPoints(points: [number, number][]) {
     this.pointsFitted.push(points);

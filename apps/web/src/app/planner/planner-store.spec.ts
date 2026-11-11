@@ -27,6 +27,54 @@ describe('PlannerStore', () => {
     store = TestBed.inject(PlannerStore);
   });
 
+  describe('showing the route or a stretch on the map, when the user asks', () => {
+    const long: PlannedRoute = {
+      ...route,
+      geometry: Array.from({ length: 10 }, (_, i): [number, number, number] => [
+        3 + i / 100,
+        45,
+        400,
+      ]),
+    };
+
+    it('asks for the whole selected route, gliding, once there is a route', () => {
+      store.fitSelectedRoute();
+      expect(store.viewRequest()).toBeNull();
+      store.setRoutes([long]);
+      store.fitSelectedRoute();
+      expect(store.viewRequest()).toMatchObject({
+        animate: true,
+        geometry: long.geometry,
+      });
+    });
+
+    it('makes each request a new one, so asking twice moves the map twice', () => {
+      store.setRoutes([long]);
+      store.fitSelectedRoute();
+      const first = store.viewRequest()!.id;
+      store.fitSelectedRoute();
+      expect(store.viewRequest()!.id).toBe(first + 1);
+    });
+
+    it('asks for the stretch that is selected, and for nothing without one', () => {
+      store.setRoutes([long]);
+      store.fitStretch();
+      expect(store.viewRequest()).toBeNull();
+      store.selectStretch([3, 6]);
+      store.fitStretch();
+      expect(store.viewRequest()).toMatchObject({
+        animate: true,
+        geometry: long.geometry.slice(3, 7),
+      });
+    });
+
+    it('selecting a stretch does not move the map by itself', () => {
+      store.setRoutes([long]);
+      store.selectStretch([3, 6]);
+      expect(store.viewRequest()).toBeNull();
+    });
+  });
+
   describe('points', () => {
     it('sets the start with the first click and the end with the second', () => {
       store.addPoint([3, 45]);

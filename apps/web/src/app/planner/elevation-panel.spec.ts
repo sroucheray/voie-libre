@@ -179,6 +179,30 @@ describe('ElevationPanel', () => {
     expect(root.querySelector('.selection')).toBeNull();
   });
 
+  it('offers to zoom the map on the selected stretch, only once there is one, and never by itself', async () => {
+    const { store, fixture, root } = await setup();
+    expect(root.querySelector('.stretch-zoom')).toBeNull();
+    store.selectStretch([2, 6]);
+    await fixture.whenStable();
+    // Selecting does not move the map.
+    expect(store.viewRequest()).toBeNull();
+    const button = root.querySelector<HTMLButtonElement>('.stretch-zoom')!;
+    expect(button.textContent).toContain('Zoom on the map');
+    expect(button.getAttribute('aria-label')).toBe(
+      'Zoom the map on the selected stretch',
+    );
+    button.click();
+    // The map is asked to glide to the vertices 2 to 6 of the route.
+    expect(store.viewRequest()?.animate).toBe(true);
+    expect(store.viewRequest()?.geometry).toEqual(geometry.slice(2, 7));
+    // Letting the selection go removes the button and does not move the map again.
+    const id = store.viewRequest()!.id;
+    store.selectStretch(null);
+    await fixture.whenStable();
+    expect(root.querySelector('.stretch-zoom')).toBeNull();
+    expect(store.viewRequest()?.id).toBe(id);
+  });
+
   it('selects with Shift and the arrow keys, and Escape clears', async () => {
     const { store, fixture, root } = await setup();
     const plot = root.querySelector<HTMLElement>('.plot')!;
