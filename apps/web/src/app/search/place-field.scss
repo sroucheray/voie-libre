@@ -45,9 +45,19 @@
   background: var(--map-marker-waypoint);
 }
 
+// The target icon is drawn, not typed: a text glyph sits off the line of the text.
 .suggestions__position::before {
-  content: '◎ ';
-  color: var(--color-accent);
+  content: '';
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  background: radial-gradient(
+    circle,
+    var(--color-accent) 0 2.5px,
+    transparent 3px 5.5px,
+    var(--color-accent) 6px 7.5px,
+    transparent 8px
+  );
 }
 
 .suggestions {
