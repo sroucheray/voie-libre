@@ -404,6 +404,86 @@ describe('Saved routes', () => {
       expect(view.root.querySelectorAll('.points li')).toHaveLength(points);
     });
 
+    describe('opening a route when the one on screen is not unsaved work', () => {
+      /** Two saved routes: the first (older, at the end of the list) and the second, on screen. */
+      async function renderWithTwoSavedRoutes() {
+        const view = await renderWithSavedRoute();
+        (view.root.querySelector('.clear') as HTMLButtonElement).click();
+        await view.settle(ROUTE_DEBOUNCE_MS + 10);
+        view.driver.handlers.onClick([2, 44]);
+        view.driver.handlers.onClick([2.1, 44.1]);
+        await view.settle(ROUTE_DEBOUNCE_MS + 10);
+        view.save().click();
+        await view.settle();
+        expect(view.items()).toHaveLength(2);
+        return view;
+      }
+      const open = (
+        view: { items: () => Element[]; fixture: { detectChanges(): void } },
+        at: number,
+      ) => {
+        view
+          .items()
+          [at].querySelector<HTMLButtonElement>('.name.open')
+          ?.click();
+        view.fixture.detectChanges();
+      };
+      const asks = (view: { text: () => string }) =>
+        view.text().includes('Replace the route being planned');
+
+      it('opens at once after a route was just saved', async () => {
+        const view = await renderWithTwoSavedRoutes();
+        open(view, 1);
+        await view.settle();
+        expect(asks(view)).toBe(false);
+      });
+
+      it('opens a second route at once when the first was opened and left alone', async () => {
+        const view = await renderWithTwoSavedRoutes();
+        open(view, 1);
+        await view.settle();
+        open(view, 0);
+        await view.settle();
+        expect(asks(view)).toBe(false);
+        open(view, 1);
+        await view.settle();
+        expect(asks(view)).toBe(false);
+      });
+
+      it('asks once the opened route was changed', async () => {
+        const view = await renderWithTwoSavedRoutes();
+        open(view, 1);
+        await view.settle();
+        view.driver.handlers.onClick([3.0, 45.0]);
+        await view.settle(ROUTE_DEBOUNCE_MS + 10);
+        open(view, 0);
+        expect(asks(view)).toBe(true);
+      });
+
+      it('does not ask when the change was undone', async () => {
+        const view = await renderWithTwoSavedRoutes();
+        open(view, 1);
+        await view.settle();
+        view.driver.handlers.onClick([3.0, 45.0]);
+        await view.settle(ROUTE_DEBOUNCE_MS + 10);
+        TestBed.inject(PlannerStore).undo();
+        await view.settle();
+        open(view, 0);
+        expect(asks(view)).toBe(false);
+      });
+
+      it('asks for a route planned and not saved', async () => {
+        const view = await renderWithSavedRoute();
+        (view.root.querySelector('.clear') as HTMLButtonElement).click();
+        await view.settle(ROUTE_DEBOUNCE_MS + 10);
+        view.driver.handlers.onClick([2, 44]);
+        view.driver.handlers.onClick([2.1, 44.1]);
+        await view.settle(ROUTE_DEBOUNCE_MS + 10);
+        open(view, 0);
+        expect(asks(view)).toBe(true);
+      });
+    });
+
     it('does not open when a button inside the card is clicked', async () => {
       const view = await renderWithSavedRoute();
       (view.root.querySelector('.clear') as HTMLButtonElement).click();

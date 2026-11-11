@@ -765,6 +765,7 @@ export class PlannerStore {
     this.cursor.set(null);
     this.errorState.set(null);
     this.statusState.set('ready');
+    this.markSaved();
     this.viewState.update((view) => ({
       id: (view?.id ?? 0) + 1,
       geometry: saved.geometry,
@@ -803,12 +804,36 @@ export class PlannerStore {
   }
 
   private currentSignature(): string {
-    return inputsSignature(
+    return this.signature();
+  }
+
+  /** What the route on screen was computed from (points, profile, alternatives, loop mode). */
+  private readonly signature = computed(() =>
+    inputsSignature(
       this.pointsState(),
       this.profileState(),
       this.alternativesState(),
       this.loop(),
-    );
+    ),
+  );
+
+  /** The inputs of the route when it was last saved or opened from a saved route; `null` before. */
+  private readonly savedSignature = signal<string | null>(null);
+
+  /**
+   * True when there is work on screen that is not on the device: points that are not those of the
+   * route last saved or opened. Editing a route and undoing the edit makes it false again; an
+   * opened route nobody touched, or one just saved, is not unsaved work.
+   */
+  readonly unsaved = computed(
+    () =>
+      this.pointsState().length > 0 &&
+      this.savedSignature() !== this.signature(),
+  );
+
+  /** The route on screen was just saved: it is no longer unsaved work. */
+  markSaved(): void {
+    this.savedSignature.set(this.signature());
   }
 
   /** Remembers the state before a change, which also ends what could be redone. */

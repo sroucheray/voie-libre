@@ -179,6 +179,7 @@ export class SavedRoutes {
         ...(route.loop ? { loop: route.loop } : {}),
       });
       this.routes.update((routes) => [saved, ...routes]);
+      this.planner.markSaved();
       this.draft.set(null);
     });
   }
@@ -256,7 +257,9 @@ export class SavedRoutes {
 
   /** Opens at once when nothing is planned, else asks before replacing the route on screen. */
   protected requestOpen(id: string): void {
-    if (this.planner.points().length === 0) {
+    // Only work that is not on the device is worth a question: an opened route left alone, or a
+    // route just saved, is replaced at once.
+    if (!this.planner.unsaved()) {
       void this.open(id);
       return;
     }
