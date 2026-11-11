@@ -752,6 +752,27 @@ export async function createMapLibreDriver(
       } else {
         cursorMarker.setLngLat(point);
       }
+      // The dot that follows the pointer along the route is left out where it would cover a marker
+      // (the number of a stop, the letters of the start and the end).
+      const at = map.project(point);
+      const box = map.getContainer().getBoundingClientRect();
+      const half = 7 + GHOST_CLEARANCE_PX;
+      const hidden = [
+        ...map
+          .getCanvasContainer()
+          .querySelectorAll<HTMLElement>(
+            '.planner-marker:not(.planner-ghost__dot)',
+          ),
+      ].some((marker) => {
+        const m = marker.getBoundingClientRect();
+        return (
+          m.right > box.left + at.x - half &&
+          m.left < box.left + at.x + half &&
+          m.bottom > box.top + at.y - half &&
+          m.top < box.top + at.y + half
+        );
+      });
+      cursorMarker.getElement().style.visibility = hidden ? 'hidden' : '';
     },
     setLocation(fix: LocationFix | null) {
       const first = !locationFix && !!fix;
