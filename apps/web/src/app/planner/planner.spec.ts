@@ -743,11 +743,16 @@ describe('Planner', () => {
     expect(view.driver.selected).toBe(2);
     expect(buttons[2].getAttribute('aria-pressed')).toBe('true');
     expect(buttons[0].getAttribute('aria-pressed')).toBe('false');
+    // A click on its card shows the whole route on the map; a click on the map does not move it.
+    const fits = view.driver.fitted.length;
+    expect(fits).toBeGreaterThan(0);
+    expect(view.driver.fitted.at(-1)).toEqual(view.driver.routes[2]);
 
     view.driver.handlers.onSelectRoute(1);
     view.fixture.detectChanges();
     TestBed.tick();
     expect(view.driver.selected).toBe(1);
+    expect(view.driver.fitted).toHaveLength(fits);
   });
 
   it('moves a point dragged on the map and recomputes', async () => {

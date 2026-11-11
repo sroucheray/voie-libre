@@ -636,13 +636,17 @@ export async function createMapLibreDriver(
       for (const [lon, lat] of geometry) bounds.extend([lon, lat]);
       // Keep the route clear of the panel, but never ask for more padding than the map has.
       const width = map.getContainer().clientWidth;
+      // On a phone the panel is a bottom sheet (open or not): leave room under the route instead.
+      const phone = width <= 640;
       map.fitBounds(bounds, {
-        padding: {
-          top: 50,
-          bottom: 50,
-          right: 50,
-          left: Math.min(340, Math.round(width / 3)),
-        },
+        padding: phone
+          ? { top: 50, bottom: 260, right: 40, left: 40 }
+          : {
+              top: 50,
+              bottom: 50,
+              right: 50,
+              left: Math.min(340, Math.round(width / 3)),
+            },
         duration: 0,
         maxZoom: 16,
       });

@@ -483,7 +483,7 @@
           <button
             type="button"
             [attr.aria-pressed]="i === store.selectedIndex()"
-            (click)="store.selectRoute(i)"
+            (click)="store.showRoute(i)"
           >
             <strong
               >{{ 'planner.routes.route' | transloco : { n: i + 1 } }}</strong

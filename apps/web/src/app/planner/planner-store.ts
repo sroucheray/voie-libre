@@ -725,6 +725,17 @@ export class PlannerStore {
     this.alternativesState.set(clamped);
   }
 
+  /** Selects a route and asks the map to show all of it (a click on its card in the panel). */
+  showRoute(index: number): void {
+    const route = this.routesState()[index];
+    if (!route) return;
+    this.selectRoute(index);
+    this.viewState.update((view) => ({
+      id: (view?.id ?? 0) + 1,
+      geometry: route.geometry,
+    }));
+  }
+
   selectRoute(index: number): void {
     if (index >= 0 && index < this.routesState().length) {
       this.selectedState.set(index);
