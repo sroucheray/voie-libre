@@ -23,6 +23,19 @@ services:
     mem_limit: 768m
     restart: unless-stopped
 
+  migrate:
+    # Applies the SQL migrations at every `up`, then exits (a run with nothing new does nothing).
+    image: voie-libre/migrate
+    build:
+      context: .
+      dockerfile: docker/migrate/Dockerfile
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-voielibre}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-voielibre}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: 'no'
+
   brouter:
     image: voie-libre/brouter
     build:
@@ -66,8 +79,8 @@ services:
       GEOCODE_RATE_LIMIT_MAX: ${GEOCODE_RATE_LIMIT_MAX:-60}
       GEOCODER_URL: ${GEOCODER_URL:-https://photon.komoot.io}
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       brouter:
         condition: service_started
     mem_limit: 384m
