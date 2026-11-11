@@ -256,17 +256,6 @@
         (changed)="selectProfile($event)"
       />
 
-      <label class="alternatives">
-        {{ 'planner.alternatives.label' | transloco }}
-        <select (change)="selectAlternatives($event)">
-          @for (count of alternativeChoices; track count) {
-          <option [value]="count" [selected]="count === store.alternatives()">
-            {{ format.number(count) }}
-          </option>
-          }
-        </select>
-      </label>
-
       @if (canPlaceMyPosition()) {
       <button type="button" class="place-position" (click)="placeMyPosition()">
         {{ 'location.place.' + store.nextRole() | transloco }}
@@ -476,6 +465,17 @@
       <p class="error" role="alert">
         {{ 'planner.errors.' + code | transloco }}
       </p>
+      } @if (store.points().length > 0) {
+      <label class="alternatives">
+        {{ 'planner.alternatives.label' | transloco }}
+        <select (change)="selectAlternatives($event)">
+          @for (count of alternativeChoices; track count) {
+          <option [value]="count" [selected]="count === store.alternatives()">
+            {{ format.number(count) }}
+          </option>
+          }
+        </select>
+      </label>
       } @if (store.routes().length > 0) {
       <ul class="routes" [attr.aria-label]="'planner.routes.label' | transloco">
         @for (route of store.routes(); track $index; let i = $index) {
