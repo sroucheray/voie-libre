@@ -62,6 +62,11 @@ export interface PlannerMapDriver {
   setMarkers(markers: MarkerSpec[]): void;
   /** `routes[selected]` is drawn as the main route, the others as alternatives. */
   setRoutes(routes: LngLat3[][], selected: number): void;
+  /**
+   * Draws the selected route in the colours of what it rides on (`surfaces`: one character per
+   * segment of `geometry`), over its line; `null` removes it.
+   */
+  setSurfaces(geometry: LngLat3[] | null, surfaces: string | null): void;
   /** Moves the view so that the whole route is visible. */
   fitRoute(geometry: LngLat3[]): void;
   /** Moves the view to a place (a search result), keeping it clear of the panel. */

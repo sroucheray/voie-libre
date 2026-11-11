@@ -22,9 +22,23 @@ describe('MapLayers', () => {
     expect(JSON.parse(localStorage.getItem(MAP_LAYERS_KEY)!)).toEqual({
       relief: true,
       ways: true,
+      surface: false,
     });
     TestBed.resetTestingModule();
     expect(TestBed.inject(MapLayers).ways()).toBe(true);
+  });
+
+  it('leaves the surface of the route off until the user turns it on, and remembers', () => {
+    const layers = TestBed.inject(MapLayers);
+    expect(layers.surface()).toBe(false);
+    layers.setSurface(true);
+    expect(JSON.parse(localStorage.getItem(MAP_LAYERS_KEY)!)).toEqual({
+      relief: true,
+      ways: false,
+      surface: true,
+    });
+    TestBed.resetTestingModule();
+    expect(TestBed.inject(MapLayers).surface()).toBe(true);
   });
 
   it('ignores a stored value it does not understand', () => {

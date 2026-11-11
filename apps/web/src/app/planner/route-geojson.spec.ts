@@ -1,4 +1,4 @@
-import { routesToGeoJson } from './route-geojson';
+import { routesToGeoJson, surfacesToGeoJson } from './route-geojson';
 
 describe('routesToGeoJson', () => {
   const a: [number, number, number][] = [
@@ -24,5 +24,26 @@ describe('routesToGeoJson', () => {
 
   it('is empty without routes', () => {
     expect(routesToGeoJson([], 0).features).toEqual([]);
+  });
+});
+
+describe('surfacesToGeoJson', () => {
+  const geometry: [number, number, number][] = [
+    [3, 45, 0],
+    [3.1, 45, 0],
+    [3.2, 45, 0],
+    [3.3, 45, 0],
+  ];
+
+  it('cuts the route into one line per run of one category, sharing their end vertices', () => {
+    const { features } = surfacesToGeoJson(geometry, 'ppu');
+    expect(features.map((f) => f.properties.code)).toEqual(['p', 'u']);
+    expect(features[0].geometry.coordinates).toEqual(geometry.slice(0, 3));
+    expect(features[1].geometry.coordinates).toEqual(geometry.slice(2, 4));
+  });
+
+  it('draws nothing when the codes do not fit the geometry', () => {
+    expect(surfacesToGeoJson(geometry, 'pp').features).toEqual([]);
+    expect(surfacesToGeoJson([], '').features).toEqual([]);
   });
 });

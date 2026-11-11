@@ -1,4 +1,8 @@
-import type { Map as MapLibreMap, Marker } from 'maplibre-gl';
+import type {
+  ExpressionSpecification,
+  Map as MapLibreMap,
+  Marker,
+} from 'maplibre-gl';
 import type { LngLat, MapLike } from '../core/map/map-factory';
 import type {
   GhostSpec,
@@ -9,11 +13,14 @@ import type {
 } from './planner-map-driver';
 import { accuracyCircle } from '../location/accuracy-circle';
 import type { LocationFix } from '../location/geolocation';
-import { routesToGeoJson } from './route-geojson';
+import { routesToGeoJson, surfacesToGeoJson } from './route-geojson';
+import { SURFACE_CODES, SURFACE_COLORS } from './route-surface';
 
 const SOURCE = 'planner-routes';
 const ALTERNATIVE_LAYER = 'planner-routes-alternative';
 const SELECTED_LAYER = 'planner-routes-selected';
+const SURFACE_SOURCE = 'planner-surfaces';
+const SURFACE_LAYER = 'planner-surfaces-line';
 const HIGHLIGHT_SOURCE = 'planner-highlight';
 const HIGHLIGHT_LAYER = 'planner-highlight-line';
 const PREVIEW_SOURCE = 'planner-preview';
@@ -74,6 +81,7 @@ export async function createMapLibreDriver(
   let deferred = false;
   let preview: LngLat3[] | null = null;
   let highlight: LngLat3[] | null = null;
+  let surfaceRoute: { geometry: LngLat3[]; surfaces: string } | null = null;
 
   /** Adds the source and layers. Idempotent: a new style (language change) removes them. */
   const ensureLayers = () => {
@@ -116,6 +124,26 @@ export async function createMapLibreDriver(
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: { 'line-color': '#1570ef', 'line-width': 6 },
     });
+    map.addSource(SURFACE_SOURCE, {
+      type: 'geojson',
+      data: surfacesToGeoJson([], ''),
+    });
+    // Over the route's own line, under the stretch highlighted from the chart.
+    map.addLayer({
+      id: SURFACE_LAYER,
+      type: 'line',
+      source: SURFACE_SOURCE,
+      layout: { 'line-cap': 'butt', 'line-join': 'round' },
+      paint: {
+        'line-color': [
+          'match',
+          ['get', 'code'],
+          ...SURFACE_CODES.flatMap((code) => [code, SURFACE_COLORS[code]]),
+          SURFACE_COLORS['?'],
+        ] as unknown as ExpressionSpecification,
+        'line-width': 6,
+      },
+    });
     map.addSource(HIGHLIGHT_SOURCE, {
       type: 'geojson',
       data: routesToGeoJson(highlight ? [highlight] : [], 0),
@@ -144,6 +172,17 @@ export async function createMapLibreDriver(
       },
     });
     pushRoutes();
+    pushSurfaces();
+  };
+
+  const pushSurfaces = () => {
+    const source = map.getSource(SURFACE_SOURCE) as
+      { setData(data: unknown): void } | undefined;
+    source?.setData(
+      surfaceRoute
+        ? surfacesToGeoJson(surfaceRoute.geometry, surfaceRoute.surfaces)
+        : surfacesToGeoJson([], ''),
+    );
   };
 
   const pushPreview = () => {
@@ -535,6 +574,11 @@ export async function createMapLibreDriver(
       selected = nextSelected;
       pushRoutes();
     },
+    setSurfaces(geometry: LngLat3[] | null, surfaces: string | null) {
+      surfaceRoute =
+        geometry && surfaces !== null ? { geometry, surfaces } : null;
+      pushSurfaces();
+    },
     setPreview(geometry: LngLat3[] | null) {
       preview = geometry;
       pushPreview();
@@ -676,6 +720,7 @@ export async function createMapLibreDriver(
       for (const id of [
         PREVIEW_LAYER,
         HIGHLIGHT_LAYER,
+        SURFACE_LAYER,
         SELECTED_LAYER,
         ALTERNATIVE_LAYER,
         ACCURACY_LINE_LAYER,
@@ -685,6 +730,7 @@ export async function createMapLibreDriver(
       }
       for (const id of [
         SOURCE,
+        SURFACE_SOURCE,
         HIGHLIGHT_SOURCE,
         PREVIEW_SOURCE,
         ACCURACY_SOURCE,

@@ -115,6 +115,32 @@
         }
       </ul>
       }
+      <label>
+        <input
+          type="checkbox"
+          class="surface-checkbox"
+          [checked]="layers.surface()"
+          (change)="setSurface($event)"
+        />
+        {{ 'map.layers.surface' | transloco }}
+      </label>
+      @if (layers.surface()) {
+      <ul
+        class="ways-legend surface-legend"
+        [attr.aria-label]="'map.layers.surfaceLegend' | transloco"
+      >
+        @for (item of surfaceLegend; track item.code) {
+        <li>
+          <span
+            class="ways-legend__swatch"
+            [style.--way-color]="item.color"
+            aria-hidden="true"
+          ></span>
+          {{ item.key | transloco }}
+        </li>
+        }
+      </ul>
+      }
     </div>
     }
   </div>

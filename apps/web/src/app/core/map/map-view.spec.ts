@@ -201,6 +201,7 @@ describe('MapView', () => {
       expect(JSON.parse(localStorage.getItem(MAP_LAYERS_KEY)!)).toEqual({
         relief: false,
         ways: false,
+        surface: false,
       });
 
       view.checkbox()!.click();
@@ -259,6 +260,25 @@ describe('MapView', () => {
       view.fixture.detectChanges();
       expect(layerIds()).not.toContain('ways-good');
       expect(view.root.querySelector('.ways-legend')).toBeNull();
+    });
+
+    it('offers the surface of the route, off at first, with a legend of the five categories', async () => {
+      const view = await renderWith(true);
+      view.open();
+      const box =
+        view.root.querySelector<HTMLInputElement>('.surface-checkbox')!;
+      expect(box.checked).toBe(false);
+      expect(view.root.querySelector('.surface-legend')).toBeNull();
+      box.click();
+      view.fixture.detectChanges();
+      expect(
+        [...view.root.querySelectorAll('.surface-legend li')].map((li) =>
+          li.textContent?.trim(),
+        ),
+      ).toEqual(['Paved', 'Cycleway', 'Unpaved or rough', 'Path', 'Unknown']);
+      expect(JSON.parse(localStorage.getItem(MAP_LAYERS_KEY)!).surface).toBe(
+        true,
+      );
     });
 
     it('leaves the map as it is without the relief file, and says why', async () => {

@@ -31,6 +31,11 @@ export class FakePlannerDriver implements PlannerMapDriver {
   setMarkers(markers: MarkerSpec[]) {
     this.markers = markers;
   }
+  surfaces: { geometry: LngLat3[]; surfaces: string } | null = null;
+  setSurfaces(geometry: LngLat3[] | null, surfaces: string | null) {
+    this.surfaces =
+      geometry && surfaces !== null ? { geometry, surfaces } : null;
+  }
   setRoutes(routes: LngLat3[][], selected: number) {
     this.routes = routes;
     this.selected = selected;

@@ -18,6 +18,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { map, switchMap } from 'rxjs';
 import { FormattingService } from '../core/format/formatting.service';
 import type { LngLat, MapLike } from '../core/map/map-factory';
+import { MapLayers } from '../core/map/map-layers';
 import { MapView } from '../core/map/map-view';
 import { LocationStore } from '../location/location-store';
 import {
@@ -89,6 +90,7 @@ export class Planner {
   protected readonly store = inject(PlannerStore);
   protected readonly format = inject(FormattingService);
   protected readonly location = inject(LocationStore);
+  private readonly mapLayers = inject(MapLayers);
   protected readonly profiles = PROFILES;
   protected readonly alternativeChoices = Array.from(
     { length: MAX_ALTERNATIVES },
@@ -391,6 +393,18 @@ export class Planner {
       driver?.setRoutes(
         routes.map((route) => route.geometry),
         selected,
+      );
+    });
+
+    // The selected route in the colours of what it rides on, when the user asked for it.
+    effect(() => {
+      const driver = this.driver();
+      const surfaces = this.mapLayers.surface()
+        ? this.store.selectedSurfaces()
+        : null;
+      driver?.setSurfaces(
+        surfaces === null ? null : this.store.selectedGeometry(),
+        surfaces,
       );
     });
   }

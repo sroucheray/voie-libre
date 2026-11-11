@@ -28,7 +28,9 @@
       "waysLegend": "Ways for the profile: legend",
       "ways_good": "Suited",
       "ways_fair": "Possible",
-      "ways_avoid": "To avoid"
+      "ways_avoid": "To avoid",
+      "surface": "Surface of the route",
+      "surfaceLegend": "Surface of the route: legend"
     },
     "attribution": {
       "label": "Map data attribution",

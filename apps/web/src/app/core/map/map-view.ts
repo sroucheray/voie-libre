@@ -23,6 +23,11 @@ import {
 } from './basemap-style';
 import { MapLayers, RELIEF_PROBE } from './map-layers';
 import { WAY_COLORS, WAY_LEVELS } from './way-levels';
+import {
+  SURFACE_COLORS,
+  SURFACE_CODES,
+  surfaceKey,
+} from './surface-categories';
 import { BASEMAP_URL, LngLat, MAP_FACTORY, MapLike } from './map-factory';
 
 /** Clermont-Ferrand, the test region. */
@@ -87,6 +92,11 @@ export class MapView {
     level,
     color: WAY_COLORS[level],
   })).reverse();
+  protected readonly surfaceLegend = SURFACE_CODES.map((code) => ({
+    code,
+    color: SURFACE_COLORS[code],
+    key: surfaceKey(code),
+  }));
   protected readonly layersOpen = signal(false);
 
   constructor() {
@@ -205,6 +215,10 @@ export class MapView {
       .querySelector('.map-layers')
       ?.contains(target);
     if (!inside) this.layersOpen.set(false);
+  }
+
+  protected setSurface(event: Event): void {
+    this.layers.setSurface((event.target as HTMLInputElement).checked);
   }
 
   protected setWays(event: Event): void {

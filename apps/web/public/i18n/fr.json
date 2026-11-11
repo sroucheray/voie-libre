@@ -28,7 +28,9 @@
       "waysLegend": "Voies du profil : légende",
       "ways_good": "Adaptées",
       "ways_fair": "Possibles",
-      "ways_avoid": "À éviter"
+      "ways_avoid": "À éviter",
+      "surface": "Revêtement du tracé",
+      "surfaceLegend": "Revêtement du tracé : légende"
     },
     "attribution": {
       "label": "Source des données cartographiques",

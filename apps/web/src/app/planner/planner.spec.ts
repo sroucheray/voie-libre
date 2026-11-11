@@ -17,6 +17,7 @@ import { LIVE_DRAG_INTERVAL_MS, Planner } from './planner';
 import { PlannerStore } from './planner-store';
 import { WAY_TILES, type Way, type WayTileReader } from '../core/map/way-tiles';
 import { ROUTE_DEBOUNCE_MS } from './route-planner';
+import { MapLayers } from '../core/map/map-layers';
 import { SEARCH_DEBOUNCE_MS } from '../search/place-field';
 import { LocationStore } from '../location/location-store';
 import { NAME_DEBOUNCE_MS } from '../search/point-namer';
@@ -823,6 +824,36 @@ describe('Planner', () => {
       view.store.undo();
       expect(view.store.points()).toHaveLength(2);
     });
+  });
+
+  it('draws the route in the colours of what it rides on once the user asked, and not before', async () => {
+    respond = () =>
+      json({
+        routes: [{ ...routes(1).routes[0], surfaces: 'pu' }],
+      });
+    const view = await render();
+    view.click(3.087, 45.777);
+    view.click(3.249, 45.544);
+    await view.settle();
+    expect(view.driver.surfaces).toBeNull();
+
+    TestBed.inject(MapLayers).setSurface(true);
+    await view.settle();
+    expect(view.driver.surfaces?.surfaces).toBe('pu');
+    expect(view.driver.surfaces?.geometry).toHaveLength(3);
+
+    TestBed.inject(MapLayers).setSurface(false);
+    await view.settle();
+    expect(view.driver.surfaces).toBeNull();
+  });
+
+  it('draws no surfaces for a route that does not say', async () => {
+    const view = await render();
+    TestBed.inject(MapLayers).setSurface(true);
+    view.click(3.087, 45.777);
+    view.click(3.249, 45.544);
+    await view.settle();
+    expect(view.driver.surfaces).toBeNull();
   });
 
   it('removes a stop from the panel or with the map handler', async () => {
