@@ -31,3 +31,7 @@ Distances (CIE Lab, Viénot simulation of protanopia, deuteranopia, tritanopia; 
 | Grade bands                                       | 0/1 13, 2/3 25, 0/2 31 (before: 0/1 13, 2/3 21, 1/4 29)                                          |
 
 Changes made from this: ways good `#039855`, fair `#fec84b` (lighter, so lightness differs from the green), avoid `#b42318`; cycleway blue `#2e90fa` instead of green; steepest grade bands `#f79009` and `#b42318`; path brown darker. The ways to avoid stay dashed. Grade 0/1 (pale blue, pale green) are close for everyone, but adjacent bands are also told apart by the chart's height and the legend order.
+
+## Contrast (WCAG)
+
+Text pairs are at least 4.5:1: text on surface 16.2, secondary text on surface 6.8 (on the page background 6.3, on `--color-surface-2` 6.1), white on accent and on the header 5.5, accent on surface 5.5, accent on its soft tint 4.8, danger on surface 6.6. The status dot on the header (3.7) and the route on the basemap land (4.7) pass the 3:1 bar for non-text.

@@ -6,14 +6,20 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.25rem 0.75rem;
-  font-size: 0.875rem;
+  justify-content: flex-end;
+  gap: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+
+  button {
+    min-height: 2rem;
+    padding: 0 var(--space-3);
+  }
 }
 
 .progress {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .detail {
@@ -27,7 +33,17 @@
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 0.5rem;
+  gap: var(--space-1) var(--space-2);
+}
+
+.confirm {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+
+  &:hover:not(:disabled) {
+    background: var(--color-accent-hover);
+  }
 }
 
 .pending {
@@ -36,6 +52,10 @@
 
 .areas {
   flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-1) var(--space-3);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -43,6 +63,28 @@
   li {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
+  }
+}
+
+// On a phone the buttons share the row and the rest follows underneath.
+@media (max-width: 40rem) {
+  .offline {
+    justify-content: flex-start;
+  }
+
+  .actions {
+    flex: 1;
+    flex-wrap: nowrap;
+
+    button {
+      flex: 1;
+      padding: 0 var(--space-2);
+      font-size: var(--font-size-xs);
+    }
+  }
+
+  .areas {
+    justify-content: flex-start;
   }
 }
