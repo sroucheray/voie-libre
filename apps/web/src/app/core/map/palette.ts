@@ -10,7 +10,9 @@
 export const PALETTE = {
   /** The route being planned, and what points at it (the cursor on the profile, the accuracy of a fix). */
   route: '#0e7490',
-  routeAlternative: '#98a2b3',
+  routeAlternative: '#667085',
+  /** A white halo under every route line, so it stands out on any colour (ways, photos, relief). */
+  routeCasing: '#ffffff',
   routeHighlight: '#0f2420',
   routePreview: '#f79009',
   location: '#1a73e8',
@@ -50,6 +52,7 @@ export const PALETTE = {
 export const PALETTE_TOKENS: Record<string, string> = {
   '--map-route': PALETTE.route,
   '--map-route-alternative': PALETTE.routeAlternative,
+  '--map-route-casing': PALETTE.routeCasing,
   '--map-route-highlight': PALETTE.routeHighlight,
   '--map-route-preview': PALETTE.routePreview,
   '--map-location': PALETTE.location,

@@ -18,6 +18,8 @@ import { PALETTE } from '../core/map/palette';
 import { SURFACE_CODES, SURFACE_COLORS } from './route-surface';
 
 const SOURCE = 'planner-routes';
+const ALTERNATIVE_CASING_LAYER = 'planner-routes-alternative-casing';
+const SELECTED_CASING_LAYER = 'planner-routes-selected-casing';
 const ALTERNATIVE_LAYER = 'planner-routes-alternative';
 const SELECTED_LAYER = 'planner-routes-selected';
 const SURFACE_SOURCE = 'planner-surfaces';
@@ -109,16 +111,52 @@ export async function createMapLibreDriver(
       },
     });
     map.addSource(SOURCE, { type: 'geojson', data: routesToGeoJson([], 0) });
+    // Each line has a white halo under it (its casing) and grows with the zoom: at a high zoom the
+    // ways of the profile and the photos are drawn thick, and a thin grey line vanishes on them.
+    // The selected route and its halo come after the alternatives, so they win where they overlap.
+    const roundLine = { 'line-cap': 'round', 'line-join': 'round' } as const;
+    const widthAt = (small: number, large: number): ExpressionSpecification => [
+      'interpolate',
+      ['linear'],
+      ['zoom'],
+      8,
+      small,
+      14,
+      large,
+      19,
+      large * 1.5,
+    ];
+    map.addLayer({
+      id: ALTERNATIVE_CASING_LAYER,
+      type: 'line',
+      source: SOURCE,
+      filter: ['==', ['get', 'selected'], false],
+      layout: roundLine,
+      paint: {
+        'line-color': PALETTE.routeCasing,
+        'line-width': widthAt(5, 9),
+      },
+    });
     map.addLayer({
       id: ALTERNATIVE_LAYER,
       type: 'line',
       source: SOURCE,
       filter: ['==', ['get', 'selected'], false],
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      layout: roundLine,
       paint: {
         'line-color': PALETTE.routeAlternative,
-        'line-width': 5,
-        'line-opacity': 0.9,
+        'line-width': widthAt(3, 6),
+      },
+    });
+    map.addLayer({
+      id: SELECTED_CASING_LAYER,
+      type: 'line',
+      source: SOURCE,
+      filter: ['==', ['get', 'selected'], true],
+      layout: roundLine,
+      paint: {
+        'line-color': PALETTE.routeCasing,
+        'line-width': widthAt(6, 10),
       },
     });
     map.addLayer({
@@ -126,8 +164,8 @@ export async function createMapLibreDriver(
       type: 'line',
       source: SOURCE,
       filter: ['==', ['get', 'selected'], true],
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': PALETTE.route, 'line-width': 6 },
+      layout: roundLine,
+      paint: { 'line-color': PALETTE.route, 'line-width': widthAt(4, 7) },
     });
     map.addSource(SURFACE_SOURCE, {
       type: 'geojson',
@@ -727,7 +765,9 @@ export async function createMapLibreDriver(
         HIGHLIGHT_LAYER,
         SURFACE_LAYER,
         SELECTED_LAYER,
+        SELECTED_CASING_LAYER,
         ALTERNATIVE_LAYER,
+        ALTERNATIVE_CASING_LAYER,
         ACCURACY_LINE_LAYER,
         ACCURACY_FILL_LAYER,
       ]) {

@@ -27,7 +27,8 @@
 
   /* Map and charts (mirrored in core/map/palette.ts). */
   --map-route: #0e7490;
-  --map-route-alternative: #98a2b3;
+  --map-route-alternative: #667085;
+  --map-route-casing: #ffffff;
   --map-route-highlight: #0f2420;
   --map-route-preview: #f79009;
   --map-location: #1a73e8;
