@@ -27,7 +27,9 @@
         "http://*/fonts/**",
         "https://*/fonts/**",
         "http://*/sprites/**",
-        "https://*/sprites/**"
+        "https://*/sprites/**",
+        "https://*/tiles/fonts/**",
+        "https://*/tiles/sprites/**"
       ],
       "cacheConfig": {
         "strategy": "performance",

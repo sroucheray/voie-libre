@@ -1,4 +1,5 @@
 import { InjectionToken } from '@angular/core';
+import { currentBaseUrls } from '../api/base-urls';
 import type { Map as MapLibreMap, StyleSpecification } from 'maplibre-gl';
 import {
   OfflineFirstSource,
@@ -46,10 +47,10 @@ export interface MapCreateOptions {
 
 export type MapFactory = (options: MapCreateOptions) => Promise<MapLike>;
 
-/** Where the basemap is served (the `tiles` service of docker-compose). Override per environment. */
+/** Where the basemap is served: the `tiles` service of docker-compose in development, `/tiles` of the page's origin otherwise. */
 export const BASEMAP_URL = new InjectionToken<string>('BASEMAP_URL', {
   providedIn: 'root',
-  factory: () => 'http://localhost:8081',
+  factory: () => currentBaseUrls().tiles,
 });
 
 let pmtilesRegistered = false;

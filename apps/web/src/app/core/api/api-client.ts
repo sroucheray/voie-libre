@@ -1,10 +1,11 @@
 import { InjectionToken, inject } from '@angular/core';
 import { ApiClient, createApiClient } from '@voie-libre/api-client';
+import { currentBaseUrls } from './base-urls';
 
-/** Base URL of the Voie Libre API. Override in `app.config.ts` per environment. */
+/** Base URL of the Voie Libre API: a local port in development, `/api` of the page's origin otherwise. */
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL', {
   providedIn: 'root',
-  factory: () => 'http://localhost:3000',
+  factory: () => currentBaseUrls().api,
 });
 
 /** Typed client generated from the API's OpenAPI document (see packages/api-client). */
