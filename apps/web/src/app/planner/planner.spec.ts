@@ -616,6 +616,7 @@ describe('Planner', () => {
       role: 'start',
       label: 'A',
       text: 'Click to set the start',
+      refusedText: 'No road close to this place for this profile.',
     });
     view.click(3.087, 45.777);
     TestBed.tick();
@@ -627,6 +628,7 @@ describe('Planner', () => {
       role: 'waypoint',
       label: '+',
       text: 'Click to add a stop',
+      refusedText: 'No road close to this place for this profile.',
     });
   });
 

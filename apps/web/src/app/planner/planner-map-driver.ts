@@ -25,6 +25,8 @@ export interface GhostSpec {
   label: string;
   /** What the click does, translated: "Click to set the end". */
   text: string;
+  /** Said when the pointer rests where no point can be placed (no way for the profile). */
+  refusedText: string;
 }
 
 /** What the user does on the map, reported to the planner. */

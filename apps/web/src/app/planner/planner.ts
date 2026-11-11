@@ -358,6 +358,11 @@ export class Planner {
         // route, and its number is only known once it is placed.
         label: role === 'start' ? 'A' : role === 'end' ? 'B' : '+',
         text: this.transloco.translate(`planner.ghost.${role}`, {}, language),
+        refusedText: this.transloco.translate(
+          'planner.snap.refused',
+          {},
+          language,
+        ),
       });
     });
 

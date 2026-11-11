@@ -47,6 +47,10 @@ function accuracyData(fix: LocationFix | null): GeoJSON.GeoJSON {
 const HIT_TOLERANCE = 6;
 /** Space kept between the ghost of the next point and a marker, so that it never touches one. */
 const GHOST_CLEARANCE_PX = 4;
+/** A ghost that stops being valid stays this long, so that grazing a way's edge does not flicker. */
+const GHOST_GRACE_MS = 150;
+/** Resting this long where nothing can be placed says why, once. */
+const GHOST_MESSAGE_DELAY_MS = 400;
 
 /** Pixels the mouse must move after a click before the ghost of the next point shows. */
 const GHOST_MOVE_PX = 30;
@@ -284,9 +288,57 @@ export async function createMapLibreDriver(
   const setAiming = (aiming: boolean) =>
     map.getCanvasContainer().classList.toggle('planner-aiming', aiming);
 
+  let graceTimer: ReturnType<typeof setTimeout> | null = null;
+  let messageTimer: ReturnType<typeof setTimeout> | null = null;
+  let ghostText: HTMLElement | null = null;
+
+  const clearGhostTimers = () => {
+    if (graceTimer) clearTimeout(graceTimer);
+    if (messageTimer) clearTimeout(messageTimer);
+    graceTimer = messageTimer = null;
+  };
+
   const hideGhost = () => {
-    if (ghostElement) ghostElement.style.display = 'none';
+    clearGhostTimers();
+    if (ghostElement) {
+      ghostElement.style.display = 'none';
+      ghostElement.classList.remove('planner-ghost--refused');
+    }
+    if (ghostText && ghostSpec) ghostText.textContent = ghostSpec.text;
     setAiming(false);
+  };
+
+  /**
+   * The pointer is where no point can be placed: no ghost and no cross, so the map says plainly
+   * that a click does nothing. A ghost that was valid a moment ago stays a short while (grazing the
+   * edge of a way must not flicker), and a pointer that rests here is told why, once.
+   */
+  const refuseAt = (lngLat: { lng: number; lat: number }) => {
+    if (!ghostElement || !ghostMarker || !ghostSpec) return;
+    if (ghostElement.classList.contains('planner-ghost--refused')) {
+      // The message is for a pointer at rest: it goes as soon as the pointer moves.
+      hideGhost();
+    }
+    if (messageTimer) clearTimeout(messageTimer);
+    const spec = ghostSpec;
+    messageTimer = setTimeout(() => {
+      messageTimer = null;
+      if (!ghostElement || !ghostMarker || !ghostText) return;
+      ghostElement.classList.add('planner-ghost--refused');
+      ghostText.textContent = spec.refusedText;
+      ghostMarker.setLngLat([lngLat.lng, lngLat.lat]);
+      ghostElement.style.display = '';
+      setAiming(false);
+    }, GHOST_MESSAGE_DELAY_MS);
+    if (ghostElement.style.display === 'none') {
+      setAiming(false);
+    } else if (!graceTimer) {
+      graceTimer = setTimeout(() => {
+        graceTimer = null;
+        if (ghostElement) ghostElement.style.display = 'none';
+        setAiming(false);
+      }, GHOST_GRACE_MS);
+    }
   };
 
   // Where the last click was: the ghost of the next point waits for a short move away from it.
@@ -331,8 +383,16 @@ export async function createMapLibreDriver(
       hideGhost();
       return;
     }
-    ghostElement.style.display = '';
     const landing = handlers.ghostAt([event.lngLat.lng, event.lngLat.lat]);
+    if (landing.refused) {
+      refuseAt(event.lngLat);
+      return;
+    }
+    // A place to click: the ghost is back (or stays), the refusal timers are over.
+    clearGhostTimers();
+    ghostElement.classList.remove('planner-ghost--refused');
+    if (ghostText) ghostText.textContent = ghostSpec.text;
+    ghostElement.style.display = '';
     // The ghost sits where the point would land (on the nearest way, for a profile that needs one),
     // to the right of it: a ghost that would cover a marker (the number of a stop) is not shown,
     // whether or not the pointer itself is on that marker yet.
@@ -357,7 +417,6 @@ export async function createMapLibreDriver(
       }
     }
     setAiming(true);
-    ghostElement.classList.toggle('planner-ghost--refused', landing.refused);
     ghostMarker.setLngLat(landing.point);
   };
   const container = map.getCanvasContainer();
@@ -735,6 +794,7 @@ export async function createMapLibreDriver(
       const text = document.createElement('span');
       text.className = 'planner-ghost__text';
       text.textContent = spec.text;
+      ghostText = text;
       element.append(dot, text);
     },
     setCursor(point: LngLat | null) {
