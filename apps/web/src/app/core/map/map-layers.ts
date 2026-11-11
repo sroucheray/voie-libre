@@ -10,24 +10,42 @@ export const MAP_LAYERS_KEY = 'voie-libre.map-layers';
 @Injectable({ providedIn: 'root' })
 export class MapLayers {
   private readonly reliefState = signal(this.read().relief ?? true);
+  private readonly waysState = signal(this.read().ways ?? false);
   /** True when the user wants the hillshade. */
   readonly relief = this.reliefState.asReadonly();
+  /** True when the user wants the ways coloured by how well they suit the profile (off at first). */
+  readonly ways = this.waysState.asReadonly();
 
   setRelief(shown: boolean): void {
     this.reliefState.set(shown);
+    this.save();
+  }
+
+  setWays(shown: boolean): void {
+    this.waysState.set(shown);
+    this.save();
+  }
+
+  private save(): void {
     try {
-      localStorage.setItem(MAP_LAYERS_KEY, JSON.stringify({ relief: shown }));
+      localStorage.setItem(
+        MAP_LAYERS_KEY,
+        JSON.stringify({ relief: this.reliefState(), ways: this.waysState() }),
+      );
     } catch {
       // Storage refused (private window): the choice holds until the page is closed.
     }
   }
 
-  private read(): { relief?: boolean } {
+  private read(): { relief?: boolean; ways?: boolean } {
     try {
       const stored = JSON.parse(localStorage.getItem(MAP_LAYERS_KEY) ?? '{}');
-      return typeof stored?.relief === 'boolean'
-        ? { relief: stored.relief }
-        : {};
+      return {
+        ...(typeof stored?.relief === 'boolean'
+          ? { relief: stored.relief }
+          : {}),
+        ...(typeof stored?.ways === 'boolean' ? { ways: stored.ways } : {}),
+      };
     } catch {
       return {};
     }

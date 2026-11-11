@@ -6,6 +6,7 @@ import {
   RELIEF_TILE_SIZE,
   RELIEF_TILES_FILE,
 } from '@voie-libre/shared';
+import { wayLayers } from './way-levels';
 
 /** Name of the vector source in the style; the Protomaps layers refer to it. */
 export const BASEMAP_SOURCE = 'protomaps';
@@ -32,6 +33,8 @@ export function reliefTilesUrl(baseUrl: string): string {
 export interface BasemapStyleOptions {
   /** Draws the hillshade. Only when the archive of elevation tiles exists. */
   relief?: boolean;
+  /** Draws the ways by how well they suit this profile (`road`, `gravel`, `trail`). */
+  ways?: string | null;
 }
 
 /**
@@ -42,7 +45,8 @@ export interface BasemapStyleOptions {
  * only generates the label layers when a language is given.
  *
  * With `relief`, a hillshade computed by MapLibre from the local elevation tiles is drawn under
- * the water and the roads.
+ * the water and the roads. With `ways`, the roads, tracks and paths are drawn again in three
+ * colours by how well they suit the profile, above the roads and under the labels.
  */
 export function buildBasemapStyle(
   baseUrl: string,
@@ -53,9 +57,12 @@ export function buildBasemapStyle(
   const basemap = layers(BASEMAP_SOURCE, namedFlavor('light'), {
     lang: language,
   }) as StyleSpecification['layers'];
-  if (!options.relief) return styleOf(base, {}, basemap);
-  const at = basemap.findIndex((layer) => layer.id === RELIEF_BEFORE);
-  const index = at === -1 ? basemap.length : at;
+  const withWays = options.ways
+    ? withWayLayers(basemap, wayLayers(BASEMAP_SOURCE, options.ways))
+    : basemap;
+  if (!options.relief) return styleOf(base, {}, withWays);
+  const at = withWays.findIndex((layer) => layer.id === RELIEF_BEFORE);
+  const index = at === -1 ? withWays.length : at;
   return styleOf(
     base,
     {
@@ -69,7 +76,7 @@ export function buildBasemapStyle(
       },
     },
     [
-      ...basemap.slice(0, index),
+      ...withWays.slice(0, index),
       {
         id: RELIEF_LAYER,
         type: 'hillshade',
@@ -82,9 +89,19 @@ export function buildBasemapStyle(
           'hillshade-accent-color': '#6b7280',
         },
       },
-      ...basemap.slice(index),
+      ...withWays.slice(index),
     ],
   );
+}
+
+/** The way layers go before the first label layer: above every road, under the names. */
+function withWayLayers(
+  basemap: StyleSpecification['layers'],
+  ways: StyleSpecification['layers'],
+): StyleSpecification['layers'] {
+  const at = basemap.findIndex((layer) => layer.type === 'symbol');
+  const index = at === -1 ? basemap.length : at;
+  return [...basemap.slice(0, index), ...ways, ...basemap.slice(index)];
 }
 
 function styleOf(

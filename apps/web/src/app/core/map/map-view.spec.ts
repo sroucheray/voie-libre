@@ -200,6 +200,7 @@ describe('MapView', () => {
       ).not.toContain('Copernicus');
       expect(JSON.parse(localStorage.getItem(MAP_LAYERS_KEY)!)).toEqual({
         relief: false,
+        ways: false,
       });
 
       view.checkbox()!.click();
@@ -214,6 +215,50 @@ describe('MapView', () => {
       view.open();
       expect(view.checkbox()?.checked).toBe(false);
       expect(view.checkbox()?.disabled).toBe(false);
+    });
+
+    it('colours the ways of the profile once asked, with a legend, and follows the profile', async () => {
+      const view = await renderWith(true);
+      const layerIds = () =>
+        (
+          (maps[0].style as { layers: { id: string }[] } | undefined)?.layers ??
+          []
+        ).map((l) => l.id);
+      view.open();
+      const ways = view.root.querySelector<HTMLInputElement>('.ways-checkbox')!;
+      // No profile given: nothing to colour.
+      expect(ways.disabled).toBe(true);
+      view.fixture.componentRef.setInput('waysProfile', 'road');
+      view.fixture.detectChanges();
+      expect(ways.disabled).toBe(false);
+      expect(ways.checked).toBe(false);
+      expect(view.root.querySelector('.ways-legend')).toBeNull();
+      expect(layerIds()).not.toContain('ways-good');
+
+      ways.click();
+      await flush();
+      view.fixture.detectChanges();
+      expect(layerIds()).toContain('ways-good');
+      expect(
+        [...view.root.querySelectorAll('.ways-legend li')].map((li) =>
+          li.textContent?.trim(),
+        ),
+      ).toEqual(['Suited', 'Possible', 'To avoid']);
+
+      // The profile changes: the layers are drawn again for it.
+      const before = maps[0].calls.filter((c) => c === 'setStyle').length;
+      view.fixture.componentRef.setInput('waysProfile', 'trail');
+      view.fixture.detectChanges();
+      await flush();
+      expect(maps[0].calls.filter((c) => c === 'setStyle').length).toBe(
+        before + 1,
+      );
+
+      ways.click();
+      await flush();
+      view.fixture.detectChanges();
+      expect(layerIds()).not.toContain('ways-good');
+      expect(view.root.querySelector('.ways-legend')).toBeNull();
     });
 
     it('leaves the map as it is without the relief file, and says why', async () => {

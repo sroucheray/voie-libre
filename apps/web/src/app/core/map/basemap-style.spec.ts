@@ -6,6 +6,50 @@ import {
   reliefTilesUrl,
 } from './basemap-style';
 
+describe('with ways', () => {
+  const base = 'http://tiles.test:8081/';
+  const ids = (ways?: string | null) =>
+    buildBasemapStyle(base, 'en', { ways }).layers.map((l) => l.id);
+
+  it('draws no way layer unless asked, or for a profile without levels', () => {
+    expect(ids().some((id) => id.startsWith('ways-'))).toBe(false);
+    expect(ids(null).some((id) => id.startsWith('ways-'))).toBe(false);
+    expect(ids('boat').some((id) => id.startsWith('ways-'))).toBe(false);
+  });
+
+  it('draws the three levels over every road and under the first label', () => {
+    const style = buildBasemapStyle(base, 'en', { ways: 'road' });
+    const all = style.layers.map((l) => l.id);
+    expect(all.filter((id) => id.startsWith('ways-'))).toEqual([
+      'ways-avoid',
+      'ways-fair',
+      'ways-good',
+    ]);
+    const first = all.indexOf('ways-avoid');
+    const lastRoad = Math.max(
+      ...style.layers.map((l, i) =>
+        'source-layer' in l &&
+        l['source-layer'] === 'roads' &&
+        !l.id.startsWith('ways-') &&
+        l.type === 'line'
+          ? i
+          : -1,
+      ),
+    );
+    expect(first).toBeGreaterThan(lastRoad);
+    expect(style.layers[first + 3].type).toBe('symbol');
+  });
+
+  it('keeps the relief under the water when both are asked', () => {
+    const all = buildBasemapStyle(base, 'en', {
+      ways: 'gravel',
+      relief: true,
+    }).layers.map((l) => l.id);
+    expect(all.indexOf('relief')).toBe(all.indexOf('water') - 1);
+    expect(all.indexOf('ways-good')).toBeGreaterThan(all.indexOf('water'));
+  });
+});
+
 describe('buildBasemapStyle', () => {
   const style = buildBasemapStyle('http://tiles.test:8081/', 'en');
 

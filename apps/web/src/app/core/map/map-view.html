@@ -87,6 +87,34 @@
         {{ 'map.layers.reliefUnavailable' | transloco }}
       </p>
       }
+      <label>
+        <input
+          type="checkbox"
+          class="ways-checkbox"
+          [checked]="layers.ways()"
+          [disabled]="!waysProfile()"
+          (change)="setWays($event)"
+        />
+        {{ 'map.layers.ways' | transloco }}
+      </label>
+      @if (waysShown()) {
+      <ul
+        class="ways-legend"
+        [attr.aria-label]="'map.layers.waysLegend' | transloco"
+      >
+        @for (item of wayLevels; track item.level) {
+        <li>
+          <span
+            class="ways-legend__swatch"
+            [class.ways-legend__swatch--dashed]="item.level === 'avoid'"
+            [style.--way-color]="item.color"
+            aria-hidden="true"
+          ></span>
+          {{ 'map.layers.ways_' + item.level | transloco }}
+        </li>
+        }
+      </ul>
+      }
     </div>
     }
   </div>

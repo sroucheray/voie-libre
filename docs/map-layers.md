@@ -45,7 +45,7 @@ MapLibre draws shading itself from elevation tiles (`raster-dem` source, `hillsh
 - **Licence**: Copernicus, credit required (already shown for the elevation profile).
 - **Risks**: GLO-30 is a surface model (it includes forests and buildings), so shading is slightly noisy in towns; 30 m is coarse above zoom 13 (shading gets soft, not wrong).
 
-## 3. Ways for the profile (from the current tiles)
+## 3. Ways for the profile (from the current tiles; done 2026-11-11)
 
 The basemap's road layer carries a class and the OpenStreetMap highway value for each way (`kind`, `kind_detail`: checked in the local archive). That is enough to restyle the map per profile, with no new data:
 
@@ -136,7 +136,7 @@ Worth doing only when the app is used outside France.
 ## Recommended order
 
 1. **Switcher and hillshade** (1, 2): done. The data is already on disk, it works offline, and relief is what the plain map lacks most for cycling and running.
-2. **Ways for the profile** (3). A day of styling on the current tiles; it also makes snapping understandable.
+2. **Ways for the profile** (3): done (a checkbox in the switcher, three levels per profile, see `BRIEF-ways.md`).
 3. **Surface and way type of the route** (4). The most useful answer to "is this route right for my bike", with no new data to host.
 4. **IGN imagery, opt-in** (5). Small, and the best way to judge a track or a path before going.
 5. **Contours** (6), then **own way tiles** (7) when surfaces and signed routes on the map are worth a build pipeline.

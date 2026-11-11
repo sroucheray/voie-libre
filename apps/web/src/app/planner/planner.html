@@ -1,5 +1,9 @@
 <div class="map-area">
-  <vl-map-view class="map" (mapReady)="onMapReady($event)" />
+  <vl-map-view
+    class="map"
+    [waysProfile]="store.profile()"
+    (mapReady)="onMapReady($event)"
+  />
 
   <p class="help-bar" aria-live="polite">{{ helpKey() | transloco }}</p>
 

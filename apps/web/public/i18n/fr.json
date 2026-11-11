@@ -23,7 +23,12 @@
       "button": "Couches de la carte",
       "title": "Couches",
       "relief": "Relief",
-      "reliefUnavailable": "Indisponible : le fichier du relief est absent ou inaccessible."
+      "reliefUnavailable": "Indisponible : le fichier du relief est absent ou inaccessible.",
+      "ways": "Voies du profil",
+      "waysLegend": "Voies du profil : légende",
+      "ways_good": "Adaptées",
+      "ways_fair": "Possibles",
+      "ways_avoid": "À éviter"
     },
     "attribution": {
       "label": "Source des données cartographiques",

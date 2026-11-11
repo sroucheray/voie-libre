@@ -7,6 +7,7 @@ import {
   computed,
   effect,
   inject,
+  input,
   model,
   output,
   signal,
@@ -21,6 +22,7 @@ import {
   reliefTilesUrl,
 } from './basemap-style';
 import { MapLayers, RELIEF_PROBE } from './map-layers';
+import { WAY_COLORS, WAY_LEVELS } from './way-levels';
 import { BASEMAP_URL, LngLat, MAP_FACTORY, MapLike } from './map-factory';
 
 /** Clermont-Ferrand, the test region. */
@@ -75,6 +77,16 @@ export class MapView {
   protected readonly reliefShown = computed(
     () => this.reliefAvailable() && this.layers.relief(),
   );
+  /** The profile whose suited ways can be drawn (`road`, `gravel`, `trail`); none, none drawn. */
+  readonly waysProfile = input<string | null>(null);
+  /** The ways are drawn: the user wants them and the profile is known. */
+  protected readonly waysShown = computed(
+    () => (this.layers.ways() ? this.waysProfile() : null) ?? null,
+  );
+  protected readonly wayLevels = WAY_LEVELS.map((level) => ({
+    level,
+    color: WAY_COLORS[level],
+  })).reverse();
   protected readonly layersOpen = signal(false);
 
   constructor() {
@@ -132,12 +144,15 @@ export class MapView {
       const map = this.map();
       const language = this.language.current();
       const relief = this.reliefShown();
+      const ways = this.waysShown();
       if (!map) return;
-      const wanted = `${language}|${relief}`;
-      // The map was created without relief.
-      styled ??= `${language}|false`;
+      const wanted = `${language}|${relief}|${ways ?? ''}`;
+      // The map was created without relief or ways.
+      styled ??= `${language}|false|`;
       if (styled !== wanted) {
-        map.setStyle(buildBasemapStyle(this.basemapUrl, language, { relief }));
+        map.setStyle(
+          buildBasemapStyle(this.basemapUrl, language, { relief, ways }),
+        );
       }
       styled = wanted;
     });
@@ -190,6 +205,10 @@ export class MapView {
       .querySelector('.map-layers')
       ?.contains(target);
     if (!inside) this.layersOpen.set(false);
+  }
+
+  protected setWays(event: Event): void {
+    this.layers.setWays((event.target as HTMLInputElement).checked);
   }
 
   protected setRelief(event: Event): void {

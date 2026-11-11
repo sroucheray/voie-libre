@@ -23,7 +23,12 @@
       "button": "Map layers",
       "title": "Layers",
       "relief": "Relief",
-      "reliefUnavailable": "Not available: the relief file is missing or cannot be reached."
+      "reliefUnavailable": "Not available: the relief file is missing or cannot be reached.",
+      "ways": "Ways for the profile",
+      "waysLegend": "Ways for the profile: legend",
+      "ways_good": "Suited",
+      "ways_fair": "Possible",
+      "ways_avoid": "To avoid"
     },
     "attribution": {
       "label": "Map data attribution",

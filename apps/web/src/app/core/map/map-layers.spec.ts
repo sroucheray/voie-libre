@@ -14,6 +14,19 @@ describe('MapLayers', () => {
     expect(TestBed.inject(MapLayers).relief()).toBe(false);
   });
 
+  it('leaves the ways off until the user turns them on, and remembers', () => {
+    const layers = TestBed.inject(MapLayers);
+    expect(layers.ways()).toBe(false);
+    layers.setWays(true);
+    expect(layers.ways()).toBe(true);
+    expect(JSON.parse(localStorage.getItem(MAP_LAYERS_KEY)!)).toEqual({
+      relief: true,
+      ways: true,
+    });
+    TestBed.resetTestingModule();
+    expect(TestBed.inject(MapLayers).ways()).toBe(true);
+  });
+
   it('ignores a stored value it does not understand', () => {
     localStorage.setItem(MAP_LAYERS_KEY, '{"relief":"yes"');
     expect(TestBed.inject(MapLayers).relief()).toBe(true);
