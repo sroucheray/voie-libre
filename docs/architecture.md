@@ -26,12 +26,12 @@ Quatre règles guident tous les choix : ouvert, local d'abord, données partagé
 
 Le front est une PWA empaquetée en APK par Capacitor : un seul code pour le site et l'application Android.
 
-| Option | Site web | Carte (MapLibre) | Rendu natif | Effort | Verdict |
-| --- | --- | --- | --- | --- | --- |
-| PWA + Capacitor | Natif | Bibliothèque web directe | Moyen | Faible | Retenu |
-| Expo / React Native | Via React Native Web | Version native à intégrer | Bon | Moyen | Plus tard si besoin |
-| Flutter | Possible | Écosystème plus pauvre | Bon | Moyen | Écarté |
-| Kotlin natif | Aucun | Natif | Très bon | Élevé | Écarté au départ |
+| Option              | Site web             | Carte (MapLibre)          | Rendu natif | Effort | Verdict             |
+| ------------------- | -------------------- | ------------------------- | ----------- | ------ | ------------------- |
+| PWA + Capacitor     | Natif                | Bibliothèque web directe  | Moyen       | Faible | Retenu              |
+| Expo / React Native | Via React Native Web | Version native à intégrer | Bon         | Moyen  | Plus tard si besoin |
+| Flutter             | Possible             | Écosystème plus pauvre    | Bon         | Moyen  | Écarté              |
+| Kotlin natif        | Aucun                | Natif                     | Très bon    | Élevé  | Écarté au départ    |
 
 **Reste de la pile :**
 
@@ -52,11 +52,11 @@ BRouter calcule tous les itinéraires derrière une interface « fournisseur de 
 
 **BRouter** est un programme Java qui lit des fichiers de données (.rd5, carrés de 5° x 5° issus d'OpenStreetMap, régénérés chaque semaine sur brouter.de) et répond à des requêtes HTTP du type `GET /brouter?lonlats=lon,lat|lon,lat&profile=trekking&alternativeidx=0&format=geojson`. Il accepte des zones à éviter (cercles, lignes, polygones), 1 à 3 alternatives et des profils modifiables.
 
-| Mode | Identifiants | Usage |
-| --- | --- | --- |
-| Serveur public brouter.de | Aucun | Développement seulement : serveur de bénévoles, sans garantie |
-| Docker auto-hébergé | Aucun (à protéger par le reverse proxy) | Production : segments de la France montés en volume, profils personnalisés |
-| Application Android BRouter | Sans objet | Plus tard : calcul sans réseau sur le téléphone |
+| Mode                        | Identifiants                            | Usage                                                                      |
+| --------------------------- | --------------------------------------- | -------------------------------------------------------------------------- |
+| Serveur public brouter.de   | Aucun                                   | Développement seulement : serveur de bénévoles, sans garantie              |
+| Docker auto-hébergé         | Aucun (à protéger par le reverse proxy) | Production : segments de la France montés en volume, profils personnalisés |
+| Application Android BRouter | Sans objet                              | Plus tard : calcul sans réseau sur le téléphone                            |
 
 **Interface « fournisseur de routage » :** une seule fonction du backend reçoit points, profil, zones à éviter et nombre d'alternatives, et renvoie une géométrie avec distance, dénivelé et durée. BRouter est l'implémentation par défaut.
 
@@ -87,17 +87,17 @@ BRouter calcule tous les itinéraires derrière une interface « fournisseur de 
 
 OpenStreetMap fournit le réseau, Copernicus ou l'IGN le relief, et des extraits PMTiles le fond de carte.
 
-| Besoin | Source | Statut | Remarque |
-| --- | --- | --- | --- |
-| Réseau routier et chemins | OpenStreetMap | Ouvert (ODbL) | Tags utiles : surface, highway, tracktype, smoothness, cycleway, bicycle, construction |
-| Relief mondial | Copernicus GLO-30 (30 m) | Gratuit, licence Copernicus | Mention de la source obligatoire |
-| Relief France | IGN RGE ALTI (5 m) | Ouvert (Licence ouverte Etalab 2.0) | Plus précis que GLO-30 |
-| Fond de carte hors-ligne | Extraits PMTiles (Protomaps) | Ouvert | Un fichier par région, lu par MapLibre |
-| Fond vélo | CyclOSM | Ouvert | Utile en superposition |
-| Géocodage | Photon | Ouvert | Appelé par l'API seulement (`GET /geocode`, interface `Geocoder`), jamais par le navigateur. Serveur public à remplacer par une instance propre si le trafic grossit |
-| Preuves visuelles | Mapillary | CC-BY-SA | Photos de rue pour vérifier un état de route |
-| Événements routiers | Bison Futé, transport.data.gouv.fr | Gratuit, accès parfois restreint | Réseau national non concédé seulement, pas les petites routes |
-| Météo | Météo-France (AROME) | Ouvert | Alertes éventuelles |
+| Besoin                    | Source                             | Statut                              | Remarque                                                                                                                                                             |
+| ------------------------- | ---------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Réseau routier et chemins | OpenStreetMap                      | Ouvert (ODbL)                       | Tags utiles : surface, highway, tracktype, smoothness, cycleway, bicycle, construction                                                                               |
+| Relief mondial            | Copernicus GLO-30 (30 m)           | Gratuit, licence Copernicus         | Mention de la source obligatoire                                                                                                                                     |
+| Relief France             | IGN RGE ALTI (5 m)                 | Ouvert (Licence ouverte Etalab 2.0) | Plus précis que GLO-30                                                                                                                                               |
+| Fond de carte hors-ligne  | Extraits PMTiles (Protomaps)       | Ouvert                              | Un fichier par région, lu par MapLibre                                                                                                                               |
+| Fond vélo                 | CyclOSM                            | Ouvert                              | Utile en superposition                                                                                                                                               |
+| Géocodage                 | Photon                             | Ouvert                              | Appelé par l'API seulement (`GET /geocode`, interface `Geocoder`), jamais par le navigateur. Serveur public à remplacer par une instance propre si le trafic grossit |
+| Preuves visuelles         | Mapillary                          | CC-BY-SA                            | Photos de rue pour vérifier un état de route                                                                                                                         |
+| Événements routiers       | Bison Futé, transport.data.gouv.fr | Gratuit, accès parfois restreint    | Réseau national non concédé seulement, pas les petites routes                                                                                                        |
+| Météo                     | Météo-France (AROME)               | Ouvert                              | Alertes éventuelles                                                                                                                                                  |
 
 Il n'existe pas, à ma connaissance, de jeu de données national fiable sur les travaux des petites routes : la couche de signalements de l'application est la vraie source pour ce besoin. Certaines métropoles et départements publient leurs chantiers sur data.gouv.fr, à chercher zone par zone.
 
@@ -125,12 +125,12 @@ Un tronçon problématique est traité à trois niveaux selon sa durée de vie :
 
 **Ordre de réalisation :** en phase 3, seules les zones personnelles et les notes OSM existent. La couche communautaire (partage, confirmation, modération) arrive en phase 4.
 
-| Cas | Où ça va | Durée de vie |
-| --- | --- | --- |
-| Éviter ce tronçon maintenant | Zone locale de l'utilisateur, transmise à BRouter | Tant que l'utilisateur la garde |
-| Travaux ou fermeture temporaire | Couche communautaire de l'application | Date d'expiration obligatoire |
-| Chemin non roulable, route fermée durablement | Couche communautaire, sans expiration | Jusqu'à correction dans OSM |
-| Donnée fausse dans la carte (surface, existence, accès) | Note OSM, ou correction guidée | Permanent, profite à tous |
+| Cas                                                     | Où ça va                                          | Durée de vie                    |
+| ------------------------------------------------------- | ------------------------------------------------- | ------------------------------- |
+| Éviter ce tronçon maintenant                            | Zone locale de l'utilisateur, transmise à BRouter | Tant que l'utilisateur la garde |
+| Travaux ou fermeture temporaire                         | Couche communautaire de l'application             | Date d'expiration obligatoire   |
+| Chemin non roulable, route fermée durablement           | Couche communautaire, sans expiration             | Jusqu'à correction dans OSM     |
+| Donnée fausse dans la carte (surface, existence, accès) | Note OSM, ou correction guidée                    | Permanent, profite à tous       |
 
 **Fonctionnement dans l'application :** l'utilisateur sélectionne un tronçon sur une trace enregistrée, choisit un type (travaux, chemin, dangereux, autre) et un commentaire. Si le problème est durable, l'application propose d'envoyer aussi une note à OpenStreetMap.
 
@@ -150,12 +150,12 @@ Un tronçon problématique est traité à trois niveaux selon sa durée de vie :
 
 Quatre entités suffisent au départ ; la même structure existe en local (IndexedDB ou SQLite) et sur le serveur (PostGIS).
 
-| Entité | Champs principaux | Remarque |
-| --- | --- | --- |
-| Parcours | id court, nom, propriétaire, visibilité (local, privé synchronisé, lien, public), profil, points de passage, géométrie, distance, dénivelé positif, aperçu (trace simplifiée pour la miniature), créé le, modifié le | Le GPX est généré à la demande depuis la géométrie |
-| Zone à éviter | id, géométrie (cercle, ligne ou polygone), type, portée (personnelle, communautaire), auteur, créée le, expire le | `expire le` vide pour les chemins non roulables |
-| Signalement | id, tronçon ou position, type, commentaire, photo éventuelle, auteur, confirmations, envoyé à OSM (note id) | Alimente les zones communautaires |
-| Utilisateur | id, nom affiché, connexion OSM optionnelle | Le compte n'est requis que pour synchroniser, partager ou signaler |
+| Entité        | Champs principaux                                                                                                                                                                                                    | Remarque                                                           |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Parcours      | id court, nom, propriétaire, visibilité (local, privé synchronisé, lien, public), profil, points de passage, géométrie, distance, dénivelé positif, aperçu (trace simplifiée pour la miniature), créé le, modifié le | Le GPX est généré à la demande depuis la géométrie                 |
+| Zone à éviter | id, géométrie (cercle, ligne ou polygone), type, portée (personnelle, communautaire), auteur, créée le, expire le                                                                                                    | `expire le` vide pour les chemins non roulables                    |
+| Signalement   | id, tronçon ou position, type, commentaire, photo éventuelle, auteur, confirmations, envoyé à OSM (note id)                                                                                                          | Alimente les zones communautaires                                  |
+| Utilisateur   | id, nom affiché, connexion OSM optionnelle                                                                                                                                                                           | Le compte n'est requis que pour synchroniser, partager ou signaler |
 
 **Identifiants courts :** 8 à 10 caractères aléatoires, utilisables dans l'adresse de partage (`/p/abc123xy`).
 
@@ -163,19 +163,19 @@ Quatre entités suffisent au départ ; la même structure existe en local (Index
 
 L'API est petite : elle calcule, enregistre, partage et signale. Les endpoints ci-dessous sont une proposition de départ.
 
-| Méthode et chemin | Rôle | Authentification |
-| --- | --- | --- |
-| `POST /route` | Calcule un itinéraire (points, profil, zones à éviter, alternatives) via le fournisseur de routage | Non, avec limitation de débit |
-| `POST /loops` | Propose des boucles (point de départ, distance, dénivelé, graine) | Non, avec limitation de débit |
-| `GET /p/{id}` | Lit un parcours partagé | Non pour lien ou public |
-| `PUT /p/{id}` | Crée un parcours partagé sous l'identifiant tiré sur l'appareil (jamais mis à jour : un identifiant existant répond 409) ; renvoie une fois un jeton de suppression | Non, avec limitation de débit stricte |
-| `DELETE /p/{id}` | Supprime un parcours partagé | Jeton de suppression (en-tête `Authorization: Bearer`) |
-| `POST /elevation` | Altitude de jusqu'à 5000 points, lue localement dans les dalles Copernicus GLO-30 | Non, avec limitation de débit |
-| `GET /p/{id}.gpx` | Exporte le GPX | Idem lecture |
-| `GET /avoid?bbox=` | Zones à éviter communautaires dans une emprise | Non |
-| `POST /reports` | Crée un signalement | Oui |
-| `POST /reports/{id}/confirm` | Confirme un signalement | Oui |
-| `POST /reports/{id}/osm-note` | Envoie le signalement comme note OSM | Oui, via OAuth 2 OSM |
+| Méthode et chemin             | Rôle                                                                                                                                                                | Authentification                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `POST /route`                 | Calcule un itinéraire (points, profil, zones à éviter, alternatives) via le fournisseur de routage                                                                  | Non, avec limitation de débit                          |
+| `POST /loops`                 | Propose des boucles (point de départ, distance, dénivelé, graine)                                                                                                   | Non, avec limitation de débit                          |
+| `GET /p/{id}`                 | Lit un parcours partagé                                                                                                                                             | Non pour lien ou public                                |
+| `PUT /p/{id}`                 | Crée un parcours partagé sous l'identifiant tiré sur l'appareil (jamais mis à jour : un identifiant existant répond 409) ; renvoie une fois un jeton de suppression | Non, avec limitation de débit stricte                  |
+| `DELETE /p/{id}`              | Supprime un parcours partagé                                                                                                                                        | Jeton de suppression (en-tête `Authorization: Bearer`) |
+| `POST /elevation`             | Altitude de jusqu'à 5000 points, lue localement dans les dalles Copernicus GLO-30                                                                                   | Non, avec limitation de débit                          |
+| `GET /p/{id}.gpx`             | Exporte le GPX                                                                                                                                                      | Idem lecture                                           |
+| `GET /avoid?bbox=`            | Zones à éviter communautaires dans une emprise                                                                                                                      | Non                                                    |
+| `POST /reports`               | Crée un signalement                                                                                                                                                 | Oui                                                    |
+| `POST /reports/{id}/confirm`  | Confirme un signalement                                                                                                                                             | Oui                                                    |
+| `POST /reports/{id}/osm-note` | Envoie le signalement comme note OSM                                                                                                                                | Oui, via OAuth 2 OSM                                   |
 
 **État de la phase 1 (écart avec la proposition) :** le partage de la phase 1 se fait sans compte : parcours immuables, jeton de suppression dont seul l'empreinte SHA-256 est stockée, ouverture dans l'application sur `/p/:id`. `PUT /p/{id}` ne met donc pas à jour (la synchronisation de la phase 2 reste à concevoir) et le QR code n'est pas encore fait. `POST /loops` et les endpoints de signalement ne sont pas implémentés.
 
@@ -201,13 +201,13 @@ Cinq écrans couvrent le parcours d'usage, de la préparation à l'export.
 
 Le socle rend l'application utilisable avant toute fonction communautaire.
 
-| Phase | Nom | Contenu |
-| --- | --- | --- |
-| 1 | Socle | Carte et routage, profils et GPX, sauvegarde locale, partage par lien, consultation hors-ligne |
-| 2 | Planification | Alternatives, édition à la main, boucles, distance cible, dénivelé cible |
-| 3 | Signalements | Zones à éviter personnelles, notes OSM, expiration |
-| 4 | Communauté | Parcours publics, évaluations, zones partagées, découverte |
-| 5 | Plus tard | Calcul local, navigation guidée, Expo ou natif si besoin |
+| Phase | Nom           | Contenu                                                                                        |
+| ----- | ------------- | ---------------------------------------------------------------------------------------------- |
+| 1     | Socle         | Carte et routage, profils et GPX, sauvegarde locale, partage par lien, consultation hors-ligne |
+| 2     | Planification | Alternatives, édition à la main, boucles, distance cible, dénivelé cible                       |
+| 3     | Signalements  | Zones à éviter personnelles, notes OSM, expiration                                             |
+| 4     | Communauté    | Parcours publics, évaluations, zones partagées, découverte                                     |
+| 5     | Plus tard     | Calcul local, navigation guidée, Expo ou natif si besoin                                       |
 
 Chaque phase laisse une application utilisable ; les dates restent à fixer selon votre temps disponible.
 
@@ -226,13 +226,13 @@ Le code sera en AGPL ; le coût de départ se limite à un petit serveur, et les
 
 **Risques et mesures**
 
-| Risque | Mesure |
-| --- | --- |
+| Risque                                                               | Mesure                                                                                         |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | Serveur public BRouter, tuiles ou géocodage indisponibles ou limités | Auto-héberger BRouter dès le partage, instance Photon propre, tuiles PMTiles stockées chez soi |
-| Abus de l'API de calcul | Limitation de débit, mise en cache, reverse proxy |
-| Faux signalements ou vandalisme | Confirmation par plusieurs utilisateurs, expiration, possibilité de retirer un signalement |
-| Corrections OSM de mauvaise qualité | Notes par défaut, correction directe réservée à un formulaire guidé |
-| Données personnelles de localisation | Local d'abord, partage volontaire, suppression possible à tout moment |
+| Abus de l'API de calcul                                              | Limitation de débit, mise en cache, reverse proxy                                              |
+| Faux signalements ou vandalisme                                      | Confirmation par plusieurs utilisateurs, expiration, possibilité de retirer un signalement     |
+| Corrections OSM de mauvaise qualité                                  | Notes par défaut, correction directe réservée à un formulaire guidé                            |
+| Données personnelles de localisation                                 | Local d'abord, partage volontaire, suppression possible à tout moment                          |
 
 **Coûts :** un petit VPS (environ 4 à 6 € par mois en novembre 2026 pour 2 processeurs et 4 Go de mémoire, tarifs à vérifier avant de commander) suffit pour BRouter avec les segments de la France et pour le backend. Le trafic des tuiles et du géocodage est le poste qui grossirait en premier.
 

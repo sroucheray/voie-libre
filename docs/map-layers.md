@@ -58,7 +58,7 @@ The same classes already decide where a point may snap (`snap-to-way.ts`), so th
 - **Limit**: the tiles have no surface, no track grade, no cycling or hiking route, no traffic. A paved track and a muddy one look the same. Proposal 7 lifts this.
 - **Limit**: small roads and paths enter the tiles from zoom 12 and are all there at zoom 14 only; below, only main roads can be styled.
 
-## 4. Surface and way type of the computed route
+## 4. Surface and way type of the computed route (done 2026-11-11)
 
 BRouter can return, for each stretch of a route, the OpenStreetMap tags it travelled on (`highway`, `surface`, `tracktype`...; the `WayTags` column of its messages, used in `spike/brouter`). The API does not read them today.
 

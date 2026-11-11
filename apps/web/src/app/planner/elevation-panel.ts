@@ -158,6 +158,11 @@ export class ElevationPanel {
     return `${value} %`;
   }
 
+  /** A share of the route, to the whole percent. */
+  protected shareOf(fraction: number): string {
+    return `${this.format.number(fraction * 100, { maximumFractionDigits: 0 })} %`;
+  }
+
   protected percent(value: number): string {
     return `${this.format.number(value)} %`;
   }

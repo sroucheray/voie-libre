@@ -105,8 +105,8 @@
           aria-hidden="true"
         ></span>
         {{ 'surface.share' | transloco : { name: (share.key | transloco),
-        percent: percent(share.share * 100), distance:
-        format.distance(share.meters) } }}
+        percent: shareOf(share.share), distance: format.distance(share.meters) }
+        }}
       </li>
       }
     </ul>
