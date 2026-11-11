@@ -1,4 +1,4 @@
-# Plan — the relief for all of France
+# Plan — the relief for all of France (build running, see the end)
 
 Brief: [BRIEF-relief-france.md](BRIEF-relief-france.md). One commit per step, after lint, build and the targeted tests.
 
