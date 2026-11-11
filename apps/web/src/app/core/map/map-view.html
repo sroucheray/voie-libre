@@ -15,14 +15,14 @@
     (click)="zoomIn()"
     [attr.aria-label]="'map.zoomIn' | transloco"
   >
-    <span aria-hidden="true">+</span>
+    <vl-icon name="plus" />
   </button>
   <button
     type="button"
     (click)="zoomOut()"
     [attr.aria-label]="'map.zoomOut' | transloco"
   >
-    <span aria-hidden="true">&minus;</span>
+    <vl-icon name="minus" />
   </button>
   @if (bearing() !== 0) {
   <button

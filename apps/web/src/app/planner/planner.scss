@@ -159,6 +159,7 @@ vl-saved-routes {
   gap: 0.5rem;
 
   .add-stop {
+    --icon-size: 0.875rem;
     flex: none;
     display: grid;
     place-items: center;
@@ -239,7 +240,6 @@ vl-saved-routes {
     }
   }
 
-  // Six dots (two columns, three rows) drawn instead of typed: the glyph has no fixed width.
   // A single stop cannot be reordered: no handle, no grab cursor, the number stays where it was.
   .point-grip--static {
     cursor: default;
@@ -253,14 +253,11 @@ vl-saved-routes {
     visibility: hidden;
   }
 
+  // The grip icon has some air around its dots: pulled in so the number lines up with A and B.
   .point-grip__dots {
-    flex: none;
-    width: 0.625rem;
-    height: 0.9375rem;
+    --icon-size: 1.25rem;
+    margin: 0 -0.5rem 0 -0.25rem;
     color: var(--color-text-2);
-    background: radial-gradient(circle, currentcolor 1.25px, transparent 1.75px)
-      0 0 / 0.3125rem 0.3125rem;
-    font-size: 0;
   }
 
   .point-grip__number {
@@ -278,6 +275,7 @@ vl-saved-routes {
 
   // A round icon button: the cross sits in a 2 rem circle, the touchable area is larger.
   .point-remove {
+    --icon-size: 1.125rem;
     position: relative;
     flex: none;
     display: grid;

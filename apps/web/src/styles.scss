@@ -184,13 +184,6 @@ body {
     cursor: inherit;
   }
 
-  /* The "+" of a stop to add is a larger glyph than a digit, to read at once. */
-  &__dot.planner-marker--waypoint {
-    font-size: 1.125rem;
-    font-weight: 600;
-    line-height: 1;
-  }
-
   /* No point can be placed here (no way close enough for the profile). */
   &--refused &__dot {
     opacity: 0.2;

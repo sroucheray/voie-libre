@@ -42,6 +42,7 @@ import {
   pointRole,
 } from './planner-store';
 import { ProfileSelect } from './profile-select';
+import { Icon } from '../core/icons/icon';
 import { buildProfile, sampleNearest } from './elevation-profile';
 import { insertionIndex } from './insert-point';
 import { SNAP_MAX_METERS, SNAP_MAX_PIXELS } from './snap-to-way';
@@ -81,6 +82,7 @@ type DragChange = { kind: 'move' | 'insert'; index: number; point: LngLat };
     ElevationPanel,
     PlaceField,
     ProfileSelect,
+    Icon,
   ],
   templateUrl: './planner.html',
   styleUrl: './planner.scss',

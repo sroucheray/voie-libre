@@ -1,3 +1,4 @@
+import { Icon } from '../icons/icon';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -52,7 +53,7 @@ const ZOOM_EPSILON = 1e-3;
  */
 @Component({
   selector: 'vl-map-view',
-  imports: [TranslocoPipe],
+  imports: [TranslocoPipe, Icon],
   templateUrl: './map-view.html',
   styleUrl: './map-view.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -295,7 +295,7 @@
                 (pointerdown)="onGripDown($event, stop.index)"
                 (keydown)="onGripKey($event, stop.index)"
               >
-                <span class="point-grip__dots" aria-hidden="true">⋮⋮</span>
+                <vl-icon class="point-grip__dots" name="grip" />
                 <span class="point-grip__number" aria-hidden="true"
                   >{{ format.number(stop.index) }}</span
                 >
@@ -303,7 +303,10 @@
               } @else {
               <!-- A single stop has nothing to be reordered with: its number only, where the handle's would be. -->
               <span class="point-grip point-grip--static" aria-hidden="true">
-                <span class="point-grip__dots point-grip__dots--hidden"></span>
+                <vl-icon
+                  class="point-grip__dots point-grip__dots--hidden"
+                  name="grip"
+                />
                 <span class="point-grip__number"
                   >{{ format.number(stop.index) }}</span
                 >
@@ -324,7 +327,7 @@
                 (click)="store.removePoint(stop.index)"
                 [attr.aria-label]="'planner.points.remove' | transloco : { name: pointName(stop.index) }"
               >
-                <span aria-hidden="true">&times;</span>
+                <vl-icon name="x" />
               </button>
             </li>
             }
@@ -355,7 +358,7 @@
                 (click)="newStopAt.set(null)"
                 [attr.aria-label]="'planner.stops.cancel' | transloco"
               >
-                <span aria-hidden="true">&times;</span>
+                <vl-icon name="x" />
               </button>
             </li>
             } @else if (canAddStop()) {
@@ -371,7 +374,7 @@
                 [title]="'planner.stops.add' | transloco"
                 [attr.aria-label]="'planner.stops.addHere' | transloco : { before: pointName(at - 1), after: pointName(at) }"
               >
-                <span aria-hidden="true">+</span>
+                <vl-icon name="plus" />
               </button>
             </li>
             }
@@ -393,7 +396,7 @@
           [attr.aria-label]="'planner.search.reverse' | transloco"
           (click)="store.reverse()"
         >
-          <span aria-hidden="true">⇅</span>
+          <vl-icon name="swap" />
         </button>
       </div>
       @if (store.points().length > 0) { @if (store.loop(); as loop) { @if

@@ -15,6 +15,7 @@ import { accuracyCircle } from '../location/accuracy-circle';
 import type { LocationFix } from '../location/geolocation';
 import { routesToGeoJson, surfacesToGeoJson } from './route-geojson';
 import { PALETTE } from '../core/map/palette';
+import { iconElement } from '../core/icons/icons';
 import { SURFACE_CODES, SURFACE_COLORS } from './route-surface';
 
 const SOURCE = 'planner-routes';
@@ -697,7 +698,9 @@ export async function createMapLibreDriver(
       element.innerHTML = '';
       const dot = document.createElement('span');
       dot.className = `planner-marker planner-marker--${spec.role} planner-ghost__dot`;
-      dot.textContent = spec.label;
+      // The "+" of a stop to add is a drawn icon: a text glyph is never quite centred.
+      if (spec.label === '+') dot.append(iconElement('plus', 14));
+      else dot.textContent = spec.label;
       const text = document.createElement('span');
       text.className = 'planner-ghost__text';
       text.textContent = spec.text;

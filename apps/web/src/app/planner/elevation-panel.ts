@@ -17,6 +17,7 @@ import {
   type ProfileSample,
 } from './elevation-profile';
 import { PlannerStore } from './planner-store';
+import { Icon } from '../core/icons/icon';
 import {
   SURFACE_COLORS,
   surfaceKey,
@@ -37,7 +38,7 @@ const KEY_STEPS = 100;
  */
 @Component({
   selector: 'vl-elevation-panel',
-  imports: [TranslocoPipe],
+  imports: [TranslocoPipe, Icon],
   templateUrl: './elevation-panel.html',
   styleUrl: './elevation-panel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
