@@ -104,13 +104,20 @@ vl-saved-routes {
 .route-fields {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: var(--space-2);
   margin: 0.5rem 0 0;
 
+  // Round, like the other icon buttons, and kept apart from the cross of a stop on its row.
   .swap {
     flex: none;
-    padding: 0 var(--space-2);
+    width: 2.25rem;
+    height: 2.25rem;
+    min-height: 0;
+    margin-left: var(--space-1);
+    padding: 0;
+    border-radius: 50%;
     font-size: var(--font-size-lg);
+    line-height: 1;
   }
 }
 
@@ -204,7 +211,9 @@ vl-saved-routes {
     flex: none;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    // The number sits where the markers of A and B sit (1 rem in), the dots just before it.
+    justify-content: flex-start;
+    gap: 0.25rem;
     box-sizing: border-box;
     width: 2.5rem;
     min-height: 2rem;
@@ -228,12 +237,19 @@ vl-saved-routes {
     }
   }
 
+  // Six dots (two columns, three rows) drawn instead of typed: the glyph has no fixed width.
   .point-grip__dots {
+    flex: none;
+    width: 0.625rem;
+    height: 0.9375rem;
     color: var(--color-text-2);
-    letter-spacing: -0.2em;
+    background: radial-gradient(circle, currentcolor 1.25px, transparent 1.75px)
+      0 0 / 0.3125rem 0.3125rem;
+    font-size: 0;
   }
 
   .point-grip__number {
+    flex: none;
     display: grid;
     place-items: center;
     width: 1.5rem;
@@ -245,8 +261,33 @@ vl-saved-routes {
     font-weight: 700;
   }
 
+  // A round icon button: the cross sits in a 2 rem circle, the touchable area is larger.
   .point-remove {
-    padding: 0 0.375rem;
+    position: relative;
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    min-height: 0;
+    padding: 0;
+    border-color: transparent;
+    border-radius: 50%;
+    background: none;
+    color: var(--color-text-2);
+    font-size: var(--font-size-lg);
+    line-height: 1;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: -0.25rem;
+    }
+
+    &:hover:not(:disabled) {
+      background: var(--color-danger-soft);
+      color: var(--color-danger);
+    }
   }
 
   // The stop being moved, already at the place it would take.
