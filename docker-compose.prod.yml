@@ -1,0 +1,99 @@
+# Production stack (see BRIEF-deploy.md and docs/deployment.md).
+#   scripts/deploy.sh builds the images on the developer's machine and sends them to the server,
+#   where this file runs with `docker compose -f docker-compose.prod.yml up -d --no-build`.
+# Only `web` publishes ports (80 and 443): Docker opens published ports around the firewall, so
+# nothing else may publish one. Settings come from `.env` next to this file (see
+# .env.production.example); nothing secret is in this file.
+name: voie-libre
+
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-voielibre}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-voielibre}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    mem_limit: 768m
+    restart: unless-stopped
+
+  brouter:
+    image: voie-libre/brouter
+    build:
+      # The BRouter commit validated by the spike (see spike/brouter/RAPPORT.md).
+      context: https://github.com/abrensch/brouter.git#fed8f185ecdba4c01f4d6913bff7c0fae4576a32
+    environment:
+      MAXTHREADS: '2'
+      JAVA_OPTS: '-Xmx256M -Xms256M -DmaxRunningTime=300 -DuseRFCMimeType=false'
+    volumes:
+      - ${BROUTER_SEGMENTS_DIR:-./data/brouter/segments4}:/segments4:ro
+    mem_limit: 512m
+    restart: unless-stopped
+
+  tiles:
+    # Serves the basemap (PMTiles, fonts, sprites) with Range requests.
+    image: nginx:1.27-alpine
+    volumes:
+      - ${BASEMAP_DIR:-./data/basemap}:/usr/share/nginx/html:ro
+      - ./docker/tiles/default.conf:/etc/nginx/conf.d/default.conf:ro
+    mem_limit: 128m
+    restart: unless-stopped
+
+  api:
+    image: voie-libre/api
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      HOST: 0.0.0.0
+      PORT: '3000'
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Caddy is the only way in, so its X-Forwarded-For can be believed (rate limits per visitor).
+      TRUST_PROXY: 'true'
+      DATABASE_URL: postgres://${POSTGRES_USER:-voielibre}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-voielibre}
+      BROUTER_URL: http://brouter:17777
+      BROUTER_MAX_CONCURRENT: '2'
+      # Same origin as the app, so CORS only matters for tools calling the API directly.
+      CORS_ORIGINS: https://${SITE_DOMAIN:?set SITE_DOMAIN in .env}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
+      ROUTE_RATE_LIMIT_MAX: ${ROUTE_RATE_LIMIT_MAX:-120}
+      GEOCODE_RATE_LIMIT_MAX: ${GEOCODE_RATE_LIMIT_MAX:-60}
+      GEOCODER_URL: ${GEOCODER_URL:-https://photon.komoot.io}
+    depends_on:
+      db:
+        condition: service_healthy
+      brouter:
+        condition: service_started
+    mem_limit: 384m
+    restart: unless-stopped
+
+  web:
+    image: voie-libre/web
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-${SITE_DOMAIN}}
+    ports:
+      - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
+    volumes:
+      # The certificates: losing them would ask Let's Encrypt for new ones at every restart.
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+      - tiles
+    mem_limit: 128m
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

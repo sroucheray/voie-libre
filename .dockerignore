@@ -2,7 +2,8 @@
 .nx
 .angular
 node_modules
-dist
+# The web image copies dist/apps/web/browser; the API image builds its own output.
+dist/apps/api
 tmp
 data
 spike
