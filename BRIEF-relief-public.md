@@ -12,7 +12,7 @@ By default the map draws the hillshade from the public AWS Terrain Tiles ("Terra
 
 ## Scope
 
-1. **Public source by default.** The hillshade source reads `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/...` through a small `vlterrain://` protocol of MapLibre, so that the tiles kept offline are read before the network. Zooms 0 to 15 (above 15 the map zooms the last tiles).
+1. **Public source by default.** The hillshade source reads `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/...` through a small `vlterrain://` protocol of MapLibre, so that the tiles kept offline are read before the network. The map reads zooms 0 to 12 (the server has up to 15, but the elevations are about 30 m apart, which zoom 12 already shows; deeper zooms are drawn from those tiles, and an area kept offline covers them all).
 2. **The user is told.** This is the second external host after the IGN photos, now on by default: a note under the "Relief" checkbox says it loads tiles from a public Amazon server, which sees the user's address and the area looked at; the checkbox turns it off. The credit says what the data is ("Relief: Terrain Tiles, Mapzen, AWS; NASA, ESA and others", with a link to the list of sources).
 3. **Offline areas keep the relief tiles.** A kept area (corridor of the route, or the view) stores the terrain tiles of its zone at zooms 6 to 12 in its own cache, next to the basemap ranges; the size estimate counts them; removing the area removes them. Above zoom 12 the map zooms the tiles kept.
 4. **The local file stays possible.** `RELIEF_SOURCE = 'local'` gives today's behaviour unchanged (probe of `relief.pmtiles`, ranges kept in the areas). The scripts, the Copernicus files and `relief.pmtiles` are not deleted.

@@ -13,6 +13,7 @@ import {
   basemapFonts,
   type AreaShape,
 } from './offline-basemap';
+import { RELIEF_SOURCE_KIND, publicReliefTileUrl } from '../map/relief-source';
 import { AREA_CACHE_PREFIX } from './range-cache';
 
 const BASE = 'http://tiles.test:8081';
@@ -101,6 +102,8 @@ describe('OfflineBasemap', () => {
   let hasRelief: boolean;
   let failWith: Error | null;
   let estimate: { quota: number; usage: number } | undefined;
+  /** The public terrain server answers 404. */
+  let publicTilesFail: boolean;
 
   beforeEach(() => {
     storage = new FakeCacheStorage();
@@ -116,8 +119,12 @@ describe('OfflineBasemap', () => {
       getItem: (key: string) => stored.get(key) ?? null,
       setItem: (key: string, value: string) => void stored.set(key, value),
     });
+    publicTilesFail = false;
     vi.stubGlobal('fetch', async (url: string) => {
       fetched.push(url);
+      if (publicTilesFail && url.includes('amazonaws.com')) {
+        return new Response(null, { status: 404 });
+      }
       return new Response(new Uint8Array(10));
     });
     vi.stubGlobal('navigator', {
@@ -144,9 +151,13 @@ describe('OfflineBasemap', () => {
   });
 
   /** A fresh service, like the one a page load creates. */
-  async function create() {
+  async function create(reliefKind: 'local' | 'public' = 'local') {
     const offline = Injector.create({
-      providers: [OfflineBasemap, { provide: BASEMAP_URL, useValue: BASE }],
+      providers: [
+        OfflineBasemap,
+        { provide: BASEMAP_URL, useValue: BASE },
+        { provide: RELIEF_SOURCE_KIND, useValue: reliefKind },
+      ],
     }).get(OfflineBasemap);
     await offline.refresh();
     return offline;
@@ -367,5 +378,78 @@ describe('OfflineBasemap', () => {
     expect(offline.supported()).toBe(false);
     await offline.plan(VIEW);
     expect(offline.errorCode()).toBe('unsupported');
+  });
+  describe('with the public terrain tiles', () => {
+    const tilesFetched = () =>
+      fetched.filter((url) => url.includes('amazonaws.com'));
+
+    it('plans the terrain tiles of the area at zooms 6 to 12 and estimates them from a few', async () => {
+      const offline = await create('public');
+      await offline.plan(VIEW);
+      const plan = offline.pending()!;
+      expect(plan.reliefTiles.length).toBeGreaterThan(5);
+      expect(plan.reliefTiles.every((t) => t.z >= 6 && t.z <= 12)).toBe(true);
+      // Only a sample was fetched, never the PMTiles relief archive.
+      expect(tilesFetched().length).toBeLessThanOrEqual(8);
+      expect(reads.some((url) => url.endsWith('/relief.pmtiles'))).toBe(false);
+      expect(plan.bytes).toBeGreaterThan(0);
+    });
+
+    it('keeps the tiles in the cache of the area, under their public URL, and counts them', async () => {
+      const offline = await create('public');
+      await offline.plan(VIEW);
+      const plan = offline.pending()!;
+      await offline.keep('With terrain');
+      const [area] = offline.areas();
+      expect(area.relief).toBe(true);
+      expect(area.tiles).toBe(plan.tiles.length + plan.reliefTiles.length);
+      const cache = storage.caches.get(`${AREA_CACHE_PREFIX}${area.id}`)!;
+      const tile = plan.reliefTiles[0];
+      expect(
+        await cache.match(publicReliefTileUrl(tile.z, tile.x, tile.y)),
+      ).toBeDefined();
+      // Any cache holds it: that is how the map finds it offline.
+      expect(
+        await storage.match(publicReliefTileUrl(tile.z, tile.x, tile.y)),
+      ).toBeDefined();
+      expect(tilesFetched()).toHaveLength(plan.reliefTiles.length + 8);
+      expect(await offline.has(`${BASE}/relief.pmtiles`)).toBe(true);
+    });
+
+    it('removes the terrain tiles with the area', async () => {
+      const offline = await create('public');
+      await offline.plan(VIEW);
+      const tile = offline.pending()!.reliefTiles[0];
+      await offline.keep('Gone soon');
+      await offline.removeArea(offline.areas()[0].id);
+      expect(
+        await storage.match(publicReliefTileUrl(tile.z, tile.x, tile.y)),
+      ).toBeUndefined();
+      expect(await offline.has(`${BASE}/relief.pmtiles`)).toBe(false);
+    });
+
+    it('keeps the area without relief when the terrain server cannot be read, which is no failure', async () => {
+      publicTilesFail = true;
+      const offline = await create('public');
+      await offline.plan(VIEW);
+      expect(offline.pending()!.reliefTiles).toEqual([]);
+      await offline.keep('No terrain');
+      expect(offline.errorCode()).toBeNull();
+      expect(offline.areas()[0].relief).toBe(false);
+    });
+
+    it('keeps nothing when the network fails while the tiles are read', async () => {
+      const offline = await create('public');
+      await offline.plan(VIEW);
+      vi.stubGlobal('fetch', async (url: string) => {
+        if (url.includes('amazonaws.com'))
+          throw new TypeError('Failed to fetch');
+        return new Response(new Uint8Array(10));
+      });
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      await offline.keep('Failing');
+      expect(offline.errorCode()).toBe('network');
+      expect(offline.areas()).toEqual([]);
+    });
   });
 });

@@ -7,6 +7,12 @@ import {
 } from '../map/basemap-style';
 import { BASEMAP_URL, type LngLat } from '../map/map-factory';
 import {
+  PUBLIC_RELIEF_OFFLINE_MAX_ZOOM,
+  PUBLIC_RELIEF_OFFLINE_MIN_ZOOM,
+  RELIEF_SOURCE_KIND,
+  publicReliefTileUrl,
+} from '../map/relief-source';
+import {
   OFFLINE_MAX_ZOOM,
   boxAround,
   boxTiles,
@@ -37,6 +43,8 @@ export const AREA_MAX_BYTES = 1_000_000_000;
 export const AREA_MAX_TILES = 150_000;
 /** Tiles fetched to estimate the size of an area. */
 const SAMPLE_TILES = 24;
+/** Public terrain tiles fetched to estimate their size: they weigh about the same, zoom after zoom. */
+const SAMPLE_PUBLIC_TILES = 8;
 
 export type OfflineState = 'checking' | 'idle' | 'planning' | 'downloading';
 
@@ -148,6 +156,8 @@ export class OfflineBasemap implements OfflineTilesReader {
   private readonly tilesUrl = basemapTilesUrl(this.baseUrl);
   /** The hillshade's elevation tiles: optional, a server may not have them. */
   private readonly reliefUrl = reliefTilesUrl(this.baseUrl);
+  /** Where the hillshade's elevations come from: the public tiles, or our own archive. */
+  private readonly reliefKind = inject(RELIEF_SOURCE_KIND);
 
   private readonly stateSignal = signal<OfflineState>('checking');
   private readonly progressSignal = signal(0);
@@ -260,13 +270,18 @@ export class OfflineBasemap implements OfflineTilesReader {
         return;
       }
       const wanted =
-        this.tilesOf(shape, RELIEF_MIN_ZOOM, RELIEF_MAX_ZOOM) ?? [];
+        this.reliefKind === 'public'
+          ? (this.tilesOf(
+              shape,
+              PUBLIC_RELIEF_OFFLINE_MIN_ZOOM,
+              PUBLIC_RELIEF_OFFLINE_MAX_ZOOM,
+            ) ?? [])
+          : (this.tilesOf(shape, RELIEF_MIN_ZOOM, RELIEF_MAX_ZOOM) ?? []);
       // A server without a relief archive answers 404: the area has no relief, and that is fine.
-      const relief = await this.estimate(
-        this.reliefUrl,
-        wanted,
-        controller.signal,
-        0,
+      const relief = await (
+        this.reliefKind === 'public'
+          ? this.estimatePublicRelief(wanted, controller.signal)
+          : this.estimate(this.reliefUrl, wanted, controller.signal, 0)
       ).catch((error: unknown) => {
         if (controller.signal.aborted) throw error;
         return null;
@@ -348,22 +363,27 @@ export class OfflineBasemap implements OfflineTilesReader {
           ),
         );
       const basemap = record(this.tilesUrl);
+      const publicRelief = this.reliefKind === 'public';
       const relief = record(this.reliefUrl);
-      // A server without relief answers 404 for its header: the map works without.
+      // A server without a relief archive answers 404 for its header: the map works without. The
+      // public tiles need no probe: the plan already read some.
       const hasRelief =
         plan.reliefTiles.length > 0 &&
-        (await relief.getHeader().then(
-          () => true,
-          () => false,
-        ));
-      const jobs: [InstanceType<typeof PMTiles>, TileId][] = [
-        ...plan.tiles.map((t): [InstanceType<typeof PMTiles>, TileId] => [
-          basemap,
-          t,
-        ]),
+        (publicRelief ||
+          (await relief.getHeader().then(
+            () => true,
+            () => false,
+          )));
+      const read = async (archive: InstanceType<typeof PMTiles>, t: TileId) => {
+        await archive.getZxy(t.z, t.x, t.y, controller.signal);
+      };
+      const jobs: (() => Promise<void>)[] = [
+        ...plan.tiles.map((t) => () => read(basemap, t)),
         ...(hasRelief
-          ? plan.reliefTiles.map(
-              (t): [InstanceType<typeof PMTiles>, TileId] => [relief, t],
+          ? plan.reliefTiles.map((t) =>
+              publicRelief
+                ? () => this.keepPublicTile(cache, t, controller.signal)
+                : () => read(relief, t),
             )
           : []),
       ];
@@ -371,8 +391,7 @@ export class OfflineBasemap implements OfflineTilesReader {
       let next = 0;
       const worker = async () => {
         while (next < jobs.length) {
-          const [archive, tile] = jobs[next++];
-          await archive.getZxy(tile.z, tile.x, tile.y, controller.signal);
+          await jobs[next++]();
           done++;
           this.progressSignal.set(
             ASSETS_SHARE + (done / jobs.length) * (1 - ASSETS_SHARE),
@@ -487,6 +506,44 @@ export class OfflineBasemap implements OfflineTilesReader {
     );
     for (const tile of sample)
       await archive.getZxy(tile.z, tile.x, tile.y, signal);
+    return Math.round((bytes / sample.length) * tiles.length);
+  }
+
+  /** Reads a public terrain tile and keeps it in the area's cache, under its public URL. */
+  private async keepPublicTile(
+    cache: Cache,
+    tile: TileId,
+    signal: AbortSignal,
+  ): Promise<void> {
+    const url = publicReliefTileUrl(tile.z, tile.x, tile.y);
+    const response = await fetch(url, { signal });
+    if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
+    const data = await response.arrayBuffer();
+    await cache.put(
+      url,
+      new Response(data.slice(0), { headers: { 'content-type': 'image/png' } }),
+    );
+    this.downloadedSignal.update((n) => n + data.byteLength);
+  }
+
+  /** Bytes the public terrain tiles of an area will take, from a sample of them. Throws if unreadable. */
+  private async estimatePublicRelief(
+    tiles: TileId[],
+    signal: AbortSignal,
+  ): Promise<number> {
+    if (tiles.length === 0) return 0;
+    const stride = Math.max(1, Math.floor(tiles.length / SAMPLE_PUBLIC_TILES));
+    const sample = tiles
+      .filter((_, i) => i % stride === 0)
+      .slice(0, SAMPLE_PUBLIC_TILES);
+    let bytes = 0;
+    for (const t of sample) {
+      const response = await fetch(publicReliefTileUrl(t.z, t.x, t.y), {
+        signal,
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      bytes += (await response.arrayBuffer()).byteLength;
+    }
     return Math.round((bytes / sample.length) * tiles.length);
   }
 

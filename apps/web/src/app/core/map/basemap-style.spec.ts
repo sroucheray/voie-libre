@@ -202,7 +202,7 @@ describe('buildBasemapStyle', () => {
         encoding: 'terrarium',
         tileSize: 256,
         minzoom: 0,
-        maxzoom: 15,
+        maxzoom: 12,
       });
       // The style itself names no external server: the protocol does, once the user's choice is on.
       expect(JSON.stringify(publicShaded)).not.toContain('amazonaws');

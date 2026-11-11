@@ -32,7 +32,7 @@ cp .env.example .env                  # optional: the defaults already match doc
 ./scripts/download-segments.sh        # BRouter data for the test region (about 120 MB, not committed)
 ./scripts/download-basemap.sh         # map tiles, fonts and sprites for the test region (about 55 MB, not committed)
 ./scripts/download-relief.sh france   # Copernicus GLO-30 elevation tiles of France (133 files, 4.6 GB, not committed); no argument: the Clermont-Ferrand test region (about 85 MB)
-npm run build-relief                  # the map's hillshade tiles, built from those (the test region: 20 MB, a minute; France: about 1.8 GB, about an hour; needs the pmtiles CLI or Docker)
+npm run build-relief                  # OPTIONAL: only with RELIEF_SOURCE_KIND = 'local' (by default the map uses the public AWS terrain tiles); the map's hillshade tiles, built from those (the test region: 20 MB, a minute; France: about 1.8 GB, about an hour; needs the pmtiles CLI or Docker)
 docker compose up -d                  # PostgreSQL/PostGIS, BRouter (first start builds it) and the tiles server
 npm run db:migrate                    # enables PostGIS
 npm run dev                           # API and web app together
