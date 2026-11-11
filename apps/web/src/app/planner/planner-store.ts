@@ -299,6 +299,11 @@ export class PlannerStore {
     () => this.routesState()[this.selectedState()]?.geometry ?? [],
   );
 
+  /** What the selected route rides on, one character per segment; `null` when it does not say. */
+  readonly selectedSurfaces = computed(
+    () => this.routesState()[this.selectedState()]?.surfaces ?? null,
+  );
+
   /** Picks the stretch between two points of the selected route, in either order; `null` clears it. */
   selectStretch(range: [number, number] | null): void {
     const geometry = this.selectedGeometry();

@@ -130,6 +130,40 @@
   }
 }
 
+// What the route rides on: a thin bar under the chart, on the same distance scale.
+.surface {
+  grid-column: 2;
+  position: relative;
+  height: 0.5rem;
+  margin-top: 0.25rem;
+  border-radius: 0.125rem;
+  overflow: hidden;
+  background: #f2f4f7;
+}
+
+.surface__run {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.surface-legend {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+  }
+}
+
 .distances {
   grid-column: 2;
   display: flex;

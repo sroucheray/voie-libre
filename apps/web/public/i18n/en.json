@@ -317,5 +317,14 @@
     "available": "A new version of the app is available.",
     "reload": "Reload",
     "later": "Later"
+  },
+  "surface": {
+    "title": "Surface",
+    "share": "{{name}} {{percent}} ({{distance}})",
+    "p": "Paved",
+    "c": "Cycleway",
+    "u": "Unpaved or rough",
+    "s": "Path",
+    "unknown": "Unknown"
   }
 }

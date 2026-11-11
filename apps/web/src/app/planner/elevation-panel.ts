@@ -17,6 +17,12 @@ import {
   type ProfileSample,
 } from './elevation-profile';
 import { PlannerStore } from './planner-store';
+import {
+  SURFACE_COLORS,
+  surfaceKey,
+  surfaceRuns,
+  surfaceShares,
+} from './route-surface';
 
 const WIDTH = 1000;
 const HEIGHT = 100;
@@ -67,6 +73,36 @@ export class ElevationPanel {
       };
     });
     return { line: `M${points.join('L')}`, areas };
+  });
+
+  /**
+   * What the route rides on: runs along the chart's distance, and the share of each category.
+   * `null` for a route that does not say (imported, saved before it was told).
+   */
+  protected readonly surface = computed(() => {
+    const profile = this.profile();
+    const surfaces = this.store.selectedSurfaces();
+    if (!profile || surfaces === null) return null;
+    const shares = surfaceShares(profile, surfaces);
+    if (shares.length === 0) return null;
+    const runs = surfaceRuns(surfaces).map((run) => ({
+      code: run.code,
+      color: SURFACE_COLORS[run.code],
+      left: (profile.samples[run.from].distance / profile.totalDistance) * 100,
+      width:
+        ((profile.samples[run.to].distance -
+          profile.samples[run.from].distance) /
+          profile.totalDistance) *
+        100,
+    }));
+    return {
+      runs,
+      shares: shares.map((share) => ({
+        ...share,
+        color: SURFACE_COLORS[share.code],
+        key: surfaceKey(share.code),
+      })),
+    };
   });
 
   /** The grade bands, for the legend: "3–6 %", then "15 % +" for the last one. */

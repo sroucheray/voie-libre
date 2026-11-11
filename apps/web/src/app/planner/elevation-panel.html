@@ -60,6 +60,18 @@
       </div>
       }
     </div>
+    @if (surface(); as s) {
+    <div class="surface" aria-hidden="true">
+      @for (run of s.runs; track $index) {
+      <span
+        class="surface__run"
+        [style.left.%]="run.left"
+        [style.width.%]="run.width"
+        [style.background]="run.color"
+      ></span>
+      }
+    </div>
+    }
     <div class="distances">
       <span>{{ format.distance(0) }}</span>
       <span>{{ format.distance(p.totalDistance) }}</span>
@@ -83,7 +95,22 @@
         {{ 'profile.selectHint' | transloco }} }
       </p>
     </div>
-    @if (store.elevationSource(); as source) {
+    @if (surface(); as s) {
+    <ul class="surface-legend" [attr.aria-label]="'surface.title' | transloco">
+      @for (share of s.shares; track share.code) {
+      <li>
+        <span
+          class="swatch"
+          [style.background]="share.color"
+          aria-hidden="true"
+        ></span>
+        {{ 'surface.share' | transloco : { name: (share.key | transloco),
+        percent: percent(share.share * 100), distance:
+        format.distance(share.meters) } }}
+      </li>
+      }
+    </ul>
+    } @if (store.elevationSource(); as source) {
     <p class="source">{{ 'profile.source.' + source | transloco }}</p>
     }
   </div>

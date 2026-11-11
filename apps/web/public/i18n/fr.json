@@ -317,5 +317,14 @@
     "available": "Une nouvelle version de l'application est disponible.",
     "reload": "Recharger",
     "later": "Plus tard"
+  },
+  "surface": {
+    "title": "Revêtement",
+    "share": "{{name}} {{percent}} ({{distance}})",
+    "p": "Revêtu",
+    "c": "Piste cyclable",
+    "u": "Non revêtu ou rugueux",
+    "s": "Sentier",
+    "unknown": "Inconnu"
   }
 }

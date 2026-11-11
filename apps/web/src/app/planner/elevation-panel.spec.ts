@@ -9,7 +9,7 @@ const geometry: [number, number, number][] = Array.from(
   (_, i) => [3, 45 + i * 0.001, 100 + i * 10],
 );
 
-async function setup(withRoute = true) {
+async function setup(withRoute = true, surfaces?: string) {
   TestBed.configureTestingModule({ providers: [provideTestTransloco()] });
   TestBed.inject(LanguageService).use('en');
   const store = TestBed.inject(PlannerStore);
@@ -20,6 +20,7 @@ async function setup(withRoute = true) {
         distanceMeters: 1110,
         ascentMeters: 100,
         durationSeconds: 300,
+        ...(surfaces === undefined ? {} : { surfaces }),
       },
     ]);
   }
@@ -69,6 +70,31 @@ describe('ElevationPanel', () => {
     expect(store.cursor()).toBe(5);
     plot.dispatchEvent(new PointerEvent('pointerleave'));
     expect(store.cursor()).toBeNull();
+  });
+
+  it('shows what the route rides on under the chart, with the share of each', async () => {
+    // Ten segments of about 111 m: 6 paved, 3 unpaved, 1 path.
+    const { root } = await setup(true, 'pppppp' + 'uuu' + 's');
+    const runs = [...root.querySelectorAll<HTMLElement>('.surface__run')];
+    expect(runs).toHaveLength(3);
+    // The first run is 60 % of the distance, from the start.
+    expect(runs[0].style.left).toBe('0%');
+    expect(parseFloat(runs[0].style.width)).toBeCloseTo(60, 0);
+    const legend = [...root.querySelectorAll('.surface-legend li')].map((li) =>
+      li.textContent?.replace(/\s+/g, ' ').trim(),
+    );
+    expect(legend).toHaveLength(3);
+    expect(legend[0]).toMatch(/^Paved 60 % \(/);
+    expect(legend[1]).toMatch(/^Unpaved or rough 30 % \(/);
+    expect(legend[2]).toMatch(/^Path 10 % \(/);
+  });
+
+  it('shows no surface bar for a route that does not say, or whose codes do not fit', async () => {
+    expect((await setup(true)).root.querySelector('.surface')).toBeNull();
+    TestBed.resetTestingModule();
+    const { root } = await setup(true, 'ppp');
+    expect(root.querySelector('.surface')).toBeNull();
+    expect(root.querySelector('.surface-legend')).toBeNull();
   });
 
   it('colours the chart by grade and explains the colours', async () => {
