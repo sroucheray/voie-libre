@@ -17,21 +17,37 @@
     (click)="pick(profile)"
     (keydown)="onKeydown($event)"
   >
-    <svg viewBox="0 0 40 24" aria-hidden="true">
-      @switch (profile) { @case ('road') {
-      <circle cx="8" cy="16" r="5.5" />
-      <circle cx="32" cy="16" r="5.5" />
-      <path d="M8 16 15 7h8l9 9M15 7l5 9h8M23 7l-2-3h-3" />
-      } @case ('gravel') {
-      <circle cx="8" cy="16" r="6.5" stroke-width="2.6" />
-      <circle cx="32" cy="16" r="6.5" stroke-width="2.6" />
-      <path d="M8 16 15 7h8l9 9M15 7l5 9h8M23 7l1-3h4M13 5h-3q-2 0-2 3" />
-      } @default {
-      <circle cx="22" cy="4.5" r="2.5" />
-      <path d="m21 8-4 5 5 3-2 6M17 13l-5 1M21 8l5 3 4-1M22 16l5 2" />
-      <path d="M2 22l6-5 4 3 4-6" stroke-dasharray="1 3" />
-      } }
+    @switch (profile) { @case ('road') {
+    <svg viewBox="0 0 48 28" aria-hidden="true">
+      <circle cx="10" cy="19" r="6" />
+      <circle cx="38" cy="19" r="6" />
+      <path
+        d="M10 19 20 9h13M24 19 20 9M24 19 33 9M33 9l5 10M10 19h14M17 7h6"
+      />
+      <path d="M33 9l2-3h3q3 0 3 3t-2.5 2.5" />
     </svg>
+    } @case ('gravel') {
+    <svg viewBox="0 0 48 28" aria-hidden="true">
+      <circle cx="10" cy="19" r="6.2" stroke-width="3.2" />
+      <circle cx="38" cy="19" r="6.2" stroke-width="3.2" />
+      <path
+        d="M10 19 20 9h13M24 19 20 9M24 19 33 9M33 9l5 10M10 19h14M17 7h6"
+      />
+      <path d="M33 9l1.5-3H37l3.5 3.5" />
+    </svg>
+    } @default {
+    <svg viewBox="0 0 24 28" aria-hidden="true">
+      <circle cx="15" cy="4" r="2" />
+      <path
+        d="M14 7.5 11.5 13M13.6 8.5 17.5 10 20 8M13.2 8.8 9.5 9.5 8 12.5M11.5 13l4 2.5-1 5M11.5 13 8 17H3.5"
+      />
+      <path
+        d="M2 27c4-3 6 1 10-2s6 1 10-1"
+        stroke-width="1.6"
+        stroke-dasharray="0.1 3.2"
+      />
+    </svg>
+    } }
     <span class="title"
       >{{ 'planner.profile.' + profile + '.title' | transloco }}</span
     >
