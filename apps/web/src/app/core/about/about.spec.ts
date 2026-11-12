@@ -78,7 +78,7 @@ describe('About', () => {
       () => root.querySelector<HTMLButtonElement>('.about__backdrop')?.click(),
       () =>
         root
-          .querySelector('.about')
+          .querySelector('.about__box')
           ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })),
     ]) {
       await open();

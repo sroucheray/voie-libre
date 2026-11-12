@@ -9,7 +9,7 @@
 </button>
 
 @if (open()) {
-<div class="about" (keydown.escape)="close()">
+<div class="about">
   <button
     type="button"
     class="about__backdrop"
@@ -24,6 +24,7 @@
     aria-modal="true"
     aria-labelledby="about-title"
     tabindex="-1"
+    (keydown.escape)="close()"
   >
     <h2 id="about-title">{{ 'about.title' | transloco }}</h2>
     <p>{{ 'about.intro' | transloco }}</p>
