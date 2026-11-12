@@ -2,6 +2,7 @@ import { gpxFileName } from '@voie-libre/shared';
 import type { LngLat } from '../core/map/map-factory';
 import { haversine } from '../planner/elevation-profile';
 import { pointVertices } from '../planner/insert-point';
+import { clampLaps } from './laps';
 import type { LngLat3 } from '../planner/planner-map-driver';
 
 /** The parts of a route a FIT course file is built from. */
@@ -225,9 +226,11 @@ class Writer {
 }
 
 /**
- * A FIT course file: the route as a course a bike computer or a watch can follow. One lap, one
- * record per point of the itinerary and one course point per stop, named by `stopNames` (already
- * translated, one per stop, in order). Built on the device from the stored route.
+ * A FIT course file: the route as a course a bike computer or a watch can follow. One lap per
+ * turn (`laps` is more than one for a loop done several times: the records, the stops and the
+ * laps follow one another, distance and time going on), one record per point of the itinerary and
+ * one course point per stop, named by `stopNames` (already translated, one per stop, in order).
+ * Built on the device from the stored route.
  *
  * A course needs a time on every record: they are made up from the estimated duration, spread
  * along the distance, starting when the route was created.
@@ -235,9 +238,11 @@ class Writer {
 export function buildFit(
   route: FitSource,
   stopNames: readonly string[] = [],
+  laps = 1,
 ): Uint8Array<ArrayBuffer> {
   const { geometry } = route;
   if (geometry.length < 2) throw new Error('A course needs two points');
+  const count = clampLaps(laps);
 
   // Distance of each vertex, scaled so that the last one is the distance of the route.
   const along = [0];
@@ -245,13 +250,14 @@ export function buildFit(
     along.push(along[i - 1] + haversine(geometry[i - 1], geometry[i]));
   }
   const measured = along[along.length - 1] || 1;
-  const distanceCm = (i: number) =>
-    Math.round((along[i] / measured) * route.distanceMeters * 100);
+  // `lap` counts from 0: a later lap goes on from where the one before it ended.
+  const distanceCm = (i: number, lap = 0) =>
+    Math.round((along[i] / measured + lap) * route.distanceMeters * 100);
   const start = Math.round(route.createdAt / 1000) - FIT_EPOCH_SECONDS;
   const duration = Math.max(1, Math.round(route.durationSeconds));
-  const timeAt = (i: number) =>
-    start + Math.round((along[i] / measured) * duration);
-  const end = start + duration;
+  const timeAt = (i: number, lap = 0) =>
+    start + lap * duration + Math.round((along[i] / measured) * duration);
+  const end = start + count * duration;
   const first = geometry[0];
   const last = geometry[geometry.length - 1];
   const withAltitude = route.ascentMeters !== null;
@@ -269,51 +275,60 @@ export function buildFit(
     route.profile === 'trail' ? SPORT_RUNNING : SPORT_CYCLING,
     route.name,
   ]);
-  writer.write(LAP, [
-    end,
-    start,
-    semicircles(first[1]),
-    semicircles(first[0]),
-    semicircles(last[1]),
-    semicircles(last[0]),
-    duration * 1000,
-    duration * 1000,
-    Math.round(route.distanceMeters * 100),
-    route.ascentMeters === null
-      ? UINT16_INVALID
-      : Math.min(UINT16_INVALID - 1, Math.round(route.ascentMeters)),
-  ]);
-  writer.write(EVENT, [start, EVENT_TIMER, EVENT_TYPE_START, 0]);
-  geometry.forEach(([lon, lat, elevation], i) => {
-    const values = [
-      timeAt(i),
-      semicircles(lat),
-      semicircles(lon),
-      distanceCm(i),
-    ];
-    if (withAltitude) {
-      const altitude = Math.round((elevation + 500) * 5);
-      writer.write(RECORD_WITH_ALTITUDE, [
-        ...values,
-        Math.max(0, Math.min(UINT16_INVALID - 1, altitude)),
-      ]);
-    } else {
-      writer.write(RECORD, values);
-    }
-  });
-  const vertices = pointVertices(geometry, route.points);
-  route.points.slice(1, -1).forEach((_, stop) => {
-    const vertex = vertices[stop + 1];
-    writer.write(COURSE_POINT, [
-      stop,
-      timeAt(vertex),
-      semicircles(geometry[vertex][1]),
-      semicircles(geometry[vertex][0]),
-      distanceCm(vertex),
-      COURSE_POINT_GENERIC,
-      stopNames[stop] ?? '',
+  for (let lap = 0; lap < count; lap++) {
+    writer.write(LAP, [
+      start + (lap + 1) * duration,
+      start + lap * duration,
+      semicircles(first[1]),
+      semicircles(first[0]),
+      semicircles(last[1]),
+      semicircles(last[0]),
+      duration * 1000,
+      duration * 1000,
+      Math.round(route.distanceMeters * 100),
+      route.ascentMeters === null
+        ? UINT16_INVALID
+        : Math.min(UINT16_INVALID - 1, Math.round(route.ascentMeters)),
     ]);
-  });
+  }
+  writer.write(EVENT, [start, EVENT_TIMER, EVENT_TYPE_START, 0]);
+  for (let lap = 0; lap < count; lap++) {
+    geometry.forEach(([lon, lat, elevation], i) => {
+      // The end of a lap is the start of the next: that place is written once.
+      if (lap > 0 && i === 0) return;
+      const values = [
+        timeAt(i, lap),
+        semicircles(lat),
+        semicircles(lon),
+        distanceCm(i, lap),
+      ];
+      if (withAltitude) {
+        const altitude = Math.round((elevation + 500) * 5);
+        writer.write(RECORD_WITH_ALTITUDE, [
+          ...values,
+          Math.max(0, Math.min(UINT16_INVALID - 1, altitude)),
+        ]);
+      } else {
+        writer.write(RECORD, values);
+      }
+    });
+  }
+  const vertices = pointVertices(geometry, route.points);
+  const stops = route.points.length - 2;
+  for (let lap = 0; lap < count; lap++) {
+    route.points.slice(1, -1).forEach((_, stop) => {
+      const vertex = vertices[stop + 1];
+      writer.write(COURSE_POINT, [
+        lap * stops + stop,
+        timeAt(vertex, lap),
+        semicircles(geometry[vertex][1]),
+        semicircles(geometry[vertex][0]),
+        distanceCm(vertex, lap),
+        COURSE_POINT_GENERIC,
+        stopNames[stop] ?? '',
+      ]);
+    });
+  }
   writer.write(EVENT, [end, EVENT_TIMER, EVENT_TYPE_STOP_ALL, 0]);
 
   const data = writer.toBytes();

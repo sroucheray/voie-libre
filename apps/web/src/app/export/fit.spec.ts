@@ -95,6 +95,50 @@ describe('buildFit', () => {
     expect(points[0]['distance']).toBe(records[2]['distance']);
   });
 
+  it('writes one lap per turn of a loop, the distance and the time going on', async () => {
+    const loop: FitSource = {
+      ...route,
+      points: [route.points[0], route.points[1], route.points[0]],
+      geometry: [...route.geometry.slice(0, 3), route.geometry[0]],
+    };
+    const fit = await parse(buildFit(loop, ['Étape 1'], 3));
+
+    const laps = fit['laps'];
+    expect(laps).toHaveLength(3);
+    laps.forEach((lap, i) => {
+      expect(lap['total_distance']).toBeCloseTo(30_000, 1);
+      expect(lap['total_ascent']).toBe(620);
+      expect(lap['start_time']).toEqual(
+        new Date(Date.parse('2026-11-01T10:00:00Z') + i * 5400_000),
+      );
+    });
+
+    // The start of a lap is the end of the one before: four vertices, three times, minus two.
+    const records = fit['records'];
+    expect(records).toHaveLength(4 + 3 + 3);
+    expect(records[0]['distance']).toBe(0);
+    expect(records.at(-1)?.['distance']).toBeCloseTo(90_000, 1);
+    expect(records.at(-1)?.['timestamp']).toEqual(
+      new Date('2026-11-01T14:30:00Z'),
+    );
+    for (let i = 1; i < records.length; i++) {
+      expect(records[i]['distance']).toBeGreaterThan(
+        records[i - 1]['distance'] as number,
+      );
+    }
+
+    // The stop is passed once per lap, each time further along.
+    const points = fit['course_points'];
+    expect(points).toHaveLength(3);
+    const distances = points.map((p) => p['distance'] as number);
+    expect(distances[1]).toBeGreaterThan(distances[0]);
+    expect(distances[2]).toBeGreaterThan(distances[1]);
+  });
+
+  it('is the same file for one lap as without a number of laps', () => {
+    expect(buildFit(route, [], 1)).toEqual(buildFit(route));
+  });
+
   it('is a running course on the trail profile', async () => {
     const fit = await parse(buildFit({ ...route, profile: 'trail' }));
     expect(courseOf(fit)['sport']).toBe('running');

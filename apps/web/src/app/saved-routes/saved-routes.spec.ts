@@ -630,6 +630,126 @@ describe('Saved routes', () => {
     });
   });
 
+  describe('laps of a loop', () => {
+    const loop = {
+      name: 'Loop',
+      profile: 'road' as const,
+      points: [
+        [3.087, 45.777],
+        [3.15, 45.65],
+        [3.087, 45.777],
+      ] as [number, number][],
+      geometry: [geometry[0], geometry[1], geometry[0]],
+      distanceMeters: 10_000,
+      ascentMeters: 300,
+      durationSeconds: 1800,
+    };
+    const lapsInput = (view: Awaited<ReturnType<typeof render>>) =>
+      view.root.querySelector<HTMLInputElement>('.export-formats .laps input');
+
+    async function setLaps(
+      view: Awaited<ReturnType<typeof render>>,
+      value: string,
+    ) {
+      const input = lapsInput(view);
+      if (!input) throw new Error('No laps input');
+      input.value = value;
+      input.dispatchEvent(new Event('change'));
+      await view.settle();
+    }
+
+    it('offers a number of laps for a loop and not for another route', async () => {
+      await routeStore.save(loop);
+      await routeStore.save({
+        ...loop,
+        name: 'Line',
+        points: loop.points.slice(0, 2),
+      });
+      const view = await render();
+      await view.settle();
+      view.button('Export Loop').click();
+      await view.settle();
+      expect(lapsInput(view)).not.toBeNull();
+      expect(lapsInput(view)?.value).toBe('1');
+      view.button('Export Line').click();
+      await view.settle();
+      expect(lapsInput(view)).toBeNull();
+    });
+
+    it('keeps the number of laps with the route and shows the total', async () => {
+      const saved = await routeStore.save(loop);
+      const view = await render();
+      await view.settle();
+      expect(view.text()).not.toContain('laps');
+      view.button('Export Loop').click();
+      await view.settle();
+      await setLaps(view, '3');
+      expect((await routeStore.get(saved.id))?.laps).toBe(3);
+      expect(view.root.querySelector('.laps-total')?.textContent).toMatch(
+        /3 laps: .*30.*900/,
+      );
+      expect(view.root.querySelector('.laps-meta')?.textContent).toMatch(
+        /3 laps/,
+      );
+      // Back to one lap: nothing is kept, nothing is said.
+      await setLaps(view, '1');
+      expect('laps' in ((await routeStore.get(saved.id)) ?? {})).toBe(false);
+      expect(view.root.querySelector('.laps-meta')).toBeNull();
+    });
+
+    it('holds a number of laps between 1 and the maximum', async () => {
+      const saved = await routeStore.save(loop);
+      const view = await render();
+      await view.settle();
+      view.button('Export Loop').click();
+      await view.settle();
+      await setLaps(view, '999');
+      expect((await routeStore.get(saved.id))?.laps).toBe(20);
+      expect(lapsInput(view)?.value).toBe('20');
+      await setLaps(view, 'abc');
+      expect('laps' in ((await routeStore.get(saved.id)) ?? {})).toBe(false);
+    });
+
+    it('exports every lap in the GPX track', async () => {
+      const saved = await routeStore.save(loop);
+      await routeStore.setLaps(saved.id, 3);
+      const view = await render();
+      await view.settle();
+      view.button('Export Loop').click();
+      await view.settle();
+      view.button('Export Loop as GPX').click();
+      await view.settle();
+      const doc = new DOMParser().parseFromString(
+        downloads[0].content,
+        'application/xml',
+      );
+      // Three vertices a lap, the place where a lap ends and the next starts written once.
+      expect(doc.querySelectorAll('trkpt')).toHaveLength(3 + 2 + 2);
+      // The waypoints are the route's own, once.
+      expect(doc.querySelectorAll('wpt')).toHaveLength(3);
+    });
+
+    it('exports one lap of a route that is no loop whatever number was kept', async () => {
+      const saved = await routeStore.save({
+        ...loop,
+        name: 'Line',
+        points: loop.points.slice(0, 2),
+      });
+      await routeStore.setLaps(saved.id, 5);
+      const view = await render();
+      await view.settle();
+      view.button('Export Line').click();
+      await view.settle();
+      view.button('Export Line as GPX').click();
+      await view.settle();
+      const doc = new DOMParser().parseFromString(
+        downloads[0].content,
+        'application/xml',
+      );
+      expect(doc.querySelectorAll('trkpt')).toHaveLength(3);
+    });
+  });
+
   describe('exporting', () => {
     it('downloads a GPX built from the stored geometry, with no network call', async () => {
       const view = await renderWithSavedRoute();

@@ -137,7 +137,11 @@
         format.elevation(route.ascentMeters), date: format.date(route.createdAt)
         } }} }
       </span>
-      @if (route.share) {
+      @if (lapsOf(route) > 1) {
+      <span class="meta laps-meta"
+        >{{ lapsTotalKey(route) | transloco : lapsTotalParams(route) }}</span
+      >
+      } @if (route.share) {
       <div class="share-link">
         <span class="badge">{{ 'sharing.shared' | transloco }}</span>
         <input
@@ -192,6 +196,23 @@
         [attr.aria-label]="'saved.exportFormat' | transloco"
         (keydown.escape)="exportingId.set(null)"
       >
+        @if (isLoop(route)) {
+        <label class="laps">
+          {{ 'saved.laps.label' | transloco }}
+          <input
+            type="number"
+            min="1"
+            [max]="maxLaps"
+            step="1"
+            [value]="lapsOf(route)"
+            (change)="setLaps(route.id, $event)"
+          />
+        </label>
+        @if (lapsOf(route) > 1) {
+        <span class="laps-total"
+          >{{ lapsTotalKey(route) | transloco : lapsTotalParams(route) }}</span
+        >
+        } }
         <span>{{ 'saved.exportFormat' | transloco }}</span>
         @for (format of exportFormats; track format) {
         <button

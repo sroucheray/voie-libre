@@ -258,6 +258,11 @@
     "export": "Exporter",
     "exportNamed": "Exporter {{name}}",
     "exportFormat": "Format du fichier",
+    "laps": {
+      "label": "Tours de la boucle",
+      "total": "{{n}} tours : {{distance}}, {{ascent}} de dénivelé",
+      "totalNoClimb": "{{n}} tours : {{distance}}"
+    },
     "exportAs": "Exporter {{name}} en {{format}}",
     "formats": {
       "gpx": "GPX",

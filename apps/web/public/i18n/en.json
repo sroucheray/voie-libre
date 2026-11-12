@@ -258,6 +258,11 @@
     "export": "Export",
     "exportNamed": "Export {{name}}",
     "exportFormat": "File format",
+    "laps": {
+      "label": "Laps of the loop",
+      "total": "{{n}} laps: {{distance}}, {{ascent}} climb",
+      "totalNoClimb": "{{n}} laps: {{distance}}"
+    },
     "exportAs": "Export {{name}} as {{format}}",
     "formats": {
       "gpx": "GPX",

@@ -113,6 +113,24 @@ describe('IndexedDbRouteStore', () => {
     expect('share' in ((await store.get(saved.id)) ?? {})).toBe(false);
   });
 
+  it('remembers how many laps of a loop an export holds, and forgets it for one', async () => {
+    const saved = await store.save(route('A'));
+    expect('laps' in saved).toBe(false);
+    const lapped = await store.setLaps(saved.id, 3);
+    expect(lapped.laps).toBe(3);
+    expect((await store.get(saved.id))?.laps).toBe(3);
+    // Only the laps change, not the modification date.
+    expect({ ...lapped, laps: undefined }).toEqual({
+      ...saved,
+      laps: undefined,
+    });
+    const once = await store.setLaps(saved.id, 1);
+    expect('laps' in once).toBe(false);
+    await expect(store.setLaps('missing', 2)).rejects.toMatchObject({
+      code: 'not_found',
+    });
+  });
+
   it('replaces the geometry and the climb, keeping everything else', async () => {
     const saved = await store.save({ ...route('A'), ascentMeters: null });
     const geometry: [number, number, number][] = [

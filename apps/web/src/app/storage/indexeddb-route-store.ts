@@ -112,6 +112,13 @@ export class IndexedDbRouteStore implements RouteStore {
     });
   }
 
+  async setLaps(id: string, laps: number): Promise<SavedRoute> {
+    return this.update(id, (route) => {
+      const { laps: _previous, ...rest } = route;
+      return laps > 1 ? { ...rest, laps } : rest;
+    });
+  }
+
   async setElevation(
     id: string,
     geometry: [number, number, number][],

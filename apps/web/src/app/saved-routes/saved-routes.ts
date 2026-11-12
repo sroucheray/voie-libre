@@ -25,6 +25,13 @@ import { FormattingService } from '../core/format/formatting.service';
 import { autoRouteName, type AutoName } from '../planner/route-name';
 import { FILE_DOWNLOADER } from '../export/file-download';
 import { buildFit, fitFileName } from '../export/fit';
+import {
+  MAX_LAPS,
+  clampLaps,
+  isLoopRoute,
+  lapTotals,
+  repeatGeometry,
+} from '../export/laps';
 import { buildGpx, gpxFileName } from '@voie-libre/shared';
 import {
   ElevationError,
@@ -363,16 +370,21 @@ export class SavedRoutes {
       }
       try {
         const names = this.pointNames(saved);
+        const laps = this.lapsOf(saved);
         if (format === 'fit') {
           this.download(
-            buildFit(saved, names.slice(1, -1)),
+            buildFit(saved, names.slice(1, -1), laps),
             fitFileName(saved.name),
             'application/vnd.ant.fit',
           );
         } else {
           this.download(
             buildGpx(
-              { ...saved, withElevation: saved.ascentMeters !== null },
+              {
+                ...saved,
+                geometry: repeatGeometry(saved.geometry, laps),
+                withElevation: saved.ascentMeters !== null,
+              },
               names,
             ),
             gpxFileName(saved.name),
@@ -382,6 +394,52 @@ export class SavedRoutes {
       } catch {
         throw new ExportError();
       }
+    });
+  }
+
+  protected readonly maxLaps = MAX_LAPS;
+
+  /** Only a route whose end is on its start can be done several times in a row. */
+  protected isLoop(route: SavedRoute): boolean {
+    return isLoopRoute(route.points);
+  }
+
+  /** How many laps an export of the route holds: 1 unless it is a loop with a number of laps. */
+  protected lapsOf(route: SavedRoute): number {
+    return this.isLoop(route) ? clampLaps(route.laps) : 1;
+  }
+
+  /** What all the laps add up to (the figures of the route when there is one lap). */
+  protected lapsTotal(route: SavedRoute) {
+    return lapTotals(route, this.lapsOf(route));
+  }
+
+  /** "3 laps: 45 km, 1 200 m climb", or without the climb when it is unknown. */
+  protected lapsTotalKey(route: SavedRoute): string {
+    return route.ascentMeters === null
+      ? 'saved.laps.totalNoClimb'
+      : 'saved.laps.total';
+  }
+
+  protected lapsTotalParams(route: SavedRoute) {
+    const total = this.lapsTotal(route);
+    return {
+      n: this.lapsOf(route),
+      distance: this.format.distance(total.distanceMeters),
+      ascent:
+        total.ascentMeters === null
+          ? ''
+          : this.format.elevation(total.ascentMeters),
+    };
+  }
+
+  /** The number of laps was changed in the export panel: kept with the route. */
+  protected async setLaps(id: string, event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const laps = clampLaps(input.value);
+    input.value = String(laps);
+    await this.withRoute(id, async () => {
+      this.replace(await this.routeStore.setLaps(id, laps));
     });
   }
 

@@ -37,6 +37,8 @@ export interface RouteStore {
   rename(id: string, name: string): Promise<SavedRoute>;
   /** Remembers that the route is shared (or no longer, with `null`). Throws `not_found`. */
   setShare(id: string, share: ShareInfo | null): Promise<SavedRoute>;
+  /** Remembers how many laps of a loop an export holds (1 forgets it). Throws `not_found`. */
+  setLaps(id: string, laps: number): Promise<SavedRoute>;
   /** Replaces the geometry and the climb (elevations added later). Throws `not_found`. */
   setElevation(
     id: string,

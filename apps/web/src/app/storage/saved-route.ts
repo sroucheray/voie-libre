@@ -36,6 +36,11 @@ export interface SavedRoute extends PlannedRoute {
    * routes saved before it was kept.
    */
   loop?: LoopMode;
+  /**
+   * How many times a loop is done in a row (2 to 20), applied when the route is exported: the
+   * route itself is kept once. Absent for one lap, and for a route that is no loop.
+   */
+  laps?: number;
   /** Present while the route is shared by link. The shared copy is a snapshot, never updated. */
   share?: ShareInfo;
 }
