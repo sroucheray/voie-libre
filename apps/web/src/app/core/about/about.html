@@ -1,0 +1,87 @@
+<button
+  type="button"
+  class="about-button"
+  [attr.aria-label]="'about.open' | transloco"
+  [title]="'about.open' | transloco"
+  (click)="show()"
+>
+  <vl-icon name="info" />
+</button>
+
+@if (open()) {
+<div class="about" (keydown.escape)="close()">
+  <button
+    type="button"
+    class="about__backdrop"
+    tabindex="-1"
+    aria-hidden="true"
+    (click)="close()"
+  ></button>
+  <div
+    #box
+    class="about__box"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="about-title"
+    tabindex="-1"
+  >
+    <h2 id="about-title">{{ 'about.title' | transloco }}</h2>
+    <p>{{ 'about.intro' | transloco }}</p>
+
+    <h3>{{ 'about.privacyTitle' | transloco }}</h3>
+    <p>{{ 'about.privacy' | transloco }}</p>
+
+    <h3>{{ 'about.sourceTitle' | transloco }}</h3>
+    <ul class="about__links">
+      <li>
+        <a [href]="links.repository" target="_blank" rel="noopener noreferrer">
+          {{ 'about.repository' | transloco }}
+        </a>
+      </li>
+      <li>
+        <a
+          [href]="links.repository + '/issues'"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ 'about.issues' | transloco }}
+        </a>
+      </li>
+      <li>
+        <a
+          [href]="links.repository + '/blob/main/LICENSE'"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ 'about.license' | transloco }}
+        </a>
+      </li>
+    </ul>
+
+    <h3>{{ 'about.creditsTitle' | transloco }}</h3>
+    <ul class="about__credits">
+      <li>{{ 'about.credits.map' | transloco }}</li>
+      <li>{{ 'about.credits.photos' | transloco }}</li>
+      <li>{{ 'about.credits.relief' | transloco }}</li>
+      <li>{{ 'about.credits.routing' | transloco }}</li>
+    </ul>
+
+    @if (links.donation; as donation) {
+    <h3>{{ 'about.supportTitle' | transloco }}</h3>
+    <p>{{ 'about.support' | transloco }}</p>
+    <a
+      class="about__donate"
+      [href]="donation"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {{ 'about.donate' | transloco }}
+    </a>
+    }
+
+    <button type="button" class="about__close" (click)="close()">
+      {{ 'about.close' | transloco }}
+    </button>
+  </div>
+</div>
+}

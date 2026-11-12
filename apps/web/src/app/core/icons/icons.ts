@@ -20,6 +20,14 @@ export const ICONS = {
     paths: ['m21 16-4 4-4-4', 'M17 20V4', 'm3 8 4-4 4 4', 'M7 4v16'],
   },
   chevronDown: { paths: ['m6 9 6 6 6-6'] },
+  // A circle with an "i": about the app.
+  info: {
+    paths: [
+      'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
+      'M12 16v-4',
+      'M12 8h.01',
+    ],
+  },
   // A frame with four corners: show the whole route.
   fit: {
     paths: [

@@ -47,6 +47,28 @@
     "outside": "Pas de carte ici : cet endroit est hors de la zone couverte par la carte.",
     "fitRoute": "Voir tout le parcours"
   },
+  "about": {
+    "open": "À propos de Voie Libre",
+    "close": "Fermer",
+    "title": "À propos de Voie Libre",
+    "intro": "Un planificateur d'itinéraires pour le vélo de route, le gravel et la course sur sentiers. Gratuit, sans publicité, et libre.",
+    "privacyTitle": "Ce qui va où",
+    "privacy": "Vos parcours enregistrés restent sur votre appareil. Pour calculer un itinéraire ou chercher un lieu, l'application envoie au serveur les points ou les mots concernés. Le relief (activé par défaut) est lu sur les tuiles publiques d'Amazon et les photos aériennes (en option) sur celles de l'IGN : ces serveurs voient votre adresse et la zone que vous regardez.",
+    "sourceTitle": "Code source",
+    "repository": "Le code sur GitHub",
+    "issues": "Signaler un problème ou proposer une idée",
+    "license": "Licence GNU AGPL-3.0",
+    "creditsTitle": "Données et crédits",
+    "credits": {
+      "map": "Carte : © contributeurs d'OpenStreetMap (ODbL), tuiles Protomaps.",
+      "photos": "Photos aériennes : IGN (Licence Ouverte Etalab 2.0), quand vous les demandez.",
+      "relief": "Relief : tuiles de terrain de Mapzen et d'Amazon ; altitudes SRTM (NASA, NGA).",
+      "routing": "Itinéraires : BRouter. Lieux : Photon (komoot)."
+    },
+    "supportTitle": "Soutenir le projet",
+    "support": "Voie Libre est gratuit et sans publicité. Le serveur coûte environ 86 € par an hors taxes, auxquels s'ajoute le nom de domaine ; l'auteur paie les deux.",
+    "donate": "Soutenir le projet"
+  },
   "planner": {
     "title": "Planificateur de parcours",
     "hint": {

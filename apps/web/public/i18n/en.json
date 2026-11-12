@@ -47,6 +47,28 @@
     "outside": "No map data here: this place is outside the area the map covers.",
     "fitRoute": "Show the whole route"
   },
+  "about": {
+    "open": "About Voie Libre",
+    "close": "Close",
+    "title": "About Voie Libre",
+    "intro": "A route planner for road cycling, gravel and trail running. Free, without advertising, and open source.",
+    "privacyTitle": "What goes where",
+    "privacy": "Your saved routes stay on your device. To compute a route or search for a place, the app sends the points or the words concerned to the server. The relief (on by default) is read from Amazon's public terrain tiles and the aerial photos (optional) from the IGN: those servers see your address and the area you look at.",
+    "sourceTitle": "Source code",
+    "repository": "Code on GitHub",
+    "issues": "Report a problem or suggest an idea",
+    "license": "Licence GNU AGPL-3.0",
+    "creditsTitle": "Data and credits",
+    "credits": {
+      "map": "Map: © OpenStreetMap contributors (ODbL), tiles by Protomaps.",
+      "photos": "Aerial photos: IGN (Licence Ouverte Etalab 2.0), when you ask for them.",
+      "relief": "Relief: terrain tiles from Mapzen and Amazon; elevations from SRTM (NASA, NGA).",
+      "routing": "Routes: BRouter. Places: Photon (komoot)."
+    },
+    "supportTitle": "Support the project",
+    "support": "Voie Libre is free and has no advertising. The server costs about 86 € a year before tax, and the domain name comes on top; the author pays both.",
+    "donate": "Support the project"
+  },
   "planner": {
     "title": "Route planner",
     "hint": {

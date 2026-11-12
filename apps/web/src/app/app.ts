@@ -6,12 +6,14 @@ import { OfflineMap } from './core/offline/offline-map';
 import { ApiStatus } from './core/api-status/api-status';
 import { Planner } from './planner/planner';
 import { LanguageSwitch } from './core/language-switch/language-switch';
+import { About } from './core/about/about';
 
 @Component({
   imports: [
     RouterModule,
     TranslocoPipe,
     LanguageSwitch,
+    About,
     ApiStatus,
     OfflineMap,
     UpdatePrompt,
