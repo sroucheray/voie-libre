@@ -26,63 +26,102 @@
     tabindex="-1"
     (keydown.escape)="close()"
   >
-    <h2 id="about-title">{{ 'about.title' | transloco }}</h2>
-    <p>{{ 'about.intro' | transloco }}</p>
+    <header class="about__header">
+      <img
+        class="about__logo"
+        src="icons/logo.svg"
+        alt=""
+        width="44"
+        height="44"
+      />
+      <div class="about__headline">
+        <h2 id="about-title">{{ 'about.title' | transloco }}</h2>
+        <p>{{ 'about.intro' | transloco }}</p>
+      </div>
+      <button
+        type="button"
+        class="about__close"
+        [attr.aria-label]="'about.close' | transloco"
+        [title]="'about.close' | transloco"
+        (click)="close()"
+      >
+        <vl-icon name="x" />
+      </button>
+    </header>
 
-    <h3>{{ 'about.privacyTitle' | transloco }}</h3>
-    <p>{{ 'about.privacy' | transloco }}</p>
-
-    <h3>{{ 'about.sourceTitle' | transloco }}</h3>
-    <ul class="about__links">
-      <li>
-        <a [href]="links.repository" target="_blank" rel="noopener noreferrer">
-          {{ 'about.repository' | transloco }}
-        </a>
-      </li>
-      <li>
+    <div class="about__body">
+      @if (links.donation; as donation) {
+      <section class="about__support" aria-labelledby="about-support-title">
+        <vl-icon class="about__heart" name="heart" />
+        <div class="about__support-text">
+          <h3 id="about-support-title">
+            {{ 'about.supportTitle' | transloco }}
+          </h3>
+          <p>{{ 'about.support' | transloco }}</p>
+        </div>
         <a
-          [href]="links.repository + '/issues'"
+          class="about__donate"
+          [href]="donation"
           target="_blank"
           rel="noopener noreferrer"
         >
-          {{ 'about.issues' | transloco }}
+          {{ 'about.donate' | transloco }}
+          <vl-icon name="externalLink" />
         </a>
-      </li>
-      <li>
-        <a
-          [href]="links.repository + '/blob/main/LICENSE'"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {{ 'about.license' | transloco }}
-        </a>
-      </li>
-    </ul>
+      </section>
+      }
 
-    <h3>{{ 'about.creditsTitle' | transloco }}</h3>
-    <ul class="about__credits">
-      <li>{{ 'about.credits.map' | transloco }}</li>
-      <li>{{ 'about.credits.photos' | transloco }}</li>
-      <li>{{ 'about.credits.relief' | transloco }}</li>
-      <li>{{ 'about.credits.routing' | transloco }}</li>
-    </ul>
+      <section aria-labelledby="about-source-title">
+        <h3 id="about-source-title">{{ 'about.sourceTitle' | transloco }}</h3>
+        <ul class="about__links">
+          <li>
+            <a
+              [href]="links.repository"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ 'about.repository' | transloco }}
+              <vl-icon name="externalLink" />
+            </a>
+          </li>
+          <li>
+            <a
+              [href]="links.repository + '/issues'"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ 'about.issues' | transloco }}
+              <vl-icon name="externalLink" />
+            </a>
+          </li>
+          <li>
+            <a
+              [href]="links.repository + '/blob/main/LICENSE'"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ 'about.license' | transloco }}
+              <vl-icon name="externalLink" />
+            </a>
+          </li>
+        </ul>
+      </section>
 
-    @if (links.donation; as donation) {
-    <h3>{{ 'about.supportTitle' | transloco }}</h3>
-    <p>{{ 'about.support' | transloco }}</p>
-    <a
-      class="about__donate"
-      [href]="donation"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {{ 'about.donate' | transloco }}
-    </a>
-    }
+      <section aria-labelledby="about-privacy-title">
+        <h3 id="about-privacy-title">{{ 'about.privacyTitle' | transloco }}</h3>
+        <p class="about__note">{{ 'about.privacy' | transloco }}</p>
+      </section>
 
-    <button type="button" class="about__close" (click)="close()">
-      {{ 'about.close' | transloco }}
-    </button>
+      <section aria-labelledby="about-credits-title">
+        <h3 id="about-credits-title">{{ 'about.creditsTitle' | transloco }}</h3>
+        <ul class="about__credits">
+          <li>{{ 'about.credits.map' | transloco }}</li>
+          <li>{{ 'about.credits.photos' | transloco }}</li>
+          <li>{{ 'about.credits.relief' | transloco }}</li>
+          <li>{{ 'about.credits.routing' | transloco }}</li>
+        </ul>
+      </section>
+    </div>
   </div>
 </div>
 }

@@ -381,6 +381,9 @@ vl-saved-routes {
     // The vertical room is a border, not padding: a clipped line never shows in it.
     padding-block: 0;
     border-block: 0.375rem solid var(--color-tooltip);
+    // The tooltip colour is translucent: the background stops where the border starts, so the two
+    // do not pile up into a darker band.
+    background-clip: padding-box;
   }
 }
 

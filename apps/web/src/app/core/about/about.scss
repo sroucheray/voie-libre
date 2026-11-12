@@ -35,67 +35,206 @@
   cursor: default;
 }
 
+// A card: a green band like the app's header, then the content on white.
 .about__box {
   position: relative;
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
-  width: min(32rem, 100%);
+  width: min(34rem, 100%);
   max-height: 100%;
-  overflow-y: auto;
-  padding: var(--space-4);
+  overflow: hidden;
   background: var(--color-surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-2);
   font-size: var(--font-size-base);
   color: var(--color-text);
 
-  h2 {
-    margin: 0 0 var(--space-2);
-    font-size: var(--font-size-lg, 1.25rem);
-  }
-
-  h3 {
-    margin: var(--space-4) 0 var(--space-1);
-    font-size: var(--font-size-md);
-  }
-
-  p {
-    margin: 0 0 var(--space-2);
-  }
-
-  ul {
-    margin: 0;
-    padding-left: var(--space-4);
-  }
-
-  li {
-    margin: 0.25rem 0;
-  }
-
   &:focus {
     outline: none;
   }
 }
 
-// A link that is as easy to hit as a button.
-.about__links a {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--target, 2.75rem);
+.about__header {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-header);
+  color: var(--color-header-ink);
+}
+
+.about__logo {
+  flex: none;
+  display: block;
+}
+
+.about__headline {
+  flex: 1;
+  min-width: 0;
+
+  h2 {
+    margin: 0 0 var(--space-1);
+    font-size: var(--font-size-lg);
+    font-weight: 800;
+  }
+
+  p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    opacity: 0.92;
+  }
+}
+
+.about__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  min-height: 0;
+  padding: 0;
+  border-color: transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-header-ink) 18%, transparent);
+  }
+}
+
+// What scrolls: the band above stays put.
+.about__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  overflow-y: auto;
+
+  h3 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-2);
+  }
+
+  p {
+    margin: 0;
+  }
+
+  section + section {
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+// The support card comes first and stands out: tinted, with a heart and a large button.
+.about__body .about__support {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 35%, transparent);
+  border-radius: var(--radius-md);
+
+  // The line that follows a section is for the sections that follow each other, not for this card.
+  + section {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  h3 {
+    margin: 0 0 var(--space-1);
+    font-size: var(--font-size-md);
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--color-accent);
+  }
+
+  p {
+    font-size: var(--font-size-sm);
+  }
+}
+
+.about__heart {
+  --icon-size: 1.75rem;
+  margin-top: 0.125rem;
+  color: var(--color-accent);
 }
 
 .about__donate {
-  display: inline-flex;
+  grid-column: 1 / -1;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
   min-height: var(--target, 2.75rem);
   padding: 0 var(--space-4);
   border-radius: var(--radius-sm);
   background: var(--color-accent);
-  color: var(--color-surface);
-  font-weight: 600;
+  color: var(--color-accent-ink);
+  font-weight: 700;
   text-decoration: none;
+
+  &:hover {
+    background: var(--color-accent-hover);
+  }
+
+  vl-icon {
+    --icon-size: 1rem;
+  }
 }
 
-.about__close {
-  display: block;
-  margin: var(--space-4) 0 0 auto;
+// The three links of the code as pills, wrapping on a narrow screen.
+.about__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--target, 2.75rem);
+    padding: 0 var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill, 999px);
+    color: var(--color-accent);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+      background: var(--color-accent-soft);
+      border-color: var(--color-accent);
+    }
+
+    vl-icon {
+      --icon-size: 0.875rem;
+    }
+  }
+}
+
+.about__note,
+.about__credits {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-2);
+}
+
+.about__credits {
+  margin: 0;
+  padding-left: var(--space-4);
+
+  li {
+    margin: 0.25rem 0;
+  }
 }
