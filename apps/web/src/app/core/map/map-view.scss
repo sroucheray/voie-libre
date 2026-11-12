@@ -15,6 +15,12 @@
   right: 0.75rem;
   display: flex;
   flex-direction: column;
+  // On a map too short for the whole column, the buttons wrap into a second column on its left
+  // instead of running under the sheet or off the map.
+  flex-wrap: wrap-reverse;
+  align-content: flex-start;
+  // Leaves the room of the "My position" button, bottom right.
+  max-height: calc(100% - 6.5rem);
   gap: var(--space-2);
 
   button {
@@ -28,6 +34,13 @@
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-1);
     font-weight: 400;
+  }
+}
+
+// Phone: the column also leaves the room of the closed sheet and of the "My position" button.
+@media (max-width: 40rem) {
+  .map-controls {
+    max-height: calc(100% - 9.5rem);
   }
 }
 

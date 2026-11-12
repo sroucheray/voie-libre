@@ -1,5 +1,10 @@
 :host {
   display: block;
+  // Under the map, never more than 45 % of the window: what does not fit scrolls inside.
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 45dvh;
+  overflow-y: auto;
 }
 
 .profile {

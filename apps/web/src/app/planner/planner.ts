@@ -89,6 +89,8 @@ type DragChange = { kind: 'move' | 'insert'; index: number; point: LngLat };
   templateUrl: './planner.html',
   styleUrl: './planner.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // On a phone the open sheet needs the room of the elevation profile (see planner.scss).
+  host: { '[class.sheet-open]': 'sheetOpen()' },
 })
 export class Planner {
   protected readonly store = inject(PlannerStore);
