@@ -83,6 +83,10 @@
       "loopTouch": "Loop closed. Press and hold the map to add a stop, drag a marker to move it, press and hold it to remove it.",
       "reordering": "Release to move the stop here. The route is computed again. Press Escape to cancel."
     },
+    "computing": {
+      "working": "Computing the route…",
+      "long": "{{seconds}} s. Long routes can take a minute."
+    },
     "profile": {
       "label": "Profile",
       "road": {

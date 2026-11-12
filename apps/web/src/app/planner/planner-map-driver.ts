@@ -69,6 +69,11 @@ export interface PlannerMapDriver {
    * segment of `geometry`), over its line; `null` removes it.
    */
   setSurfaces(geometry: LngLat3[] | null, surfaces: string | null): void;
+  /**
+   * The routes on screen are being replaced by a computation that takes a while: they are drawn
+   * faded (and back to full when it is over), so that they do not pass for the answer.
+   */
+  setStale(stale: boolean): void;
   /** Moves the view so that the whole route is visible. */
   fitRoute(geometry: LngLat3[], animate?: boolean): void;
   /** Moves the view so that all these points are visible (a new point was added to a route). */

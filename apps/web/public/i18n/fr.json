@@ -83,6 +83,10 @@
       "loopTouch": "Boucle fermée. Appuyez longuement sur la carte pour ajouter une étape, glissez un marqueur pour le déplacer, appui long pour le supprimer.",
       "reordering": "Relâchez pour déplacer l'étape ici. L'itinéraire est recalculé. Échap annule."
     },
+    "computing": {
+      "working": "Calcul de l'itinéraire…",
+      "long": "{{seconds}} s. Les longs parcours peuvent prendre une minute."
+    },
     "profile": {
       "label": "Profil",
       "road": {

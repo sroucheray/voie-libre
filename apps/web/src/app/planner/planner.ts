@@ -1,3 +1,4 @@
+import { ComputeBadge } from './compute-badge';
 import { VerticalSwipe } from '../core/gestures/vertical-swipe';
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import {
@@ -70,6 +71,12 @@ type PositionTarget = 'start' | 'end' | 'new' | number;
 /** Least time between two routes asked for during a drag: under the API's limit for `POST /route`. */
 export const LIVE_DRAG_INTERVAL_MS = 600;
 
+/**
+ * A computation shows itself (a badge on the map, the routes faded) only when it lasts longer than
+ * this: an edit that comes back at once changes nothing on screen but the route.
+ */
+export const COMPUTING_DELAY_MS = 300;
+
 /** Where a drag in progress puts its point. */
 type DragChange = { kind: 'move' | 'insert'; index: number; point: LngLat };
 
@@ -85,6 +92,7 @@ type DragChange = { kind: 'move' | 'insert'; index: number; point: LngLat };
     ProfileSelect,
     Icon,
     VerticalSwipe,
+    ComputeBadge,
   ],
   templateUrl: './planner.html',
   styleUrl: './planner.scss',
@@ -102,6 +110,9 @@ export class Planner {
     { length: MAX_ALTERNATIVES },
     (_, i) => i + 1,
   );
+
+  /** True when a route has been computing for more than {@link COMPUTING_DELAY_MS} (never during a drag). */
+  protected readonly computing = signal(false);
 
   /** A finger, not a mouse: a point is put by a long press, so the help bar says so. */
   private readonly touchScreen =
@@ -429,6 +440,25 @@ export class Planner {
         routes.map((route) => route.geometry),
         selected,
       );
+    });
+
+    // A computation that lasts is shown: a badge on the map, and the routes on screen faded. A drag
+    // asks for a stretch every moment and has its own feedback (the point follows the pointer).
+    effect((onCleanup) => {
+      const loading =
+        this.store.status() === 'loading' && !this.store.dragging();
+      if (!loading) {
+        untracked(() => this.computing.set(false));
+        return;
+      }
+      const timer = setTimeout(
+        () => this.computing.set(true),
+        COMPUTING_DELAY_MS,
+      );
+      onCleanup(() => clearTimeout(timer));
+    });
+    effect(() => {
+      this.driver()?.setStale(this.computing());
     });
 
     // The selected route in the colours of what it rides on, when the user asked for it.

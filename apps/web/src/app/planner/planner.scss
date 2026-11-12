@@ -436,34 +436,72 @@ vl-saved-routes {
   }
 }
 
-// The loop and clear buttons share one row that never wraps (a long label wraps inside its button),
-// and the loop button's hint sits under the row, so that it never ends up under the wrong button.
+// The loop is one card, full width: the title and what it does are inside it, so that the two
+// can never be taken for two things. "Clear" is apart, under it, as a small red link.
 .panel-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, max-content));
-  justify-content: start;
-  align-items: center;
-  gap: 0.25rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
   margin-top: 0.5rem;
 
-  .loop,
   .clear {
+    align-self: flex-start;
     margin-top: 0;
   }
 }
 
-.loop,
+.loop {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: var(--space-3);
+  row-gap: 0.125rem;
+  height: auto;
+  min-height: var(--target);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  font-weight: 400;
+
+  .loop__icon {
+    grid-row: 1 / span 2;
+    color: var(--color-accent);
+  }
+
+  .loop__title {
+    font-weight: 700;
+  }
+
+  .loop-hint {
+    grid-column: 2;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-2);
+  }
+}
+
 .loop-cancel,
-.place-position,
-.recompute {
+.place-position {
   margin-top: 0.5rem;
 }
 
-.loop-hint {
-  grid-column: 1 / -1;
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-2);
+// The number of alternatives and the whole-route button, on one row (the button wraps under on a narrow panel).
+.compute-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+
+  .alternatives {
+    margin-top: 0;
+    flex: 1 1 auto;
+  }
+
+  .recompute {
+    margin-top: 0;
+    flex: none;
+  }
 }
 
 /* The "My position" button sits above the attribution, the message grows to its left. */

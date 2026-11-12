@@ -1,0 +1,16 @@
+<!-- The live region is always there, so that what appears in it is announced. -->
+<div class="badge-host" role="status">
+  @if (active()) {
+  <div class="badge">
+    <span class="spinner" aria-hidden="true"></span>
+    <span>
+      {{ 'planner.computing.working' | transloco }} @if (long()) {
+      <span class="long"
+        >{{ 'planner.computing.long' | transloco : { seconds: seconds() }
+        }}</span
+      >
+      }
+    </span>
+  </div>
+  }
+</div>

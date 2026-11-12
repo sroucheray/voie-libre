@@ -20,6 +20,15 @@ export const ICONS = {
     paths: ['m21 16-4 4-4-4', 'M17 20V4', 'm3 8 4-4 4 4', 'M7 4v16'],
   },
   chevronDown: { paths: ['m6 9 6 6 6-6'] },
+  // Two arrows chasing one another: a loop.
+  repeat: {
+    paths: [
+      'm17 2 4 4-4 4',
+      'M3 11v-1a4 4 0 0 1 4-4h14',
+      'm7 22-4-4 4-4',
+      'M21 13v1a4 4 0 0 1-4 4H3',
+    ],
+  },
   // A heart: support the project.
   heart: {
     paths: [

@@ -13,7 +13,7 @@ import { provideTestTransloco } from '../../testing/transloco-testing';
 import { provideInMemoryRouteStore } from '../../testing/in-memory-route-store';
 import { API_CLIENT } from '../core/api/api-client';
 import { LanguageService } from '../core/i18n/language.service';
-import { LIVE_DRAG_INTERVAL_MS, Planner } from './planner';
+import { COMPUTING_DELAY_MS, LIVE_DRAG_INTERVAL_MS, Planner } from './planner';
 import { PlannerStore } from './planner-store';
 import { WAY_TILES, type Way, type WayTileReader } from '../core/map/way-tiles';
 import { ROUTE_DEBOUNCE_MS } from './route-planner';
@@ -140,6 +140,66 @@ describe('Planner', () => {
     };
   }
 
+  describe('a computation that lasts', () => {
+    const answer = {
+      geometry: [
+        [3.087, 45.777, 402],
+        [3.249, 45.544, 380],
+      ] as [number, number, number][],
+      distanceMeters: 1000,
+      ascentMeters: 10,
+      durationSeconds: 100,
+    };
+    const advance = async (
+      view: Awaited<ReturnType<typeof render>>,
+      ms: number,
+    ) => {
+      await vi.advanceTimersByTimeAsync(ms);
+      TestBed.tick();
+      view.fixture.detectChanges();
+    };
+
+    it('shows a badge and fades the routes once it lasts, and takes both away when it is over', async () => {
+      const view = await render();
+      const store = TestBed.inject(PlannerStore);
+      store.startLoading();
+      await advance(view, COMPUTING_DELAY_MS - 1);
+      expect(view.root.querySelector('.badge')).toBeNull();
+      expect(view.driver.stale).toBe(false);
+      await advance(view, 2);
+      expect(view.root.querySelector('.badge')?.textContent).toContain(
+        'Computing the route',
+      );
+      expect(view.driver.stale).toBe(true);
+      store.setRoutes([answer]);
+      await advance(view, 1);
+      expect(view.root.querySelector('.badge')).toBeNull();
+      expect(view.driver.stale).toBe(false);
+    });
+
+    it('shows nothing for a computation that comes back at once', async () => {
+      const view = await render();
+      const store = TestBed.inject(PlannerStore);
+      store.startLoading();
+      await advance(view, COMPUTING_DELAY_MS / 3);
+      store.setRoutes([answer]);
+      await advance(view, COMPUTING_DELAY_MS * 2);
+      expect(view.root.querySelector('.badge')).toBeNull();
+      expect(view.driver.stale).toBe(false);
+    });
+
+    it('shows nothing while a point is being dragged: every stretch it asks for is quick', async () => {
+      const view = await render();
+      const store = TestBed.inject(PlannerStore);
+      store.startDrag();
+      store.startLoading();
+      await advance(view, COMPUTING_DELAY_MS * 3);
+      expect(view.root.querySelector('.badge')).toBeNull();
+      expect(view.driver.stale).toBe(false);
+      store.cancelDrag();
+    });
+  });
+
   it('asks for the start, then for the end', async () => {
     const view = await render();
     expect(view.text()).toContain('Click the map to set the start.');
@@ -201,9 +261,16 @@ describe('Planner', () => {
       view.fixture.detectChanges();
       const button = () =>
         view.root.querySelector('.loop') as HTMLButtonElement;
+      const title = () =>
+        view.root.querySelector('.loop__title')?.textContent?.trim();
       const hint = () =>
         view.root.querySelector('#loop-hint')?.textContent?.trim();
-      expect(button().textContent?.trim()).toBe('Make a loop');
+      // The title and the hint are inside the one button: they cannot be taken for two things.
+      expect(title()).toBe('Make a loop');
+      expect(button().contains(view.root.querySelector('#loop-hint'))).toBe(
+        true,
+      );
+      expect(button().getAttribute('aria-labelledby')).toBe('loop-title');
       expect(hint()).toBe('Draw a loop of a set length from the start.');
       // The hint is the button's description, for screen readers.
       expect(button().getAttribute('aria-describedby')).toBe('loop-hint');
@@ -224,7 +291,7 @@ describe('Planner', () => {
 
       view.click(3.249, 45.544);
       view.fixture.detectChanges();
-      expect(button().textContent?.trim()).toBe('Close the loop');
+      expect(title()).toBe('Close the loop');
       expect(hint()).toBe(
         'Return to the start along your stops, or by another way.',
       );
@@ -241,12 +308,12 @@ describe('Planner', () => {
       await view.settle();
       view.click(3.087, 45.777);
       view.fixture.detectChanges();
-      expect(view.root.querySelector('.loop')?.textContent?.trim()).toBe(
+      expect(view.root.querySelector('.loop__title')?.textContent?.trim()).toBe(
         'Faire une boucle',
       );
       view.click(3.249, 45.544);
       view.fixture.detectChanges();
-      expect(view.root.querySelector('.loop')?.textContent?.trim()).toBe(
+      expect(view.root.querySelector('.loop__title')?.textContent?.trim()).toBe(
         'Boucler le parcours',
       );
     });

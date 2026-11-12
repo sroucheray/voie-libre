@@ -578,7 +578,7 @@ describe('Saved routes', () => {
       // Nothing is being computed (the profile has a status line of its own).
       expect(
         view.root.querySelector(
-          '[role="status"]:not(.stretch):not(.saved-notice)',
+          '[role="status"]:not(.stretch):not(.saved-notice):not(.badge-host)',
         ),
       ).toBeNull();
       expect(view.text()).toContain('Route 1');

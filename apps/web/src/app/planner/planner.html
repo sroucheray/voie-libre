@@ -10,6 +10,8 @@
     (mapReady)="onMapReady($event)"
   />
 
+  <vl-compute-badge [active]="computing()" />
+
   <!-- On a phone the panel is a closed sheet: undo and redo stay on the map, always within reach. -->
   <div
     class="map-history"
@@ -473,26 +475,28 @@
         </select>
       </label>
       } }
-      <!-- The two buttons stay on one row (their text wraps instead); the hint of the loop button is under that row. -->
       <div class="panel-actions">
         @if (canClose()) {
+        <!-- One card: the title and what it does stay together. -->
         <button
           type="button"
           class="loop"
+          aria-labelledby="loop-title"
           aria-describedby="loop-hint"
           (click)="openLoopDialog()"
         >
-          {{ loopLabelKey() | transloco }}
+          <vl-icon class="loop__icon" name="repeat" />
+          <span id="loop-title" class="loop__title"
+            >{{ loopLabelKey() | transloco }}</span
+          >
+          <span id="loop-hint" class="loop-hint"
+            >{{ loopLabelKey() + 'Hint' | transloco }}</span
+          >
         </button>
         }
         <button type="button" class="clear" (click)="store.clear()">
           {{ 'planner.clear' | transloco }}
         </button>
-        @if (canClose()) {
-        <p id="loop-hint" class="loop-hint">
-          {{ loopLabelKey() + 'Hint' | transloco }}
-        </p>
-        }
       </div>
       } @if (store.status() === 'loading') {
       <p role="status">{{ 'planner.status.loading' | transloco }}</p>
@@ -501,27 +505,30 @@
         {{ 'planner.errors.' + code | transloco }}
       </p>
       } @if (store.points().length > 0) {
-      <label class="alternatives">
-        {{ 'planner.alternatives.label' | transloco }}
-        <select (change)="selectAlternatives($event)">
-          @for (count of alternativeChoices; track count) {
-          <option [value]="count" [selected]="count === store.alternatives()">
-            {{ format.number(count) }}
-          </option>
-          }
-        </select>
-      </label>
-      } @if (store.routes().length > 0 && store.canRecompute() && store.status()
-      === 'ready') {
-      <!-- An edit beside the route on a long trip only recomputes a stretch: this asks for it all. -->
-      <button
-        type="button"
-        class="recompute"
-        [title]="'planner.recompute.hint' | transloco"
-        (click)="store.recompute()"
-      >
-        {{ 'planner.recompute.button' | transloco }}
-      </button>
+      <div class="compute-options">
+        <label class="alternatives">
+          {{ 'planner.alternatives.label' | transloco }}
+          <select (change)="selectAlternatives($event)">
+            @for (count of alternativeChoices; track count) {
+            <option [value]="count" [selected]="count === store.alternatives()">
+              {{ format.number(count) }}
+            </option>
+            }
+          </select>
+        </label>
+        @if (store.routes().length > 0 && store.canRecompute() && store.status()
+        === 'ready') {
+        <!-- An edit beside the route on a long trip only recomputes a stretch: this asks for it all. -->
+        <button
+          type="button"
+          class="recompute"
+          [title]="'planner.recompute.hint' | transloco"
+          (click)="store.recompute()"
+        >
+          {{ 'planner.recompute.button' | transloco }}
+        </button>
+        }
+      </div>
       } @if (store.routes().length > 0) {
       <ul class="routes" [attr.aria-label]="'planner.routes.label' | transloco">
         @for (route of store.routes(); track $index; let i = $index) {

@@ -225,6 +225,24 @@ export async function createMapLibreDriver(
     });
     pushRoutes();
     pushSurfaces();
+    pushStale();
+  };
+
+  /** The routes are faded while a computation that takes a while is under way. */
+  let stale = false;
+  const STALE_OPACITY = 0.4;
+  const pushStale = () => {
+    for (const id of [
+      SELECTED_LAYER,
+      SELECTED_CASING_LAYER,
+      ALTERNATIVE_LAYER,
+      ALTERNATIVE_CASING_LAYER,
+      SURFACE_LAYER,
+    ]) {
+      if (map.getLayer(id)) {
+        map.setPaintProperty(id, 'line-opacity', stale ? STALE_OPACITY : 1);
+      }
+    }
   };
 
   const pushSurfaces = () => {
@@ -784,6 +802,10 @@ export async function createMapLibreDriver(
       routes = next;
       selected = nextSelected;
       pushRoutes();
+    },
+    setStale(next: boolean) {
+      stale = next;
+      pushStale();
     },
     setSurfaces(geometry: LngLat3[] | null, surfaces: string | null) {
       surfaceRoute =
