@@ -122,6 +122,10 @@
       "redoHint": "Redo (Ctrl+Shift+Z)"
     },
     "clear": "Clear all points",
+    "recompute": {
+      "button": "Compute the whole route again",
+      "hint": "Asks for the best route through all your points again. Undo brings the previous one back."
+    },
     "status": {
       "loading": "Computing the route…"
     },

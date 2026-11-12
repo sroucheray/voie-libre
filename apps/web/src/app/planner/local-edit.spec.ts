@@ -6,6 +6,7 @@ import {
   editWindow,
   planLocalEdit,
   projectOnRoute,
+  shouldComputeInFull,
   type LocalEditPlan,
   spliceGeometry,
   spliceSurfaces,
@@ -362,5 +363,91 @@ describe('planLocalEdit', () => {
         edit({ kind: 'remove', index: 1, point: route[1] }, [route[0]]),
       ),
     ).toBeNull();
+  });
+});
+
+describe('shouldComputeInFull', () => {
+  type P = [number, number];
+  /** 111 km along the equator, a vertex per 0.01° (about 1.1 km): beyond the short-route limit. */
+  const longLine: LngLat3[] = Array.from({ length: 101 }, (_, i) => [
+    i / 100,
+    0,
+    0,
+  ]);
+  const ends: P[] = [
+    [0, 0],
+    [1, 0],
+  ];
+  const insert = (point: P, geometry = longLine, previous = ends): boolean =>
+    shouldComputeInFull(geometry, {
+      kind: 'insert',
+      index: 1,
+      point,
+      previous,
+      next: [previous[0], point, previous[1]],
+    } as PointEdit);
+
+  it('computes in full what was chosen on purpose, even beside the route', () => {
+    expect(
+      shouldComputeInFull(longLine, {
+        kind: 'insert',
+        index: 1,
+        point: [0.5, 0.001],
+        previous: ends,
+        next: [ends[0], [0.5, 0.001], ends[1]],
+        deliberate: true,
+      }),
+    ).toBe(true);
+  });
+
+  it('computes a short route in full whatever the edit', () => {
+    const short: LngLat3[] = Array.from({ length: 21 }, (_, i) => [
+      i / 100,
+      0,
+      0,
+    ]);
+    const shortEnds: P[] = [
+      [0, 0],
+      [0.2, 0],
+    ];
+    expect(insert([0.1, 0.001], short, shortEnds)).toBe(true);
+  });
+
+  it('keeps a stretch for a point beside the route of a long trip', () => {
+    // 111 m off the route, nowhere near 2 km nor a tenth of the 111 km between the ends.
+    expect(insert([0.5, 0.001])).toBe(false);
+  });
+
+  it('computes in full for a point far from the route', () => {
+    // 0.05° is about 5.5 km off: the way there may leave the route altogether.
+    expect(insert([0.5, 0.05])).toBe(true);
+  });
+
+  it('keeps a stretch for a removed stop on a long trip', () => {
+    const stops: P[] = [ends[0], [0.5, 0], ends[1]];
+    expect(
+      shouldComputeInFull(longLine, {
+        kind: 'remove',
+        index: 1,
+        point: [0.5, 0],
+        previous: stops,
+        next: ends,
+      }),
+    ).toBe(false);
+  });
+
+  it('treats a move like an insert: near keeps a stretch, far computes in full', () => {
+    const stops: P[] = [ends[0], [0.5, 0], ends[1]];
+    const move = (to: P) =>
+      shouldComputeInFull(longLine, {
+        kind: 'move',
+        index: 1,
+        from: [0.5, 0],
+        point: to,
+        previous: stops,
+        next: [stops[0], to, stops[2]],
+      });
+    expect(move([0.5, 0.002])).toBe(false);
+    expect(move([0.5, 0.04])).toBe(true);
   });
 });

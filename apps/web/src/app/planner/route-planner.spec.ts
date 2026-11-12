@@ -2,10 +2,12 @@ import { TestBed } from '@angular/core/testing';
 import { createApiClient } from '@voie-libre/api-client';
 import { API_CLIENT } from '../core/api/api-client';
 import {
+  FULL_COMPUTE_RULES,
   ROUTE_DEBOUNCE_MS,
   RoutePlanner,
   errorCodeFrom,
 } from './route-planner';
+import { DEFAULT_FULL_COMPUTE_RULES } from './local-edit';
 import { PlannerStore } from './planner-store';
 import {
   SAVED_ROUTE_SCHEMA_VERSION,
@@ -68,7 +70,15 @@ describe('RoutePlanner', () => {
       },
     });
     TestBed.configureTestingModule({
-      providers: [{ provide: API_CLIENT, useValue: client }],
+      providers: [
+        { provide: API_CLIENT, useValue: client },
+        // The routes of these tests are short: let them be edited as a stretch. The rule itself is
+        // tried in local-edit.spec.ts and at the end of this file.
+        {
+          provide: FULL_COMPUTE_RULES,
+          useValue: { ...DEFAULT_FULL_COMPUTE_RULES, belowMeters: 0 },
+        },
+      ],
     });
     store = TestBed.inject(PlannerStore);
     TestBed.inject(RoutePlanner);
@@ -246,6 +256,35 @@ describe('RoutePlanner', () => {
       expect(route.geometry.slice(0, 50)).toEqual(line.slice(0, 50));
       expect(route.geometry.slice(-50)).toEqual(line.slice(-50));
       expect(store.status()).toBe('ready');
+    });
+
+    it('computes the whole route for a stop chosen by search, even beside the route', async () => {
+      store.insertPoint(1, [0.1, 0.002], true);
+      await settle();
+      expect(requests).toHaveLength(2);
+      const { points } = requests[1].body as {
+        points: { lon: number; lat: number }[];
+      };
+      // The start and the end of the route, not vertices around the new stop.
+      expect(points).toEqual([
+        { lon: 0, lat: 0 },
+        { lon: 0.1, lat: 0.002 },
+        { lon: 0.2, lat: 0 },
+      ]);
+    });
+
+    it('computes the whole route when it is short, for a click beside it', async () => {
+      // The default rules: this route is 22 km, short enough to be computed in full.
+      TestBed.inject(FULL_COMPUTE_RULES).belowMeters =
+        DEFAULT_FULL_COMPUTE_RULES.belowMeters;
+      store.addPoint([0.1, 0.002]);
+      await settle();
+      expect(requests).toHaveLength(2);
+      const { points } = requests[1].body as {
+        points: { lon: number; lat: number }[];
+      };
+      expect(points[0]).toEqual({ lon: 0, lat: 0 });
+      expect(points.at(-1)).toEqual({ lon: 0.2, lat: 0 });
     });
 
     it('splices the surfaces of the stretch like its geometry', async () => {
@@ -734,14 +773,15 @@ describe('RoutePlanner', () => {
     it('computes only a stretch on the first change made after opening', async () => {
       store.loadSaved(saved);
       await settle();
-      store.movePoint(1, [3.3, 45.5]);
+      // About a kilometre: any further, the route is computed in full (see shouldComputeInFull).
+      store.movePoint(1, [3.26, 45.54]);
       await settle();
       expect(requests).toHaveLength(1);
       // The moved end is routed from the saved route's vertex just before it, not from the start.
       expect(requests[0].body).toEqual({
         points: [
           { lon: 3.15, lat: 45.65 },
-          { lon: 3.3, lat: 45.5 },
+          { lon: 3.26, lat: 45.54 },
         ],
         profile: 'trail',
         alternatives: 1,

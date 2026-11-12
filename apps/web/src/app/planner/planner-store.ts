@@ -131,17 +131,23 @@ export type PointEdit = (
   | { kind: 'insert'; index: number; point: LngLat }
   | { kind: 'move'; index: number; from: LngLat; point: LngLat }
   | { kind: 'remove'; index: number; point: LngLat }
-) & { previous: LngLat[]; next: LngLat[] };
+) & {
+  previous: LngLat[];
+  next: LngLat[];
+  /** The place was chosen on purpose (search, "My position"): the route is computed in full. */
+  deliberate?: boolean;
+};
 
 /**
  * The state before a change, to come back to. `routes` is what was on screen then, or `null` when
  * it was not up to date with the points (still loading, or in error): going back to it computes.
  */
 /** A change of the points that a stretch of the route can absorb. */
-type EditOf =
+type EditOf = (
   | { kind: 'insert'; index: number; point: LngLat }
   | { kind: 'move'; index: number; from: LngLat; point: LngLat }
-  | { kind: 'remove'; index: number; point: LngLat };
+  | { kind: 'remove'; index: number; point: LngLat }
+) & { deliberate?: boolean };
 
 /** `points` with point `index` moved; the start and the end of a loop move together. */
 function movedPoints(
@@ -461,7 +467,7 @@ export class PlannerStore {
    * Inserts a waypoint so that it ends up at `index` (1 to length - 1: never before the start or
    * after the end). Ignored beyond {@link MAX_POINTS}.
    */
-  insertPoint(index: number, point: LngLat): void {
+  insertPoint(index: number, point: LngLat, deliberate = false): void {
     const points = this.pointsState();
     if (points.length < 2 || points.length >= MAX_POINTS) return;
     const at = Math.min(Math.max(index, 1), points.length - 1);
@@ -469,6 +475,7 @@ export class PlannerStore {
       kind: 'insert',
       index: at,
       point,
+      ...(deliberate ? { deliberate } : {}),
     });
   }
 
@@ -545,9 +552,15 @@ export class PlannerStore {
   }
 
   /** The start and the end of a loop move together, so that it stays closed. */
-  movePoint(index: number, point: LngLat): void {
+  movePoint(index: number, point: LngLat, deliberate = false): void {
     const moved = movedPoints(this.pointsState(), index, point);
-    if (moved) this.setPoints(moved.next, moved.edit);
+    if (!moved) return;
+    this.setPoints(
+      moved.next,
+      moved.edit && deliberate
+        ? { ...moved.edit, deliberate: true }
+        : moved.edit,
+    );
   }
 
   /**

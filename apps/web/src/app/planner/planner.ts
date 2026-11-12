@@ -848,7 +848,7 @@ export class Planner {
 
   /** A place picked in the field of a stop: the stop moves there. */
   protected pickStop(index: number, place: FoundPlace): void {
-    this.store.movePoint(index, place.point);
+    this.store.movePoint(index, place.point, true);
     this.store.setLabel(place.point, place.label, place.short);
     this.showPlace(place.point);
   }
@@ -866,7 +866,7 @@ export class Planner {
     const at = this.addingAt();
     this.newStopAt.set(null);
     if (at === null) return;
-    this.store.insertPoint(at, place.point);
+    this.store.insertPoint(at, place.point, true);
     this.store.setLabel(place.point, place.label, place.short);
     this.showPlace(place.point);
   }
@@ -887,7 +887,7 @@ export class Planner {
   protected placeMyPosition(): void {
     this.menu.set(null);
     const fix = this.location.fix();
-    if (fix) this.addStopAt(fix.position);
+    if (fix) this.addStopAt(fix.position, true);
   }
 
   /**
@@ -897,14 +897,14 @@ export class Planner {
    * end, a route still being computed or in error) it goes where {@link PlannerStore.addPoint}
    * puts it, before the end.
    */
-  private addStopAt(place: LngLat): void {
+  private addStopAt(place: LngLat, deliberate = false): void {
     const points = this.store.points();
     const index =
       points.length >= 2 && this.store.status() === 'ready'
         ? insertionIndex(this.store.selectedGeometry(), points, place)
         : null;
     if (index === null) this.store.addPoint(place);
-    else this.store.insertPoint(index, place);
+    else this.store.insertPoint(index, place, deliberate);
   }
 
   /** With only the start placed there is one way to close the loop: go straight to its length. */

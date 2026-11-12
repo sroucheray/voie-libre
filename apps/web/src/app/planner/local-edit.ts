@@ -249,3 +249,68 @@ export function planLocalEdit(
     ],
   };
 }
+
+/** The thresholds of {@link shouldComputeInFull}. */
+export interface FullComputeRules {
+  /** A route shorter than this is always computed in full: it is quick, and the result is the best. */
+  belowMeters: number;
+  /** A point further than this from the route changes the way, not just a detour around it. */
+  farMeters: number;
+  /** ... or further than this share of the stretch between its neighbouring points. */
+  farShare: number;
+}
+
+export const DEFAULT_FULL_COMPUTE_RULES: FullComputeRules = {
+  belowMeters: 50_000,
+  farMeters: 2_000,
+  farShare: 0.1,
+};
+
+/**
+ * Whether `edit` is better absorbed by computing the whole route again than by a stretch of it
+ * (which {@link planLocalEdit} would give). Not for a drag in progress, which needs the speed of
+ * the short route. Full when the place was chosen on purpose (a search, "My position": the way to
+ * it is the point of the edit), when the route is short (a full computation is quick), or when
+ * the point is far from the route (the best way to it, and on to the next point, may leave the
+ * old route altogether). A local stretch stays for a click or a move beside the route of a long
+ * trip, and for a removed stop (the whole way between its neighbours is replaced anyway).
+ */
+export function shouldComputeInFull(
+  geometry: readonly LngLat3[],
+  edit: PointEdit,
+  rules: FullComputeRules = DEFAULT_FULL_COMPUTE_RULES,
+): boolean {
+  if (edit.deliberate) return true;
+  const cumulative = cumulativeDistances(geometry);
+  const length = cumulative[cumulative.length - 1] ?? 0;
+  if (length < rules.belowMeters) return true;
+  if (edit.kind === 'remove') return false;
+
+  const { previous } = edit;
+  if (geometry.length < 2 || previous.length < 2) return false;
+  const vertices = pointVertices(geometry, previous);
+
+  let offset: number;
+  let stretch: number;
+  if (edit.kind === 'insert') {
+    if (edit.index < 1 || edit.index > previous.length - 1) return false;
+    const bounds = {
+      min: vertices[edit.index - 1],
+      max: vertices[edit.index],
+    };
+    offset = nearestInRange(geometry, edit.point, bounds).distanceMeters;
+    stretch = cumulative[bounds.max] - cumulative[bounds.min];
+  } else {
+    const { index } = edit;
+    if (index < 0 || index >= previous.length) return false;
+    offset = haversine(
+      [edit.from[0], edit.from[1], 0],
+      [edit.point[0], edit.point[1], 0],
+    );
+    const min = index === 0 ? 0 : vertices[index - 1];
+    const max =
+      index === previous.length - 1 ? geometry.length - 1 : vertices[index + 1];
+    stretch = cumulative[max] - cumulative[min];
+  }
+  return offset > rules.farMeters || offset > rules.farShare * stretch;
+}

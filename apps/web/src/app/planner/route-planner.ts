@@ -1,4 +1,10 @@
-import { Injectable, effect, inject, untracked } from '@angular/core';
+import {
+  Injectable,
+  InjectionToken,
+  effect,
+  inject,
+  untracked,
+} from '@angular/core';
 import { API_CLIENT } from '../core/api/api-client';
 import {
   PlannedRoute,
@@ -9,7 +15,13 @@ import {
   type Profile,
 } from './planner-store';
 import type { LngLat } from '../core/map/map-factory';
-import { planLocalEdit, type LocalEditPlan } from './local-edit';
+import {
+  DEFAULT_FULL_COMPUTE_RULES,
+  planLocalEdit,
+  shouldComputeInFull,
+  type FullComputeRules,
+  type LocalEditPlan,
+} from './local-edit';
 import type { LngLat3 } from './planner-map-driver';
 
 /** Wait for the user to stop editing before calling the API. */
@@ -37,6 +49,12 @@ export function errorCodeFrom(status: number, body: unknown): PlannerErrorCode {
   return API_ERROR_CODES.find((known) => known === code) ?? 'unknown';
 }
 
+/** When an edit is computed in full rather than as a stretch (tests loosen it to try the stretch). */
+export const FULL_COMPUTE_RULES = new InjectionToken<FullComputeRules>(
+  'FULL_COMPUTE_RULES',
+  { providedIn: 'root', factory: () => DEFAULT_FULL_COMPUTE_RULES },
+);
+
 /**
  * Recomputes the route whenever the points, the profile or the number of alternatives change.
  * A route restored from the device is already in the store: it is skipped, until the inputs
@@ -51,6 +69,7 @@ export function errorCodeFrom(status: number, body: unknown): PlannerErrorCode {
 export class RoutePlanner {
   private readonly store = inject(PlannerStore);
   private readonly client = inject(API_CLIENT);
+  private readonly fullComputeRules = inject(FULL_COMPUTE_RULES);
 
   /** The points the last run of the effect saw, to tell a change of points from another one. */
   private seenPoints: LngLat[] | null = null;
@@ -114,6 +133,14 @@ export class RoutePlanner {
     const edit = this.store.editBehind(points);
     const route = this.store.routeBehind(points);
     if (!edit || !route) return null;
+    // A drag needs the speed of the short route; any other edit is computed in full when that
+    // gives a better route (see shouldComputeInFull).
+    if (
+      !this.store.dragging() &&
+      shouldComputeInFull(route.geometry, edit, this.fullComputeRules)
+    ) {
+      return null;
+    }
     const plan = planLocalEdit(route.geometry, edit);
     return plan ? { plan, route } : null;
   }

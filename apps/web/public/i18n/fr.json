@@ -122,6 +122,10 @@
       "redoHint": "Rétablir (Ctrl+Maj+Z)"
     },
     "clear": "Effacer tous les points",
+    "recompute": {
+      "button": "Recalculer tout le parcours",
+      "hint": "Redemande le meilleur itinéraire par tous vos points. Annuler ramène le précédent."
+    },
     "status": {
       "loading": "Calcul du parcours…"
     },

@@ -511,6 +511,17 @@
           }
         </select>
       </label>
+      } @if (store.routes().length > 0 && store.canRecompute() && store.status()
+      === 'ready') {
+      <!-- An edit beside the route on a long trip only recomputes a stretch: this asks for it all. -->
+      <button
+        type="button"
+        class="recompute"
+        [title]="'planner.recompute.hint' | transloco"
+        (click)="store.recompute()"
+      >
+        {{ 'planner.recompute.button' | transloco }}
+      </button>
       } @if (store.routes().length > 0) {
       <ul class="routes" [attr.aria-label]="'planner.routes.label' | transloco">
         @for (route of store.routes(); track $index; let i = $index) {
