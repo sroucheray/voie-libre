@@ -16,6 +16,6 @@ export const ABOUT_LINKS = new InjectionToken<AboutLinks>('ABOUT_LINKS', {
   providedIn: 'root',
   factory: () => ({
     repository: 'https://github.com/sroucheray/voie-libre',
-    donation: null,
+    donation: 'https://liberapay.com/sroucheray',
   }),
 });
