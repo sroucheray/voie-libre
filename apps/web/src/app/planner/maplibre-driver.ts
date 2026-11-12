@@ -1,4 +1,4 @@
-import { isTouchGesture } from './touch-gesture';
+import { isPlacementSettling, isTouchGesture } from './touch-gesture';
 import type {
   ExpressionSpecification,
   Map as MapLibreMap,
@@ -260,6 +260,8 @@ export async function createMapLibreDriver(
   // On a touch screen a point needs a long press: a tap is how a finger starts a pan, a pinch or a
   // scroll, and it put points where none was wanted. The last touch tells where a gesture comes from.
   let lastTouchAt = Number.NEGATIVE_INFINITY;
+  /** When a long press last put a point: the report of the same press that comes next is ignored. */
+  let placedAt = Number.NEGATIVE_INFINITY;
   const noteTouch = () => (lastTouchAt = Date.now());
   map.on('touchstart', noteTouch);
   const onClick = (event: {
@@ -555,6 +557,9 @@ export async function createMapLibreDriver(
     suppressClick = true;
     setTimeout(() => (suppressClick = false), 400);
     if (isTouchGesture(lastTouchAt, Date.now())) {
+      // The same press reporting itself a second time: nothing more to do.
+      if (isPlacementSettling(placedAt, Date.now())) return;
+      placedAt = Date.now();
       // A long press with a finger puts the next point, like a click with a mouse (the right click
       // keeps its menu). A short vibration, where the device has one, says it was taken.
       navigator.vibrate?.(25);
@@ -600,6 +605,9 @@ export async function createMapLibreDriver(
   let removedAt = 0;
   const requestRemove = (index: number) => {
     if (Date.now() - removedAt < 800) return;
+    // The marker just put by a long press lies under the finger: the browser's own context menu of
+    // that press must not remove it.
+    if (isPlacementSettling(placedAt, Date.now())) return;
     removedAt = Date.now();
     handlers.onRemovePoint(index);
   };
