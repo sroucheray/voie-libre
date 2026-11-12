@@ -1,6 +1,6 @@
 # Voie Libre — Brief: ways suited to the profile, on the map
 
-Follow-up to [BRIEF-relief.md](BRIEF-relief.md) and proposal 3 of [docs/map-layers.md](docs/map-layers.md). Asked on 2026-11-11.
+Follow-up to [relief.md](relief.md) and proposal 3 of [docs/map-layers.md](../map-layers.md). Asked on 2026-11-11.
 
 ## Problem
 
@@ -39,3 +39,13 @@ The author, on desktop and on touch. Nothing may depend on hover; colour is neve
 ## Out of scope
 
 - Surface, track grade, traffic (proposal 7); small roads below zoom 12 (not in the tiles); changing which ways a point snaps to (`usableBy` stays as it is: it still accepts trunk roads on Road, for instance).
+
+## How it went
+
+Built in 3 steps, one commit each: Levels and layers; Switcher; Keys, tests, docs.
+
+### Checked
+
+In the browser on the local stack, with the layer on: Road (small roads green, main roads orange, motorways red dashed), Gravel, Trail (paths green in the woods, roads orange); the legend in the switcher; the map restyled when the profile changes. Specs for the table, the style, `MapLayers` and `MapView`; lint and build.
+
+Not checked: touch; the cost of `setStyle` on a slow device at each profile change; zooms below 12 (only main roads are in the tiles there).

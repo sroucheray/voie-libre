@@ -1,6 +1,6 @@
 # Voie Libre — Brief: names of routes from their places
 
-Follow-up to [BRIEF-search.md](BRIEF-search.md). Asked on 2026-11-11.
+Follow-up to [search.md](search.md). Asked on 2026-11-11.
 
 ## Problem
 
@@ -34,3 +34,17 @@ A route is saved as "Road, 41 km": the profile and the length, which the list of
 ## Out of scope
 
 - Renaming existing saved routes; naming from the stops' street names; the elevation or the profile in the name; names in two languages (a saved name is a snapshot in the language of the moment).
+
+## How it went
+
+Built in 4 steps, one commit each: API; Web: short names and the rule; Saved routes field; Docs and by-hand check.
+
+### Checked
+
+Against the real API in the browser: two clicks, the proposal `Clermont-Ferrand → Issoire` arrives once both places are named; a name typed by hand stays after the route is reversed; the API gives `short` for a reverse lookup and a search. Specs for the rule, the field (follows, stops after a hand edit, empty field, reset on clear, date and number on a clash), the places lookup and the API.
+
+Found on the way and fixed: when the end's name arrived, `PointNamer` cancelled the start's lookup still running and never asked again, so the start often stayed unnamed.
+
+Not checked: touch; a place with no town in Photon's answer (the short name falls back on the place's own name or is absent).
+
+Left as it is: a stop clicked on the map has no name (only the start and the end are looked up), so `via` appears only for a stop picked by search; routes already saved are not renamed.

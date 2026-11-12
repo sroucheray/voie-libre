@@ -1,6 +1,6 @@
 # Voie Libre — Brief: surface and way type of the route
 
-Follow-up to [BRIEF-ways.md](BRIEF-ways.md) and proposal 4 of [docs/map-layers.md](docs/map-layers.md). Asked on 2026-11-11.
+Follow-up to [ways.md](ways.md) and proposal 4 of [docs/map-layers.md](../map-layers.md). Asked on 2026-11-11.
 
 ## Problem
 
@@ -44,3 +44,21 @@ The author, on desktop and on touch. Colour is never the only signal.
 ## Out of scope
 
 - Grade of tracks (`tracktype`), smoothness, cycle route networks (proposal 7); showing surfaces for imported GPX files or shared links; coloured alternatives; exporting surfaces to GPX or FIT.
+
+## How it went
+
+Built in 5 steps, one commit each: API: classify and carry; Web: state and storage; Web: the bar and the legend; Web: the route on the map; Docs and by-hand check.
+
+### Checked
+
+Against the live stack: `POST /route` for a gravel route returns 490 codes for 491 points (paved, cycleway, unpaved and path present); the recorded real BRouter spec and the opt-in integration spec (a route and an "avoid the way out" loop); in the browser, the bar and its legend under the chart, the route coloured on the map from the switcher, and an added stop (local edit) leaving 822 codes for 823 points.
+
+Not checked: touch; saving and reopening a route by hand (the spec does it); a round trip by distance (the integration spec covers loops by the way out only).
+
+Left as it is:
+
+- Cobbles count as unpaved or rough though they are paved: a rough ride, which is what the category tells.
+- Imported files, shared links and routes saved before this change have no surface bar: they say so and offer "Calculate the surface", which computes the route again between its points (the result can differ from the stored track, an imported one included; Undo brings it back). Found when the author turned the layer on over a route saved earlier. A saved loop by distance (start = end, its mode is not stored) cannot be calculated again: it says so and offers no button; a failed recalculation keeps the saved route on screen (the first version of the button wiped it: found by the author, reproduced with a real click on a saved loop).
+- The surface is not carried to the GPX or FIT export.
+
+After that, the loop mode is saved with the route (`SavedRoute.loop`, optional, no version bump), so a loop saved from now on can be calculated again; the six routes saved before keep no mode. Checked in the browser: a loop by distance planned, saved, the page reloaded, the route opened with no request and its mode back, then calculated again with one request (the test route was deleted afterwards).

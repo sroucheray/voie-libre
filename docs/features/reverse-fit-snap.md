@@ -1,6 +1,6 @@
 # Voie Libre — Brief: reverse the route, wider removal, FIT export, points on ways, map layer proposals
 
-Follow-up to [BRIEF.md](BRIEF.md), [BRIEF-local-edits.md](BRIEF-local-edits.md) and [BRIEF-map-interaction.md](BRIEF-map-interaction.md). Asked on 2026-11-10.
+Follow-up to [milestone-1.md](milestone-1.md), [local-edits.md](local-edits.md) and [map-interaction.md](map-interaction.md). Asked on 2026-11-10.
 
 ## Problem
 
@@ -65,3 +65,24 @@ The author, on desktop and on touch. Nothing may depend on hover.
 - FIT import; FIT for shared links; turn-by-turn cues in the FIT file; checking on a Garmin or Wahoo device.
 - Snapping through the routing engine or a new API endpoint; snapping on Trail; re-snapping existing points when the profile changes.
 - Reversing a loop by distance (its direction is already a setting).
+
+## How it went
+
+Built in 7 steps, one commit each: Reverse the route; Removal between the two neighbours; FIT encoder; FIT in the saved routes list; Snapping rule; Snapping on the map; Layer proposals and wrap-up.
+
+### Open points
+
+- Snapping thresholds (24 px, 100 m) are a first guess.
+- The Protomaps tiles carry road classes, not surfaces: on Gravel a paved minor road and a track both count as usable, which is what the profile routes on anyway.
+
+### Checked
+
+In a browser against the local stack: a stop on a detour (8.8 km direct, 20.4 km with the stop) removed with one `POST /route` between its two neighbours, the route back to 8.8 km; points snapped on Road and Gravel from the real tiles (a grid of 144 places north-east of Clermont-Ferrand: snapped, refused, or usable on Gravel only), the refusal message, Trail left alone; the choice of a format under a saved route.
+
+Not checked: a FIT file on a device or in a viewer (the spec reads it back with `fit-file-parser`, CRC included); snapping by a real pointer (ghost marker, marker drop) and on a touch screen; the reverse button by hand.
+
+Left as it is:
+
+- The tiles have road classes, not surfaces: an unpaved "minor road" counts as a road for the Road profile.
+- A point is snapped once, when placed: changing the profile afterwards moves nothing.
+- A drop refused for lack of a way cancels the whole drag (the point goes back where the drag started).

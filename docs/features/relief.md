@@ -1,6 +1,6 @@
 # Voie Libre — Brief: layer switcher and hillshade
 
-Follow-up to [docs/map-layers.md](docs/map-layers.md) (proposals 1 and 2), asked on 2026-11-10.
+Follow-up to [docs/map-layers.md](../map-layers.md) (proposals 1 and 2), asked on 2026-11-10.
 
 ## Problem
 
@@ -39,3 +39,19 @@ The author, on desktop and on touch. Nothing may depend on hover.
 - Contours, slope shading, 3D terrain, imagery, ways for the profile (other proposals of `docs/map-layers.md`).
 - A base layer choice in the switcher (there is one base).
 - Relief beyond the basemap's area; a relief download separate from the map's.
+
+## How it went
+
+Built in 5 steps, one commit each: Relief tiles; Hillshade in the style; Layer switcher; Offline; Wrap-up.
+
+### Checked
+
+- The script on the two Copernicus files of the test region: 100 tiles, 19.6 MB, 52 s.
+- In a browser against the local stack: the relief around Clermont-Ferrand at zoom 11 and 13.5 (the Chaîne des Puys stands out, names and roads stay readable, no steps on flat ground); the switcher turns it off and on and stores the choice; the credit follows; "Download the map" gives 62.3 MB with the relief archive readable from the device, and removing deletes both.
+
+Not checked by hand: the map with the relief file missing (tests only); the relief with the network really off (the tiles server was left running); the switcher on a touch screen.
+
+Left as it is:
+
+- The steps 2 and 3 went in one commit: the style and the switcher were written together.
+- The archive is rebuilt in full each time; it must be rebuilt when `BASEMAP_BBOX` changes.

@@ -1,6 +1,6 @@
 # Voie Libre — Brief: stops anywhere and a descriptive profile choice
 
-Follow-up to [BRIEF.md](BRIEF.md) and [BRIEF-search.md](BRIEF-search.md). This brief covers two changes to the planner panel.
+Follow-up to [milestone-1.md](milestone-1.md) and [search.md](search.md). This brief covers two changes to the planner panel.
 
 ## Problem
 
@@ -44,3 +44,11 @@ Any change on the map (the menu's "add stop", dragging the route), to the API, t
 - A spec for the dropdown: shows title and description, opens and picks with mouse and keys, Escape keeps the value; `planner.spec.ts`: picking a profile calls `setProfile`.
 - The i18n key test passes; lint, build and the full suite pass once at the end.
 - Checked in Chromium: a route with two stops, a stop added between the start and the first stop through its "+", a stop moved by its handle, the profile changed through the dropdown (one request), in English and in French, at phone width.
+
+## How it went
+
+Built in 4 steps, one commit each: "+" between the fields; Reorder handle on the left; Profile dropdown; Visual check and docs.
+
+### Done
+
+All four steps done. Checked in Chromium on a route with two stops around Clermont-Ferrand: a stop searched ("Royat") through the "+" between the start and the first stop (one short request, the stop lands first), moved to the last place by its handle, the profile changed to Gravel through the dropdown (one request), in French and in English, and at 390 px wide (no horizontal scroll). The `planner.stops.add` key stays as the tooltip of the "+".

@@ -6,7 +6,7 @@ The author, the only user at launch, planning rides and runs on the website.
 
 ## What is asked
 
-The seven items noted in the backlog of `PLAN.md`: two bugs and five features.
+The seven items noted in the backlog of `milestone-1.md#how-it-went`: two bugs and five features.
 
 ## Done means
 

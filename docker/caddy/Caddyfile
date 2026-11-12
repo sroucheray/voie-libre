@@ -1,4 +1,4 @@
-# One origin for everything (see BRIEF-deploy.md):
+# One origin for everything (see docs/features/deploy.md):
 #   /api/*    the API (prefix removed)
 #   /tiles/*  the basemap server (PMTiles, fonts, sprites; prefix removed, Range requests pass)
 #   the rest  the Angular app, with an index.html fallback for its routes

@@ -1,6 +1,6 @@
 # Voie Libre — Brief: reordering the stops, explicit about the drop
 
-Follow-up to [BRIEF-backlog.md](BRIEF-backlog.md). Asked on 2026-11-11 (backlog item 5: "the drag and drop must be more explicit about the drop and what will happen").
+Follow-up to [backlog.md](backlog.md). Asked on 2026-11-11 (backlog item 5: "the drag and drop must be more explicit about the drop and what will happen").
 
 ## Problem
 
@@ -31,3 +31,11 @@ The author, on desktop and on touch. Nothing may depend on hover.
 ## Out of scope
 
 - Reordering the start and the end; reordering by dragging on the map; any change to the markers' drag on the map.
+
+## How it went
+
+Built in 4 steps, one commit each: Pointer drag with live order; Keyboard; Styles; Tests and docs.
+
+### Checked
+
+In the browser on the local stack: a mouse drag of the first stop below the third (order changed once, one route), Arrow Down on a grip (stop moved, focus followed, announcement read). Not checked: touch, Escape by hand (tested in the spec), the live order seen during a drag (spec only).

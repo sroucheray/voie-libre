@@ -1,5 +1,5 @@
 /**
- * What a stretch of a route rides on, in five categories (see `BRIEF-surface.md`). One character
+ * What a stretch of a route rides on, in five categories (see `docs/features/surface.md`). One character
  * per segment of the route's geometry:
  *
  * - `p` paved: a paved surface, or a road class with no surface told;

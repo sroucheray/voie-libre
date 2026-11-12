@@ -1,6 +1,6 @@
 # Voie Libre — Brief: local edits of a route
 
-Follow-up to [BRIEF.md](BRIEF.md) and [BRIEF-map-interaction.md](BRIEF-map-interaction.md). This brief covers reshaping a route slightly without losing the rest of it.
+Follow-up to [milestone-1.md](milestone-1.md) and [map-interaction.md](map-interaction.md). This brief covers reshaping a route slightly without losing the rest of it.
 
 ## Problem
 
@@ -44,3 +44,16 @@ Hidden anchors or visible handles along the route, per-segment profiles, local e
 - Removing the waypoint at the tip of a spur routes between a place 500 m before and after it: the result can be a little longer than the route before the detour (28.7 km against 27.9 km on the 30 km loop checked in Chromium).
 - The window factor (`2 ×`) and floor (`500 m`) are first guesses; adjust after the visual check.
 - Dropping the other alternatives on the first edit is an assumption; say so if you would rather keep them hidden and restore them.
+
+## How it went
+
+Built in 5 steps, one commit each: Pure module `local-edit.ts`; Store; RoutePlanner; All routes; Visual check and docs.
+
+### Done
+
+All five steps done. Step 5 found, in Chromium, that removing the waypoint of a detour asked BRouter for a route from a place to itself (502): fixed in `planLocalEdit`.
+
+### Open points
+
+- Window factor (2 ×) and floor (500 m) kept after the check in Chromium: one loop of 30 km and one detour, not tuned further.
+- A point added very near the start or end of a route: the window is clamped, so it may replace most of a short route; not checked in the browser.

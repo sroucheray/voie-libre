@@ -24,7 +24,7 @@
 
 # Voie Libre
 
-- Read [CLAUDE.md](CLAUDE.md) (stack, rules, commands), [BRIEF.md](BRIEF.md) and [PLAN.md](PLAN.md) first; architecture lives in [docs/architecture.md](docs/architecture.md).
+- Read [CLAUDE.md](CLAUDE.md) (stack, rules, commands), the [index of features](docs/features/README.md) (a brief says why, a plan what is left) first; architecture lives in [docs/architecture.md](docs/architecture.md).
 - The package manager is npm: prefix Nx commands with `npx` (`npx nx test web`), never `pnpm`.
 - Nx Cloud is not used and CI is GitHub Actions (`.github/workflows/ci.yml`): ignore the Nx Cloud skills and CI self-healing flows.
 - While iterating, run only the project and file you changed; the whole suite runs once at the end.

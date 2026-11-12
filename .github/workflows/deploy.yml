@@ -2,7 +2,7 @@ name: Deploy
 
 # A version goes online when a tag `v*` is pushed (after the CI checks passed), or by hand with
 # the tag of a version already built (to go back to an earlier one). Never from a pull request.
-# See BRIEF-deploy.md and docs/deployment.md for the secrets this workflow reads.
+# See docs/features/deploy.md and docs/deployment.md for the secrets this workflow reads.
 on:
   push:
     tags: ['v*']

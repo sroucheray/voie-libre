@@ -1,6 +1,6 @@
 # Map layers: proposals
 
-Asked on 2026-11-10 (see `BRIEF-reverse-fit-snap.md`). Nothing here is built. This document lists what the map could show beyond today's single basemap, what each layer needs, and an order to build them in.
+Asked on 2026-11-10 (see `docs/features/reverse-fit-snap.md`). Nothing here is built. This document lists what the map could show beyond today's single basemap, what each layer needs, and an order to build them in.
 
 Decision already taken: the default basemap stays local. Optional layers may call a public server when the user turns them on, and the switcher says so.
 
@@ -35,7 +35,7 @@ In the code: `buildBasemapStyle` takes the set of layers; overlays are added and
 
 ## 2. Hillshade (done 2026-11-10)
 
-Built as described in `BRIEF-relief.md`: `npm run build-relief` writes `data/basemap/relief.pmtiles`, **19.6 MB measured** for the test region (100 PNG tiles, zooms 6 to 11, elevations rounded to 0.25 m), more than the first estimate below, which assumed WebP and whole metres. The notes below are the proposal as it was written.
+Built as described in `docs/features/relief.md`: `npm run build-relief` writes `data/basemap/relief.pmtiles`, **19.6 MB measured** for the test region (100 PNG tiles, zooms 6 to 11, elevations rounded to 0.25 m), more than the first estimate below, which assumed WebP and whole metres. The notes below are the proposal as it was written.
 
 MapLibre draws shading itself from elevation tiles (`raster-dem` source, `hillshade` layer). The elevations come from the Copernicus GLO-30 files that `scripts/download-relief.sh` already fetches for the API.
 
@@ -136,8 +136,8 @@ Worth doing only when the app is used outside France.
 ## Recommended order
 
 1. **Switcher and hillshade** (1, 2): done. The data is already on disk, it works offline, and relief is what the plain map lacks most for cycling and running.
-2. **Ways for the profile** (3): done (a checkbox in the switcher, three levels per profile, see `BRIEF-ways.md`).
-3. **Surface and way type of the route** (4): done (five categories from BRouter's way tags, a bar under the profile, an option to colour the route on the map; see `BRIEF-surface.md`).
-4. **IGN imagery, opt-in** (5): done (a checkbox with a note about the server it calls, photos under the roads and names, off when offline; see `BRIEF-imagery.md`).
+2. **Ways for the profile** (3): done (a checkbox in the switcher, three levels per profile, see `docs/features/ways.md`).
+3. **Surface and way type of the route** (4): done (five categories from BRouter's way tags, a bar under the profile, an option to colour the route on the map; see `docs/features/surface.md`).
+4. **IGN imagery, opt-in** (5): done (a checkbox with a note about the server it calls, photos under the roads and names, off when offline; see `docs/features/imagery.md`).
 5. **Contours** (6), then **own way tiles** (7) when surfaces and signed routes on the map are worth a build pipeline.
 6. **Slope, 3D, world imagery** (8, 9, 10) last.

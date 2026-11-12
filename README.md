@@ -42,7 +42,7 @@ Found a problem, or have an idea? [Open an issue](https://github.com/sroucheray/
 
 ## For contributors
 
-Status: early development (milestone 1, see [BRIEF.md](BRIEF.md) and [PLAN.md](PLAN.md)).
+Status: early development (milestone 1; the brief and the plan of each feature are in [docs/features](docs/features/README.md)).
 Architecture: [docs/architecture.md](docs/architecture.md). Context for Claude Code: [CLAUDE.md](CLAUDE.md).
 
 ### Layout
@@ -141,7 +141,7 @@ The app runs at https://voielibre.app on a small VPS, with Docker Compose behind
 
 - [docker-compose.prod.yml](docker-compose.prod.yml), [docker/caddy/Caddyfile](docker/caddy/Caddyfile) and [.env.production.example](.env.production.example) describe the stack; nothing secret is in the repository.
 - `.github/workflows/deploy.yml` deploys a version when a `v*` tag is pushed (images to `ghcr.io`, pulled by the server over SSH); `scripts/deploy.sh` does the same by hand from a developer's machine.
-- [BRIEF-deploy.md](BRIEF-deploy.md) and [PLAN-deploy.md](PLAN-deploy.md) tell the choices, the steps and what the first deployment taught.
+- [docs/features/deploy.md](docs/features/deploy.md) tells the choices, the steps and what the first deployment taught.
 
 ## License
 

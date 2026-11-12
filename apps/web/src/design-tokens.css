@@ -1,5 +1,5 @@
 /*
- * Design tokens (see BRIEF-design.md and docs/design-tokens.md); loaded before styles.scss. Components read these; no hex value
+ * Design tokens (see docs/features/design.md and docs/design-tokens.md); loaded before styles.scss. Components read these; no hex value
  * belongs in a component stylesheet. The `--map-*`, `--way-*`, `--surface-*` and `--grade-*` values
  * are also in `core/map/palette.ts` (MapLibre cannot read custom properties); `palette.spec.ts`
  * keeps the two in step.

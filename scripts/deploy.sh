@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the production images on this machine and starts them on the server (see BRIEF-deploy.md).
+# Builds the production images on this machine and starts them on the server (see docs/features/deploy.md).
 #
 # Usage: DEPLOY_HOST=ubuntu@203.0.113.10 scripts/deploy.sh
 # Environment:

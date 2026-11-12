@@ -1,6 +1,6 @@
 # Voie Libre — Brief: aerial photos from the IGN, as an option
 
-Follow-up to [BRIEF-ways.md](BRIEF-ways.md) and proposal 5 of [docs/map-layers.md](docs/map-layers.md). Asked on 2026-11-11.
+Follow-up to [ways.md](ways.md) and proposal 5 of [docs/map-layers.md](../map-layers.md). Asked on 2026-11-11.
 
 ## Problem
 
@@ -38,3 +38,13 @@ The default basemap stays local and the map calls no external domain. This layer
 
 - Photos outside France (proposal 10); caching or downloading the photos; choosing the year or an infrared layer; IGN's own road overlay.
 - The Géoplateforme's usage terms are those of an open public service: reasonable use, credit IGN. A heavier use would need a look at them again.
+
+## How it went
+
+Built in 3 steps, one commit each: Style; Switcher; Keys, tests, docs.
+
+### Checked
+
+In the browser on the local stack: at zoom 15 around Clermont-Ferrand the photos replace the land with the roads, the ways of the profile and the names over them, "Photos: IGN" in the credit; the only external host the page contacted was `data.geopf.fr`, and none at all with the box unticked (by default). Specs for the style, `MapLayers` and `MapView` (including offline).
+
+Not checked: touch; the network really cut with the photos on (the spec fakes it); outside France (the photos are empty there); the Géoplateforme's usage limits for heavier use.

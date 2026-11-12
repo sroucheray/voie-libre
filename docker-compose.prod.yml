@@ -1,4 +1,4 @@
-# Production stack (see BRIEF-deploy.md and docs/deployment.md).
+# Production stack (see docs/features/deploy.md and docs/deployment.md).
 #   The GitHub workflow .github/workflows/deploy.yml builds the images, publishes them to ghcr.io
 #   under IMAGE_PREFIX with the tag VERSION, then runs this file on the server (`pull`, `up -d`).
 #   scripts/deploy.sh does the same by hand from the developer's machine (images sent over SSH).

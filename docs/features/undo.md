@@ -1,6 +1,6 @@
 # Voie Libre — Brief: undo and redo
 
-Follow-up to [BRIEF.md](BRIEF.md) and [BRIEF-local-edits.md](BRIEF-local-edits.md). This brief covers going back on what was done to the route being planned.
+Follow-up to [milestone-1.md](milestone-1.md) and [local-edits.md](local-edits.md). This brief covers going back on what was done to the route being planned.
 
 ## Problem
 
@@ -30,7 +30,7 @@ Persisting the history, undoing the selection of another alternative, undoing a 
 - The state and the rules live in `PlannerStore` (snapshots, `undo`, `redo`, `canUndo`, `canRedo`); the key handling and the buttons in the `Planner` component. No network code in the history.
 - A snapshot taken while a computation is in flight or in error keeps no route: undoing to it shows the points and computes them as for any change.
 - Undoing while a request is in flight cancels it (the inputs changed, `RoutePlanner` already aborts), and the restored route must not trigger a computation.
-- The first edit after an undo must still be able to be a local edit (see `BRIEF-local-edits.md`).
+- The first edit after an undo must still be able to be a local edit (see `local-edits.md`).
 - Dragging a marker or the route is one step, not one per mouse move.
 - No hard-coded UI string.
 
@@ -47,3 +47,11 @@ Persisting the history, undoing the selection of another alternative, undoing a 
 - A change made while a recompute is still in flight (two quick edits) records a snapshot without a route for the second one: undoing to it computes. Acceptable for a first version.
 - Not checked in the browser: touch use of the buttons, Cmd+Z on macOS.
 - `Ctrl+Z` also happens in the elevation panel and on the map: no special case, the focus rule above is the only one.
+
+## How it went
+
+Built in 4 steps, one commit each: History in `PlannerStore`; RoutePlanner interplay; Keys and buttons; Visual check and docs.
+
+### Done
+
+All four steps done. Checked in Chromium on a 30 km loop: a detour added (30.1 km to 40.5 km), Ctrl+Z (30.1 km, no request), Ctrl+Shift+Z (40.5 km, no request), profile changed to gravel (one request), Ctrl+Z (back to the 40.5 km route, no request). Step 3 also fixed an older case: an edit made before the previous one's route is in place now computes in full.

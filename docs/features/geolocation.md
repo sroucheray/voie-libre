@@ -1,6 +1,6 @@
 # Voie Libre — Brief: user position on the map
 
-Follow-up to [BRIEF.md](BRIEF.md). This brief covers showing the user's own position on the map when they choose to share it.
+Follow-up to [milestone-1.md](milestone-1.md). This brief covers showing the user's own position on the map when they choose to share it.
 
 ## Problem
 
@@ -37,3 +37,11 @@ Recording a track, follow/navigation mode with auto-recentring, sending or savin
 - Unit tests: location store (states, errors, accuracy, heading, stop), button states, "My position" menu entry and panel button (disabled without fix, sets start/stop at the fix), driver contract with the fake driver, i18n key parity.
 - Visual check in Chrome with a mocked geolocation (DevTools sensors): button states, dot, accuracy circle, cone, denied error, set as start.
 - Lint, build, targeted tests pass, then one full run at the end; one commit per step.
+
+## How it went
+
+Built in 5 steps, one commit each: Geolocation service and store; Driver seam; Button and states; Use as start or stop; Visual check and docs.
+
+### Open points
+
+- Heading source: `coords.heading` only moves with GPS speed; compass (`deviceorientationabsolute`) may be added later if the cone is too rarely available.

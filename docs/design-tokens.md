@@ -1,6 +1,6 @@
 # Design tokens
 
-Source: `apps/web/src/design-tokens.css` (a `:root` block, loaded before `styles.scss`). Direction chosen in [BRIEF-design.md](../BRIEF-design.md): deep green accent, green-tinted neutrals, large radii, light theme only. Components read the tokens; no hex value belongs in a component stylesheet.
+Source: `apps/web/src/design-tokens.css` (a `:root` block, loaded before `styles.scss`). Direction chosen in [the design brief](features/design.md): deep green accent, green-tinted neutrals, large radii, light theme only. Components read the tokens; no hex value belongs in a component stylesheet.
 
 | Group       | Tokens                                                                                                                                                                                  |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
