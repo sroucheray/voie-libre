@@ -14,6 +14,7 @@ A plan only stays whole while its work is open; when the work is done it is fold
 | [local-edits.md](local-edits.md)                 | Local edits of a route                                                            | done        |
 | [map-interaction.md](map-interaction.md)         | Map interaction                                                                   | done        |
 | [milestone-1.md](milestone-1.md)                 | Milestone 1: the foundation of the app                                            | done        |
+| [next.md](next.md)                               | Backlog of 2026-11-12                                                             | open        |
 | [panel-stops-profile.md](panel-stops-profile.md) | Stops anywhere and a descriptive profile choice                                   | done        |
 | [relief-france.md](relief-france.md)             | The relief for all of France                                                      | done        |
 | [relief-public.md](relief-public.md)             | The relief from public terrain tiles                                              | done        |
