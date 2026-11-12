@@ -443,6 +443,8 @@ export async function createMapLibreDriver(
    * from the map only when it starts on the route; a press that does not move stays a click.
    */
   const DRAG_THRESHOLD = 6;
+  /** As long as MapLibre's own long press (500 ms), so the two feel alike. */
+  const ROUTE_LONG_PRESS_MS = 500;
   const TOUCH_TOLERANCE = 14;
   let routeDrag: {
     from: LngLat;
@@ -452,9 +454,20 @@ export async function createMapLibreDriver(
     marker: Marker | null;
   } | null = null;
   let suppressClick = false;
+  /**
+   * A finger on the route is claimed for a drag, which keeps MapLibre from arming its own long
+   * press: this timer is the long press of that case (a stop is put beside the route as often as
+   * anywhere else).
+   */
+  let routePressTimer: ReturnType<typeof setTimeout> | undefined;
+  const clearRoutePress = () => {
+    clearTimeout(routePressTimer);
+    routePressTimer = undefined;
+  };
 
   /** Stops following the pointer; gives back the drag that was in progress, if any. */
   const releaseRouteDrag = () => {
+    clearRoutePress();
     const drag = routeDrag;
     routeDrag = null;
     if (!drag) return null;
@@ -489,6 +502,7 @@ export async function createMapLibreDriver(
     const moved = Math.hypot(event.point.x - drag.x, event.point.y - drag.y);
     if (!drag.marker && moved < DRAG_THRESHOLD) return;
     if (!drag.marker) {
+      clearRoutePress();
       const element = document.createElement('div');
       element.className =
         'planner-marker planner-marker--waypoint planner-marker--dragging';
@@ -536,6 +550,16 @@ export async function createMapLibreDriver(
     map.on('mouseup', endRouteDrag);
     map.on('touchend', endRouteDrag);
     map.on('touchcancel', endRouteDrag);
+    if (touch) {
+      routePressTimer = setTimeout(() => {
+        routePressTimer = undefined;
+        const drag = routeDrag;
+        // Still on the spot: a long press, not the start of a drag.
+        if (!drag || drag.marker) return;
+        releaseRouteDrag();
+        placeByLongPress(drag.from);
+      }, ROUTE_LONG_PRESS_MS);
+    }
   };
   map.on('mousedown', startRouteDrag);
   map.on('touchstart', startRouteDrag);
@@ -545,6 +569,18 @@ export async function createMapLibreDriver(
    * menu to place a point. A route press that turns into a long press is not a drag.
    */
   const LONG_PRESS_MS = 600;
+
+  /**
+   * A long press with a finger puts the next point, like a click with a mouse (the right click
+   * keeps its menu). A short vibration, where the device has one, says it was taken. The same
+   * press reporting itself a second time does nothing.
+   */
+  const placeByLongPress = (at: LngLat) => {
+    if (isPlacementSettling(placedAt, Date.now())) return;
+    placedAt = Date.now();
+    navigator.vibrate?.(25);
+    handlers.onClick(at);
+  };
   const onContextMenu = (event: {
     point: { x: number; y: number };
     lngLat: { lng: number; lat: number };
@@ -557,13 +593,7 @@ export async function createMapLibreDriver(
     suppressClick = true;
     setTimeout(() => (suppressClick = false), 400);
     if (isTouchGesture(lastTouchAt, Date.now())) {
-      // The same press reporting itself a second time: nothing more to do.
-      if (isPlacementSettling(placedAt, Date.now())) return;
-      placedAt = Date.now();
-      // A long press with a finger puts the next point, like a click with a mouse (the right click
-      // keeps its menu). A short vibration, where the device has one, says it was taken.
-      navigator.vibrate?.(25);
-      handlers.onClick([event.lngLat.lng, event.lngLat.lat]);
+      placeByLongPress([event.lngLat.lng, event.lngLat.lat]);
       return;
     }
     handlers.onContextMenu([event.lngLat.lng, event.lngLat.lat], event.point);
