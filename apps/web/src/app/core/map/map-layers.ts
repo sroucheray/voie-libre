@@ -5,19 +5,20 @@ export const MAP_LAYERS_KEY = 'voie-libre.map-layers';
 
 /**
  * The overlays the user wants on the map. A display preference: kept on the device
- * (`localStorage`), never sent. The relief is on until the user turns it off.
+ * (`localStorage`), never sent. The relief, the ways of the profile and the surface of the route are on
+ * until the user turns them off; the aerial photos are off until the user asks for them.
  */
 @Injectable({ providedIn: 'root' })
 export class MapLayers {
   private readonly reliefState = signal(this.read().relief ?? true);
-  private readonly waysState = signal(this.read().ways ?? false);
-  private readonly surfaceState = signal(this.read().surface ?? false);
+  private readonly waysState = signal(this.read().ways ?? true);
+  private readonly surfaceState = signal(this.read().surface ?? true);
   private readonly imageryState = signal(this.read().imagery ?? false);
   /** True when the user wants the hillshade. */
   readonly relief = this.reliefState.asReadonly();
-  /** True when the user wants the ways coloured by how well they suit the profile (off at first). */
+  /** True when the user wants the ways coloured by how well they suit the profile (on at first). */
   readonly ways = this.waysState.asReadonly();
-  /** True when the user wants the route coloured by what it rides on (off at first). */
+  /** True when the user wants the route coloured by what it rides on (on at first). */
   readonly surface = this.surfaceState.asReadonly();
   /** True when the user wants the IGN's aerial photos (off at first: it calls an external server). */
   readonly imagery = this.imageryState.asReadonly();

@@ -14,25 +14,11 @@ describe('MapLayers', () => {
     expect(TestBed.inject(MapLayers).relief()).toBe(false);
   });
 
-  it('leaves the ways off until the user turns them on, and remembers', () => {
+  it('shows the ways until the user turns them off, and remembers', () => {
     const layers = TestBed.inject(MapLayers);
-    expect(layers.ways()).toBe(false);
-    layers.setWays(true);
     expect(layers.ways()).toBe(true);
-    expect(JSON.parse(localStorage.getItem(MAP_LAYERS_KEY)!)).toEqual({
-      relief: true,
-      ways: true,
-      surface: false,
-      imagery: false,
-    });
-    TestBed.resetTestingModule();
-    expect(TestBed.inject(MapLayers).ways()).toBe(true);
-  });
-
-  it('leaves the surface of the route off until the user turns it on, and remembers', () => {
-    const layers = TestBed.inject(MapLayers);
-    expect(layers.surface()).toBe(false);
-    layers.setSurface(true);
+    layers.setWays(false);
+    expect(layers.ways()).toBe(false);
     expect(JSON.parse(localStorage.getItem(MAP_LAYERS_KEY)!)).toEqual({
       relief: true,
       ways: false,
@@ -40,7 +26,21 @@ describe('MapLayers', () => {
       imagery: false,
     });
     TestBed.resetTestingModule();
-    expect(TestBed.inject(MapLayers).surface()).toBe(true);
+    expect(TestBed.inject(MapLayers).ways()).toBe(false);
+  });
+
+  it('shows the surface of the route until the user turns it off, and remembers', () => {
+    const layers = TestBed.inject(MapLayers);
+    expect(layers.surface()).toBe(true);
+    layers.setSurface(false);
+    expect(JSON.parse(localStorage.getItem(MAP_LAYERS_KEY)!)).toEqual({
+      relief: true,
+      ways: true,
+      surface: false,
+      imagery: false,
+    });
+    TestBed.resetTestingModule();
+    expect(TestBed.inject(MapLayers).surface()).toBe(false);
   });
 
   it('leaves the aerial photos off until the user turns them on, and remembers', () => {

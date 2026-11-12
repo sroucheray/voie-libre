@@ -220,8 +220,8 @@ describe('MapView', () => {
       ).not.toContain('Copernicus');
       expect(JSON.parse(localStorage.getItem(MAP_LAYERS_KEY)!)).toEqual({
         relief: false,
-        ways: false,
-        surface: false,
+        ways: true,
+        surface: true,
         imagery: false,
       });
 
@@ -239,7 +239,7 @@ describe('MapView', () => {
       expect(view.checkbox()?.disabled).toBe(false);
     });
 
-    it('colours the ways of the profile once asked, with a legend, and follows the profile', async () => {
+    it('colours the ways of the profile from the start, with a legend, follows the profile, and can be turned off', async () => {
       const view = await renderWith(true);
       const layerIds = () =>
         (
@@ -253,18 +253,14 @@ describe('MapView', () => {
       view.fixture.componentRef.setInput('waysProfile', 'road');
       view.fixture.detectChanges();
       expect(ways.disabled).toBe(false);
-      expect(ways.checked).toBe(false);
-      expect(view.root.querySelector('.ways-legend')).toBeNull();
-      expect(layerIds()).not.toContain('ways-good');
-
-      ways.click();
+      expect(ways.checked).toBe(true);
       await flush();
       view.fixture.detectChanges();
       expect(layerIds()).toContain('ways-good');
       expect(
-        [...view.root.querySelectorAll('.ways-legend li')].map((li) =>
-          li.textContent?.trim(),
-        ),
+        [
+          ...view.root.querySelectorAll('.ways-legend:not(.surface-legend) li'),
+        ].map((li) => li.textContent?.trim()),
       ).toEqual(['Suited', 'Possible', 'To avoid']);
 
       // The profile changes: the layers are drawn again for it.
@@ -280,33 +276,33 @@ describe('MapView', () => {
       await flush();
       view.fixture.detectChanges();
       expect(layerIds()).not.toContain('ways-good');
-      expect(view.root.querySelector('.ways-legend')).toBeNull();
+      expect(
+        view.root.querySelector('.ways-legend:not(.surface-legend)'),
+      ).toBeNull();
     });
 
-    it('offers the surface of the route, off at first, with a legend of the five categories', async () => {
+    it('offers the surface of the route, on at first, with a legend of the five categories, and lets it be turned off', async () => {
       const view = await renderWith(true);
       view.open();
       const box =
         view.root.querySelector<HTMLInputElement>('.surface-checkbox')!;
-      expect(box.checked).toBe(false);
-      expect(view.root.querySelector('.surface-legend')).toBeNull();
-      box.click();
-      view.fixture.detectChanges();
+      expect(box.checked).toBe(true);
       expect(
         [...view.root.querySelectorAll('.surface-legend li')].map((li) =>
           li.textContent?.trim(),
         ),
       ).toEqual(['Paved', 'Cycleway', 'Unpaved or rough', 'Path', 'Unknown']);
+      box.click();
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.surface-legend')).toBeNull();
       expect(JSON.parse(localStorage.getItem(MAP_LAYERS_KEY)!).surface).toBe(
-        true,
+        false,
       );
     });
 
     it('says why the route has no colours, and asks for them', async () => {
       const view = await renderWith(true);
       view.open();
-      view.root.querySelector<HTMLInputElement>('.surface-checkbox')!.click();
-      view.fixture.detectChanges();
       expect(view.root.querySelector('.layers-action')).toBeNull();
       const asked: number[] = [];
       view.fixture.componentInstance.computeSurface.subscribe(() =>
@@ -326,7 +322,6 @@ describe('MapView', () => {
     it('offers no button when the route cannot be calculated again', async () => {
       const view = await renderWith(true);
       view.open();
-      view.root.querySelector<HTMLInputElement>('.surface-checkbox')!.click();
       view.fixture.componentRef.setInput('surfaceMissing', true);
       view.fixture.componentRef.setInput('surfaceComputable', false);
       view.fixture.detectChanges();

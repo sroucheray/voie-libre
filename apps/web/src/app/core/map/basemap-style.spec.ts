@@ -8,6 +8,8 @@ import {
   RELIEF_LAYER,
   RELIEF_SOURCE,
   reliefTilesUrl,
+  ROAD_CASINGS_ON_PHOTOS_OPACITY,
+  ROADS_ON_PHOTOS_OPACITY,
 } from './basemap-style';
 
 describe('with ways', () => {
@@ -93,6 +95,32 @@ describe('with imagery', () => {
     expect(ids(photos).indexOf('roads_highway')).toBeGreaterThan(at);
     expect(ids(photos).indexOf('roads_labels_major')).toBeGreaterThan(at);
     expect(ids(photos).indexOf('places_locality')).toBeGreaterThan(at);
+  });
+
+  it('draws the roads half transparent over the photos, their casing nearly gone, and the railways as they were', () => {
+    const paint = (style: typeof plain, id: string) =>
+      (
+        style.layers.find((l) => l.id === id) as {
+          paint?: Record<string, unknown>;
+        }
+      ).paint;
+    expect(paint(photos, 'roads_major')?.['line-opacity']).toBe(
+      ROADS_ON_PHOTOS_OPACITY,
+    );
+    expect(paint(photos, 'roads_minor')?.['line-opacity']).toBe(
+      ROADS_ON_PHOTOS_OPACITY,
+    );
+    expect(paint(photos, 'roads_major_casing_late')?.['line-opacity']).toBe(
+      ROAD_CASINGS_ON_PHOTOS_OPACITY,
+    );
+    expect(ROAD_CASINGS_ON_PHOTOS_OPACITY).toBeLessThan(
+      ROADS_ON_PHOTOS_OPACITY,
+    );
+    // Not softened without photos, and the railways keep their own opacity.
+    expect(paint(plain, 'roads_major')?.['line-opacity']).toBeUndefined();
+    expect(paint(photos, 'roads_rail')?.['line-opacity']).toBe(
+      paint(plain, 'roads_rail')?.['line-opacity'],
+    );
   });
 
   it('draws the relief right over the photos, and the ways over the roads', () => {

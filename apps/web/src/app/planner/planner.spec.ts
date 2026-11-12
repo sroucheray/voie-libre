@@ -892,7 +892,7 @@ describe('Planner', () => {
     });
   });
 
-  it('draws the route in the colours of what it rides on once the user asked, and not before', async () => {
+  it('draws the route in the colours of what it rides on from the start, until the user turns it off', async () => {
     respond = () =>
       json({
         routes: [{ ...routes(1).routes[0], surfaces: 'pu' }],
@@ -901,21 +901,20 @@ describe('Planner', () => {
     view.click(3.087, 45.777);
     view.click(3.249, 45.544);
     await view.settle();
-    expect(view.driver.surfaces).toBeNull();
-
-    TestBed.inject(MapLayers).setSurface(true);
-    await view.settle();
     expect(view.driver.surfaces?.surfaces).toBe('pu');
     expect(view.driver.surfaces?.geometry).toHaveLength(3);
 
     TestBed.inject(MapLayers).setSurface(false);
     await view.settle();
     expect(view.driver.surfaces).toBeNull();
+
+    TestBed.inject(MapLayers).setSurface(true);
+    await view.settle();
+    expect(view.driver.surfaces?.surfaces).toBe('pu');
   });
 
   it('draws no surfaces for a route that does not say', async () => {
     const view = await render();
-    TestBed.inject(MapLayers).setSurface(true);
     view.click(3.087, 45.777);
     view.click(3.249, 45.544);
     await view.settle();

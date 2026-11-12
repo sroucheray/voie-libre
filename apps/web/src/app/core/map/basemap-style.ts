@@ -141,11 +141,40 @@ export function buildBasemapStyle(
   return styleOf(base, sources, styleLayers);
 }
 
-/** The photos replace every filled layer (land, water, buildings): roads and labels stay. */
+/**
+ * Over the photos the roads are drawn half transparent, and their casing nearly gone: the basemap's
+ * plain white would hide the ground it is meant to show. Railways keep their own (already soft) style.
+ */
+export const ROADS_ON_PHOTOS_OPACITY = 0.5;
+export const ROAD_CASINGS_ON_PHOTOS_OPACITY = 0.15;
+
+function softenedRoad(
+  layer: StyleSpecification['layers'][number],
+): StyleSpecification['layers'][number] {
+  if (
+    layer.type !== 'line' ||
+    !('source-layer' in layer) ||
+    layer['source-layer'] !== 'roads' ||
+    layer.id.startsWith('roads_rail')
+  ) {
+    return layer;
+  }
+  const opacity = layer.id.includes('casing')
+    ? ROAD_CASINGS_ON_PHOTOS_OPACITY
+    : ROADS_ON_PHOTOS_OPACITY;
+  return { ...layer, paint: { ...layer.paint, 'line-opacity': opacity } };
+}
+
+/**
+ * The photos replace every filled layer (land, water, buildings): roads (softened, see above) and
+ * labels stay.
+ */
 function withImageryLayer(
   basemap: StyleSpecification['layers'],
 ): StyleSpecification['layers'] {
-  const kept = basemap.filter((layer) => layer.type !== 'fill');
+  const kept = basemap
+    .filter((layer) => layer.type !== 'fill')
+    .map(softenedRoad);
   const background = kept.findIndex((layer) => layer.type === 'background');
   return [
     ...kept.slice(0, background + 1),
