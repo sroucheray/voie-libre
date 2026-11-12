@@ -1,3 +1,4 @@
+import { VerticalSwipe } from '../core/gestures/vertical-swipe';
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -83,6 +84,7 @@ type DragChange = { kind: 'move' | 'insert'; index: number; point: LngLat };
     PlaceField,
     ProfileSelect,
     Icon,
+    VerticalSwipe,
   ],
   templateUrl: './planner.html',
   styleUrl: './planner.scss',
@@ -99,14 +101,21 @@ export class Planner {
     (_, i) => i + 1,
   );
 
+  /** A finger, not a mouse: a point is put by a long press, so the help bar says so. */
+  private readonly touchScreen =
+    typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+
   /** What the help bar says: it depends on how far the route is. */
   protected readonly helpKey = computed(() => {
     const count = this.store.points().length;
+    const touch = this.touchScreen ? 'Touch' : '';
     if (this.store.dragging()) return 'planner.hint.dragging';
     if (this.reorder()) return 'planner.hint.reordering';
-    if (count === 0) return 'planner.hint.start';
-    if (count === 1) return 'planner.hint.end';
-    return this.store.isLoop() ? 'planner.hint.loop' : 'planner.hint.route';
+    if (count === 0) return `planner.hint.start${touch}`;
+    if (count === 1) return `planner.hint.end${touch}`;
+    return this.store.isLoop()
+      ? `planner.hint.loop${touch}`
+      : `planner.hint.route${touch}`;
   });
 
   /** What to tell about the user's position: searching, or why it failed. */

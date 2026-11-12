@@ -6,6 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { VerticalSwipe } from '../core/gestures/vertical-swipe';
 import { FormattingService } from '../core/format/formatting.service';
 import {
   GRADE_BANDS,
@@ -38,7 +39,7 @@ const KEY_STEPS = 100;
  */
 @Component({
   selector: 'vl-elevation-panel',
-  imports: [TranslocoPipe, Icon],
+  imports: [TranslocoPipe, Icon, VerticalSwipe],
   templateUrl: './elevation-panel.html',
   styleUrl: './elevation-panel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -10,6 +10,34 @@
     (mapReady)="onMapReady($event)"
   />
 
+  <!-- On a phone the panel is a closed sheet: undo and redo stay on the map, always within reach. -->
+  <div
+    class="map-history"
+    role="group"
+    [attr.aria-label]="'planner.history.label' | transloco"
+  >
+    <button
+      type="button"
+      class="map-history__undo"
+      [disabled]="!store.canUndo()"
+      [attr.aria-label]="'planner.history.undo' | transloco"
+      [title]="'planner.history.undoHint' | transloco"
+      (click)="undo()"
+    >
+      ↶
+    </button>
+    <button
+      type="button"
+      class="map-history__redo"
+      [disabled]="!store.canRedo()"
+      [attr.aria-label]="'planner.history.redo' | transloco"
+      [title]="'planner.history.redoHint' | transloco"
+      (click)="redo()"
+    >
+      ↷
+    </button>
+  </div>
+
   <p class="help-bar" aria-live="polite">{{ helpKey() | transloco }}</p>
 
   <div class="locate">
@@ -198,6 +226,8 @@
       class="sheet-handle"
       [attr.aria-expanded]="sheetOpen()"
       [attr.aria-label]="'planner.sheet.toggle' | transloco"
+      vlVerticalSwipe
+      (swiped)="sheetOpen.set($event === 'up')"
       (click)="sheetOpen.set(!sheetOpen())"
     >
       <span aria-hidden="true"></span>

@@ -11,10 +11,13 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-2);
 
+  // The whole bar is the target (a finger misses a 2.25 rem button): a tap or a swipe on it.
   header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    min-height: 2.75rem;
+    cursor: pointer;
   }
 
   h2 {

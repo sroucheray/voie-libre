@@ -1,12 +1,18 @@
 @if (store.elevationKnown() && profile(); as p) {
 <section class="profile" [attr.aria-label]="'profile.title' | transloco">
-  <header>
+  <!-- The whole bar opens and closes the profile (a swipe down closes it, up opens it); the button
+       is the keyboard and screen-reader way in, its click reaches the bar. -->
+  <header
+    role="presentation"
+    vlVerticalSwipe
+    (swiped)="open.set($event === 'up')"
+    (click)="open.set(!open())"
+  >
     <h2>{{ 'profile.title' | transloco }}</h2>
     <button
       type="button"
       [attr.aria-expanded]="open()"
       [attr.aria-label]="(open() ? 'profile.hide' : 'profile.show') | transloco"
-      (click)="open.set(!open())"
     >
       <vl-icon
         class="chevron"

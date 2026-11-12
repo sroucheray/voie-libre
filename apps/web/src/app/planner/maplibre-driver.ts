@@ -1,3 +1,4 @@
+import { isTouchGesture } from './touch-gesture';
 import type {
   ExpressionSpecification,
   Map as MapLibreMap,
@@ -255,6 +256,12 @@ export async function createMapLibreDriver(
   };
 
   const onStyleData = () => ensureLayers();
+
+  // On a touch screen a point needs a long press: a tap is how a finger starts a pan, a pinch or a
+  // scroll, and it put points where none was wanted. The last touch tells where a gesture comes from.
+  let lastTouchAt = Number.NEGATIVE_INFINITY;
+  const noteTouch = () => (lastTouchAt = Date.now());
+  map.on('touchstart', noteTouch);
   const onClick = (event: {
     point: { x: number; y: number };
     lngLat: { lng: number; lat: number };
@@ -276,7 +283,7 @@ export async function createMapLibreDriver(
       : [];
     if (hits.length > 0) {
       handlers.onSelectRoute(Number(hits[0].properties?.['index']));
-    } else {
+    } else if (!isTouchGesture(lastTouchAt, Date.now())) {
       handlers.onClick([event.lngLat.lng, event.lngLat.lat]);
     }
   };
@@ -547,6 +554,13 @@ export async function createMapLibreDriver(
     endRouteDrag();
     suppressClick = true;
     setTimeout(() => (suppressClick = false), 400);
+    if (isTouchGesture(lastTouchAt, Date.now())) {
+      // A long press with a finger puts the next point, like a click with a mouse (the right click
+      // keeps its menu). A short vibration, where the device has one, says it was taken.
+      navigator.vibrate?.(25);
+      handlers.onClick([event.lngLat.lng, event.lngLat.lat]);
+      return;
+    }
     handlers.onContextMenu([event.lngLat.lng, event.lngLat.lat], event.point);
   };
   map.on('contextmenu', onContextMenu);
@@ -889,6 +903,7 @@ export async function createMapLibreDriver(
       map.off('mousemove', onMouseMove);
       map.off('styledata', onStyleData);
       map.off('click', onClick);
+      map.off('touchstart', noteTouch);
       for (const id of [
         PREVIEW_LAYER,
         HIGHLIGHT_LAYER,
