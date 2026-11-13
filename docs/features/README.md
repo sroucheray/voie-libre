@@ -18,6 +18,7 @@ A plan only stays whole while its work is open; when the work is done it is fold
 | [next.md](next.md)                               | Backlog of 2026-11-12                                                             | open        |
 | [mobile-sheet.md](mobile-sheet.md)               | The panel as a real sheet on a phone                                              | done        |
 | [route-panel.md](route-panel.md)                 | A clearer route panel                                                             | done        |
+| [open-route.md](open-route.md)                   | Building a route point by point                                                   | in progress |
 | [panel-stops-profile.md](panel-stops-profile.md) | Stops anywhere and a descriptive profile choice                                   | done        |
 | [relief-france.md](relief-france.md)             | The relief for all of France                                                      | done        |
 | [relief-public.md](relief-public.md)             | The relief from public terrain tiles                                              | done        |
