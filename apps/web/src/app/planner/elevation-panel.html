@@ -9,6 +9,10 @@
     (click)="open.set(!open())"
   >
     <h2>{{ 'profile.title' | transloco }}</h2>
+    @if (!open()) {
+    <!-- Folded, the bar still says something: the curve, between the title and the chevron. -->
+    <vl-profile-mini compact class="folded" />
+    }
     <button
       type="button"
       [attr.aria-expanded]="open()"

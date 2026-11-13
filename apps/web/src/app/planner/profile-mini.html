@@ -6,10 +6,12 @@
     }
     <path class="line" [attr.d]="v.paths.line" />
   </svg>
+  @if (!compact()) {
   <p>
     {{ 'profile.mini' | transloco : { distance: format.distance(v.distance),
     ascent: format.elevation(v.ascent), descent: format.elevation(v.descent) }
     }}
   </p>
+  }
 </section>
 }

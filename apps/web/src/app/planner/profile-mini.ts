@@ -1,8 +1,10 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  booleanAttribute,
   computed,
   inject,
+  input,
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { FormattingService } from '../core/format/formatting.service';
@@ -30,6 +32,8 @@ import { PlannerStore } from './planner-store';
 export class ProfileMini {
   protected readonly store = inject(PlannerStore);
   protected readonly format = inject(FormattingService);
+  /** Only the curve, without the line of figures: for the header of the folded profile strip. */
+  readonly compact = input(false, { transform: booleanAttribute });
   protected readonly viewBox = `0 0 ${PROFILE_WIDTH} ${PROFILE_HEIGHT}`;
 
   private readonly profile = computed(() =>

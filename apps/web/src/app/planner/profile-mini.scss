@@ -2,22 +2,15 @@
   display: block;
 }
 
-// Only the open sheet of a phone has it: on a wide screen the full profile is under the map.
-@media (min-width: 40.0625rem) {
-  :host {
-    display: none;
-  }
-}
-
 .mini {
-  margin: var(--space-3) 0 0;
+  margin: var(--mini-gap, var(--space-3)) 0 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-2);
 
   svg {
     display: block;
     width: 100%;
-    height: 3.5rem;
+    height: var(--mini-height, 3.5rem);
     border-radius: var(--radius-sm);
     background: var(--color-surface-2);
   }

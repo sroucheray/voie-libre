@@ -242,4 +242,18 @@ describe('ElevationPanel', () => {
     await fixture.whenStable();
     expect(root.querySelector('.plot')).not.toBeNull();
   });
+
+  it('shows the curve in the header while folded, and not when open', async () => {
+    const { fixture, root } = await setup();
+    expect(root.querySelector('vl-profile-mini')).toBeNull();
+    root.querySelector<HTMLButtonElement>('header button')!.click();
+    await fixture.whenStable();
+    expect(
+      root.querySelector('header vl-profile-mini .mini svg'),
+    ).not.toBeNull();
+    expect(root.querySelector('vl-profile-mini .mini p')).toBeNull();
+    root.querySelector<HTMLButtonElement>('header button')!.click();
+    await fixture.whenStable();
+    expect(root.querySelector('vl-profile-mini')).toBeNull();
+  });
 });

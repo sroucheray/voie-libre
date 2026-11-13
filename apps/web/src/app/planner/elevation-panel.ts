@@ -20,6 +20,7 @@ import {
   type ProfileSample,
 } from './elevation-profile';
 import { PlannerStore } from './planner-store';
+import { ProfileMini } from './profile-mini';
 import { Icon } from '../core/icons/icon';
 import {
   SURFACE_COLORS,
@@ -39,7 +40,7 @@ const KEY_STEPS = 100;
  */
 @Component({
   selector: 'vl-elevation-panel',
-  imports: [TranslocoPipe, Icon, VerticalSwipe],
+  imports: [TranslocoPipe, Icon, VerticalSwipe, ProfileMini],
   templateUrl: './elevation-panel.html',
   styleUrl: './elevation-panel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

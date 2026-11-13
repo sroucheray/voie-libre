@@ -84,6 +84,13 @@ vl-saved-routes {
   }
 }
 
+// The light profile is for the sheet of a phone; on a wide screen it only shows in the folded strip.
+@media (min-width: 40.0625rem) {
+  .tab-route vl-profile-mini {
+    display: none;
+  }
+}
+
 // Only a phone has a handle and a summary line: the panel is a bottom sheet there.
 .sheet-handle,
 .sheet-summary {

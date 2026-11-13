@@ -53,6 +53,15 @@
   }
 }
 
+// The curve of the folded bar: it takes the room between the title and the chevron.
+.profile vl-profile-mini.folded {
+  --mini-height: 1.5rem;
+  --mini-gap: 0;
+  flex: 1;
+  min-width: 0;
+  margin: 0 var(--space-3);
+}
+
 .body {
   display: grid;
   grid-template-columns: auto 1fr;
