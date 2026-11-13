@@ -14,7 +14,6 @@ import { provideInMemoryRouteStore } from '../../testing/in-memory-route-store';
 import { API_CLIENT } from '../core/api/api-client';
 import { LanguageService } from '../core/i18n/language.service';
 import { COMPUTING_DELAY_MS, LIVE_DRAG_INTERVAL_MS, Planner } from './planner';
-import { FullscreenMap } from '../core/fullscreen/fullscreen-map';
 import { PlannerStore } from './planner-store';
 import { WAY_TILES, type Way, type WayTileReader } from '../core/map/way-tiles';
 import { ROUTE_DEBOUNCE_MS } from './route-planner';
@@ -481,23 +480,6 @@ describe('Planner', () => {
       map.dispatchEvent(new Event('pointerdown'));
       view.fixture.detectChanges();
       expect(panel(view).classList).toContain('panel--full');
-    });
-
-    it('hides the sheet and takes the page chrome away in full screen, and gives it back', async () => {
-      const view = await render();
-      const button = view.root.querySelector(
-        '.map-history__fullscreen',
-      ) as HTMLButtonElement;
-      button.click();
-      view.fixture.detectChanges();
-      expect(panel(view).classList).toContain('panel--gone');
-      expect(button.getAttribute('aria-pressed')).toBe('true');
-      expect(button.getAttribute('aria-label')).toBe('Leave full screen');
-      expect(TestBed.inject(FullscreenMap).active()).toBe(true);
-      button.click();
-      view.fixture.detectChanges();
-      expect(panel(view).classList).not.toContain('panel--gone');
-      expect(button.getAttribute('aria-label')).toBe('Full screen map');
     });
 
     it('rises to half when a tab is chosen', async () => {

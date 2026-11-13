@@ -252,10 +252,6 @@
       "empty": "Open to search a place or pick a profile.",
       "pending": "Computing the route…"
     },
-    "fullscreen": {
-      "enter": "Full screen map",
-      "exit": "Leave full screen"
-    },
     "result": {
       "title": "Route"
     },

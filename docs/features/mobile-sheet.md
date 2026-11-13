@@ -53,6 +53,8 @@ A second commit pair added `ProfileMini` to the open sheet (curve plus one line 
 
 The same light profile (`compact`, curve only) also fills the folded profile bar on a wide screen, between the title and the chevron.
 
-### Item 7: full screen
+### Item 7: full screen (removed afterwards)
+
+The button was removed on 2026-11-13: it did not work on the author's Android phone and was judged useless. What follows is what was built.
 
 An `expand`/`shrink` button beside undo and redo (phone only) gives the map the whole screen: the header, the offline bar and the sheet go away, the map buttons and the same button stay. It hides the app's chrome only; the browser's full screen API was left out on purpose (not on iPhone Safari). Seen in the browser pane at phone size.

@@ -155,19 +155,6 @@
   .locate {
     margin-bottom: 4.25rem;
   }
-
-  // Full screen: the sheet is gone, so nothing needs to stay above it.
-  .panel--gone {
-    display: none;
-  }
-
-  :host(.map-fullscreen) {
-    .help-bar,
-    .undo-toast,
-    .locate {
-      margin-bottom: 0;
-    }
-  }
 }
 
 .loop-by {

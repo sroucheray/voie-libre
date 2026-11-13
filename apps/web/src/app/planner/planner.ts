@@ -7,7 +7,6 @@ import {
   stepState,
   type SheetState,
 } from '../core/gestures/sheet-snap';
-import { FullscreenMap } from '../core/fullscreen/fullscreen-map';
 import { ProfileMini } from './profile-mini';
 import { VerticalSwipe } from '../core/gestures/vertical-swipe';
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
@@ -135,11 +134,9 @@ const SHEET_PEEK_REM = 4.25;
   styleUrls: ['./planner.scss', './planner-route.scss', './planner-phone.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // A phone's map with the whole screen: the sheet goes and what floated above it comes down.
-  host: { '[class.map-fullscreen]': 'fullscreen.active()' },
 })
 export class Planner {
   protected readonly store = inject(PlannerStore);
-  protected readonly fullscreen = inject(FullscreenMap);
   protected readonly format = inject(FormattingService);
   protected readonly location = inject(LocationStore);
   private readonly mapLayers = inject(MapLayers);

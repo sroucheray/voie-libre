@@ -9,7 +9,6 @@ import { LanguageSwitch } from './core/language-switch/language-switch';
 import { About } from './core/about/about';
 import { ABOUT_LINKS } from './core/about/about-config';
 import { Icon } from './core/icons/icon';
-import { FullscreenMap } from './core/fullscreen/fullscreen-map';
 import { PhoneMenu } from './core/phone-menu/phone-menu';
 import { Welcome } from './core/welcome/welcome';
 
@@ -28,12 +27,10 @@ import { Welcome } from './core/welcome/welcome';
     Planner,
   ],
   selector: 'vl-root',
-  host: { '[class.map-fullscreen]': 'fullscreen.active()' },
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App {
-  protected readonly fullscreen = inject(FullscreenMap);
   /** The donation link of the header, from the same place as the About window. */
   protected readonly donation = inject(ABOUT_LINKS).donation;
 }
