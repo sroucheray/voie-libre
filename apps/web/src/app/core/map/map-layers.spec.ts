@@ -23,6 +23,7 @@ describe('MapLayers', () => {
       relief: true,
       ways: false,
       surface: true,
+      grade: false,
       imagery: false,
     });
     TestBed.resetTestingModule();
@@ -37,10 +38,28 @@ describe('MapLayers', () => {
       relief: true,
       ways: true,
       surface: false,
+      grade: false,
       imagery: false,
     });
     TestBed.resetTestingModule();
     expect(TestBed.inject(MapLayers).surface()).toBe(false);
+  });
+
+  it('colours the route one way at a time: by surface at first, then plain or by grade', () => {
+    const layers = TestBed.inject(MapLayers);
+    expect(layers.routeColour()).toBe('surface');
+    layers.setRouteColour('grade');
+    expect(layers.routeColour()).toBe('grade');
+    expect(layers.surface()).toBe(false);
+    layers.setSurface(true);
+    expect(layers.routeColour()).toBe('surface');
+    expect(layers.grade()).toBe(false);
+    layers.setRouteColour('plain');
+    TestBed.resetTestingModule();
+    expect(TestBed.inject(MapLayers).routeColour()).toBe('plain');
+    TestBed.inject(MapLayers).setRouteColour('grade');
+    TestBed.resetTestingModule();
+    expect(TestBed.inject(MapLayers).routeColour()).toBe('grade');
   });
 
   it('leaves the aerial photos off until the user turns them on, and remembers', () => {

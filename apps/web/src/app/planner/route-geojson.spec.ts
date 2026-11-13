@@ -1,4 +1,8 @@
-import { routesToGeoJson, surfacesToGeoJson } from './route-geojson';
+import {
+  gradesToGeoJson,
+  routesToGeoJson,
+  surfacesToGeoJson,
+} from './route-geojson';
 
 describe('routesToGeoJson', () => {
   const a: [number, number, number][] = [
@@ -45,5 +49,31 @@ describe('surfacesToGeoJson', () => {
   it('draws nothing when the codes do not fit the geometry', () => {
     expect(surfacesToGeoJson(geometry, 'pp').features).toEqual([]);
     expect(surfacesToGeoJson([], '').features).toEqual([]);
+  });
+});
+
+describe('gradesToGeoJson', () => {
+  // About 111 m per step: 20 m up, then 20 m down (18 %).
+  const hill: [number, number, number][] = Array.from(
+    { length: 11 },
+    (_, i) => [3, 45 + i * 0.001, 100 + (i <= 5 ? i : 10 - i) * 20],
+  );
+
+  it('cuts the route into runs of one band, covering all of it', () => {
+    const { features } = gradesToGeoJson(hill, true);
+    expect(features.length).toBeGreaterThan(1);
+    expect(features[0].geometry.coordinates[0]).toEqual(hill[0]);
+    expect(features.at(-1)!.geometry.coordinates.at(-1)).toEqual(hill.at(-1));
+  });
+
+  it('gives a descent the flat band when it is not coloured', () => {
+    const bands = (colour: boolean) =>
+      gradesToGeoJson(hill, colour).features.map((f) => f.properties.band);
+    expect(bands(true).at(-1)).toBe(4);
+    expect(bands(false).at(-1)).toBe(0);
+  });
+
+  it('has nothing for a route without two points', () => {
+    expect(gradesToGeoJson([], true).features).toEqual([]);
   });
 });

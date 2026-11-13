@@ -27,6 +27,7 @@ A plan only stays whole while its work is open; when the work is done it is fold
 | [relief.md](relief.md)                                       | Layer switcher and hillshade                                                      | done        |
 | [reorder.md](reorder.md)                                     | Reordering the stops, explicit about the drop                                     | done        |
 | [reverse-fit-snap.md](reverse-fit-snap.md)                   | Reverse the route, wider removal, FIT export, points on ways, map layer proposals | done        |
+| [route-colour.md](route-colour.md)                           | Colour of the route: plain, by surface, by grade                                  | done        |
 | [route-names.md](route-names.md)                             | Names of routes from their places                                                 | done        |
 | [search.md](search.md)                                       | Start and end search                                                              | done        |
 | [surface.md](surface.md)                                     | Surface and way type of the route                                                 | done        |

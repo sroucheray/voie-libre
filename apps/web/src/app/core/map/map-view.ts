@@ -23,7 +23,8 @@ import {
   buildBasemapStyle,
   reliefTilesUrl,
 } from './basemap-style';
-import { MapLayers, RELIEF_PROBE } from './map-layers';
+import { MapLayers, RELIEF_PROBE, type RouteColour } from './map-layers';
+import { PALETTE } from './palette';
 import { MapViewport } from './map-viewport';
 import { RELIEF_CREDIT_URL, RELIEF_SOURCE_KIND } from './relief-source';
 import { viewBox, type Box } from '../offline/area-tiles';
@@ -136,6 +137,16 @@ export class MapView {
     color: SURFACE_COLORS[code],
     key: surfaceKey(code),
   }));
+  /** The ways to colour the route, in the order of the panel. */
+  protected readonly routeColours: readonly RouteColour[] = [
+    'plain',
+    'surface',
+    'grade',
+  ];
+  protected readonly gradeLegend = PALETTE.gradeLine.map((color, band) => ({
+    band,
+    color,
+  }));
   protected readonly online = inject(NetworkStatus).online;
   /** The photos are drawn: the user wants them and the device can reach the IGN. */
   protected readonly imageryShown = computed(
@@ -146,6 +157,11 @@ export class MapView {
   constructor() {
     let destroyed = false;
     let created: MapLike | null = null;
+    const onResize = () => this.measureLayers();
+    window.addEventListener('resize', onResize);
+    inject(DestroyRef).onDestroy(() =>
+      window.removeEventListener('resize', onResize),
+    );
     inject(DestroyRef).onDestroy(() => {
       destroyed = true;
       created?.remove();
@@ -272,8 +288,23 @@ export class MapView {
     this.map()?.resetNorth();
   }
 
+  /** Room left for the panel of layers under its top, so that it never runs out of the window. */
+  protected readonly layersMaxHeight = signal<number | null>(null);
+
   protected toggleLayers(): void {
     this.layersOpen.update((open) => !open);
+    this.measureLayers();
+  }
+
+  /** The panel takes the room down to the bottom of the window and scrolls inside when short. */
+  private measureLayers(): void {
+    if (!this.layersOpen()) return;
+    queueMicrotask(() => {
+      const box = this.host.nativeElement.querySelector('.map-layers');
+      if (!box) return;
+      const room = window.innerHeight - box.getBoundingClientRect().top - 12;
+      this.layersMaxHeight.set(Math.max(room, 120));
+    });
   }
 
   /** Escape closes the panel of layers and gives the focus back to its button. */
@@ -297,10 +328,6 @@ export class MapView {
 
   protected setImagery(event: Event): void {
     this.layers.setImagery((event.target as HTMLInputElement).checked);
-  }
-
-  protected setSurface(event: Event): void {
-    this.layers.setSurface((event.target as HTMLInputElement).checked);
   }
 
   protected setWays(event: Event): void {

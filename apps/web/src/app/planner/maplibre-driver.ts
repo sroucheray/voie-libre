@@ -14,7 +14,11 @@ import type {
 } from './planner-map-driver';
 import { accuracyCircle } from '../location/accuracy-circle';
 import type { LocationFix } from '../location/geolocation';
-import { routesToGeoJson, surfacesToGeoJson } from './route-geojson';
+import {
+  gradesToGeoJson,
+  routesToGeoJson,
+  surfacesToGeoJson,
+} from './route-geojson';
 import { directionToGeoJson } from './route-direction';
 import { PALETTE } from '../core/map/palette';
 import { iconElement } from '../core/icons/icons';
@@ -27,6 +31,8 @@ const ALTERNATIVE_LAYER = 'planner-routes-alternative';
 const SELECTED_LAYER = 'planner-routes-selected';
 const SURFACE_SOURCE = 'planner-surfaces';
 const SURFACE_LAYER = 'planner-surfaces-line';
+const GRADE_SOURCE = 'planner-grades';
+const GRADE_LAYER = 'planner-grades-line';
 const ARROW_SOURCE = 'planner-route-direction';
 /** An arrow (→) on the line, on the stretches ridden one way. */
 const ARROW_LAYER = 'planner-route-arrows';
@@ -147,6 +153,8 @@ export async function createMapLibreDriver(
   let preview: LngLat3[] | null = null;
   let highlight: LngLat3[] | null = null;
   let surfaceRoute: { geometry: LngLat3[]; surfaces: string } | null = null;
+  let gradeRoute: { geometry: LngLat3[]; colourDescents: boolean } | null =
+    null;
 
   /** Adds the source and layers. Idempotent: a new style (language change) removes them. */
   const ensureLayers = () => {
@@ -249,6 +257,26 @@ export async function createMapLibreDriver(
         'line-width': 6,
       },
     });
+    map.addSource(GRADE_SOURCE, {
+      type: 'geojson',
+      data: gradesToGeoJson([], true),
+    });
+    // The same place as the surface: the user picks one of the two (or neither).
+    map.addLayer({
+      id: GRADE_LAYER,
+      type: 'line',
+      source: GRADE_SOURCE,
+      layout: { 'line-cap': 'butt', 'line-join': 'round' },
+      paint: {
+        'line-color': [
+          'step',
+          ['get', 'band'],
+          PALETTE.gradeLine[0],
+          ...PALETTE.gradeLine.slice(1).flatMap((color, i) => [i + 1, color]),
+        ] as unknown as ExpressionSpecification,
+        'line-width': 6,
+      },
+    });
     // Light arrows along the selected route, from a middle zoom on: an arrow where it is ridden
     // one way, a ⇄ where it is ridden both ways.
     map.addSource(ARROW_SOURCE, {
@@ -320,6 +348,7 @@ export async function createMapLibreDriver(
     });
     pushRoutes();
     pushSurfaces();
+    pushGrades();
     pushStale();
   };
 
@@ -333,6 +362,7 @@ export async function createMapLibreDriver(
       ALTERNATIVE_LAYER,
       ALTERNATIVE_CASING_LAYER,
       SURFACE_LAYER,
+      GRADE_LAYER,
     ]) {
       if (map.getLayer(id)) {
         map.setPaintProperty(id, 'line-opacity', stale ? STALE_OPACITY : 1);
@@ -352,6 +382,16 @@ export async function createMapLibreDriver(
       surfaceRoute
         ? surfacesToGeoJson(surfaceRoute.geometry, surfaceRoute.surfaces)
         : surfacesToGeoJson([], ''),
+    );
+  };
+
+  const pushGrades = () => {
+    const source = map.getSource(GRADE_SOURCE) as
+      { setData(data: unknown): void } | undefined;
+    source?.setData(
+      gradeRoute
+        ? gradesToGeoJson(gradeRoute.geometry, gradeRoute.colourDescents)
+        : gradesToGeoJson([], true),
     );
   };
 
@@ -938,6 +978,10 @@ export async function createMapLibreDriver(
     setStale(next: boolean) {
       stale = next;
       pushStale();
+    },
+    setGrades(geometry: LngLat3[] | null, colourDescents: boolean) {
+      gradeRoute = geometry ? { geometry, colourDescents } : null;
+      pushGrades();
     },
     setSurfaces(geometry: LngLat3[] | null, surfaces: string | null) {
       surfaceRoute =

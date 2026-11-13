@@ -40,6 +40,9 @@ export const PALETTE = {
   /** Grade bands, nearly flat to very steep (`GRADE_BANDS` in `elevation-profile.ts`). */
   grade: ['#d1e9ff', '#a6e3b8', '#fde272', '#f79009', '#b42318'],
 
+  /** The same bands for the route line on the map, the first one deeper so that it shows on the map. */
+  gradeLine: ['#6aaef0', '#4cb87a', '#f2c200', '#f79009', '#b42318'],
+
   /** The hillshade of the relief. */
   hillshade: {
     shadow: '#4b5563',

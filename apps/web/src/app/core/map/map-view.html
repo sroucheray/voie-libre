@@ -78,6 +78,7 @@
     <div
       id="map-layers-panel"
       class="layers-panel"
+      [style.max-height.px]="layersMaxHeight()"
       role="group"
       [attr.aria-label]="'map.layers.title' | transloco"
     >
@@ -144,15 +145,21 @@
         }
       </ul>
       }
-      <label>
-        <input
-          type="checkbox"
-          class="surface-checkbox"
-          [checked]="layers.surface()"
-          (change)="setSurface($event)"
-        />
-        {{ 'map.layers.surface' | transloco }}
-      </label>
+      <fieldset class="route-colour">
+        <legend>{{ 'map.layers.routeColour' | transloco }}</legend>
+        @for (choice of routeColours; track choice) {
+        <label>
+          <input
+            type="radio"
+            name="route-colour"
+            [class]="'route-colour-' + choice"
+            [checked]="layers.routeColour() === choice"
+            (change)="layers.setRouteColour(choice)"
+          />
+          {{ 'map.layers.routeColour_' + choice | transloco }}
+        </label>
+        }
+      </fieldset>
       @if (layers.surface() && surfaceMissing()) {
       <p class="layers-note surface-note">
         @if (surfaceComputable()) { {{ 'surface.missing' | transloco }}
@@ -178,6 +185,22 @@
             aria-hidden="true"
           ></span>
           {{ item.key | transloco }}
+        </li>
+        }
+      </ul>
+      } @if (layers.grade()) {
+      <ul
+        class="ways-legend grade-legend"
+        [attr.aria-label]="'map.layers.gradeLegend' | transloco"
+      >
+        @for (item of gradeLegend; track item.band) {
+        <li>
+          <span
+            class="ways-legend__swatch"
+            [style.--way-color]="item.color"
+            aria-hidden="true"
+          ></span>
+          {{ 'map.layers.gradeBand_' + item.band | transloco }}
         </li>
         }
       </ul>

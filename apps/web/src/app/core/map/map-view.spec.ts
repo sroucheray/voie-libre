@@ -237,6 +237,7 @@ describe('MapView', () => {
         relief: false,
         ways: true,
         surface: true,
+        grade: false,
         imagery: false,
       });
 
@@ -299,19 +300,42 @@ describe('MapView', () => {
     it('offers the surface of the route, on at first, with a legend of the five categories, and lets it be turned off', async () => {
       const view = await renderWith(true);
       view.open();
-      const box =
-        view.root.querySelector<HTMLInputElement>('.surface-checkbox')!;
+      const box = view.root.querySelector<HTMLInputElement>(
+        '.route-colour-surface',
+      )!;
       expect(box.checked).toBe(true);
       expect(
         [...view.root.querySelectorAll('.surface-legend li')].map((li) =>
           li.textContent?.trim(),
         ),
       ).toEqual(['Paved', 'Cycleway', 'Unpaved or rough', 'Path', 'Unknown']);
-      box.click();
+      view.root.querySelector<HTMLInputElement>('.route-colour-plain')!.click();
       view.fixture.detectChanges();
       expect(view.root.querySelector('.surface-legend')).toBeNull();
       expect(JSON.parse(localStorage.getItem(MAP_LAYERS_KEY)!).surface).toBe(
         false,
+      );
+    });
+
+    it('colours the route by grade instead, with its own legend', async () => {
+      const view = await renderWith(true);
+      view.open();
+      view.root.querySelector<HTMLInputElement>('.route-colour-grade')!.click();
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.surface-legend')).toBeNull();
+      expect(
+        [...view.root.querySelectorAll('.grade-legend li')].map((li) =>
+          li.textContent?.trim(),
+        ),
+      ).toEqual([
+        'Flat, under 3 %',
+        '3 to 6 %',
+        '6 to 10 %',
+        '10 to 15 %',
+        'Over 15 %',
+      ]);
+      expect(JSON.parse(localStorage.getItem(MAP_LAYERS_KEY)!).grade).toBe(
+        true,
       );
     });
 

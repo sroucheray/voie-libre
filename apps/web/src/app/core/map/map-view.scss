@@ -62,6 +62,7 @@
   z-index: 2;
   top: 0;
   right: 3.25rem;
+  box-sizing: border-box;
   width: max-content;
   max-width: 16rem;
   padding: var(--space-3);
@@ -69,6 +70,20 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-2);
   font-size: var(--font-size-base);
+  // Never taller than the window (`layersMaxHeight`): what does not fit scrolls inside.
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  .route-colour {
+    margin: 0;
+    padding: 0;
+    border: 0;
+
+    legend {
+      padding: 0;
+      font-weight: 500;
+    }
+  }
 
   label {
     display: flex;

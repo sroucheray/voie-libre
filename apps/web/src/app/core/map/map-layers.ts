@@ -1,4 +1,7 @@
-import { Injectable, InjectionToken, signal } from '@angular/core';
+import { Injectable, InjectionToken, computed, signal } from '@angular/core';
+
+/** How the selected route is coloured: plain, by what it rides on, or by its grade. */
+export type RouteColour = 'plain' | 'surface' | 'grade';
 
 /** Where the choice of layers is kept on the device. */
 export const MAP_LAYERS_KEY = 'voie-libre.map-layers';
@@ -13,6 +16,7 @@ export class MapLayers {
   private readonly reliefState = signal(this.read().relief ?? true);
   private readonly waysState = signal(this.read().ways ?? true);
   private readonly surfaceState = signal(this.read().surface ?? true);
+  private readonly gradeState = signal(this.read().grade ?? false);
   private readonly imageryState = signal(this.read().imagery ?? false);
   /** True when the user wants the hillshade. */
   readonly relief = this.reliefState.asReadonly();
@@ -20,6 +24,12 @@ export class MapLayers {
   readonly ways = this.waysState.asReadonly();
   /** True when the user wants the route coloured by what it rides on (on at first). */
   readonly surface = this.surfaceState.asReadonly();
+  /** True when the user wants the route coloured by its grade, like the elevation profile (off at first). */
+  readonly grade = this.gradeState.asReadonly();
+  /** One colouring at a time: the surface, the grade, or none. */
+  readonly routeColour = computed<RouteColour>(() =>
+    this.surfaceState() ? 'surface' : this.gradeState() ? 'grade' : 'plain',
+  );
   /** True when the user wants the IGN's aerial photos (off at first: it calls an external server). */
   readonly imagery = this.imageryState.asReadonly();
 
@@ -35,6 +45,19 @@ export class MapLayers {
 
   setSurface(shown: boolean): void {
     this.surfaceState.set(shown);
+    if (shown) this.gradeState.set(false);
+    this.save();
+  }
+
+  setGrade(shown: boolean): void {
+    this.gradeState.set(shown);
+    if (shown) this.surfaceState.set(false);
+    this.save();
+  }
+
+  setRouteColour(colour: RouteColour): void {
+    this.surfaceState.set(colour === 'surface');
+    this.gradeState.set(colour === 'grade');
     this.save();
   }
 
@@ -51,6 +74,7 @@ export class MapLayers {
           relief: this.reliefState(),
           ways: this.waysState(),
           surface: this.surfaceState(),
+          grade: this.gradeState(),
           imagery: this.imageryState(),
         }),
       );
@@ -63,6 +87,7 @@ export class MapLayers {
     relief?: boolean;
     ways?: boolean;
     surface?: boolean;
+    grade?: boolean;
     imagery?: boolean;
   } {
     try {
@@ -75,6 +100,7 @@ export class MapLayers {
         ...(typeof stored?.surface === 'boolean'
           ? { surface: stored.surface }
           : {}),
+        ...(typeof stored?.grade === 'boolean' ? { grade: stored.grade } : {}),
         ...(typeof stored?.imagery === 'boolean'
           ? { imagery: stored.imagery }
           : {}),

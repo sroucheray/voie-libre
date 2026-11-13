@@ -31,6 +31,7 @@ import { map, switchMap } from 'rxjs';
 import { FormattingService } from '../core/format/formatting.service';
 import type { LngLat, MapLike } from '../core/map/map-factory';
 import { MapLayers } from '../core/map/map-layers';
+import { DescentColours } from './descent-colours';
 import { distanceFor } from './loop-duration';
 import { LoopSpeeds } from './loop-speeds';
 import { MapView } from '../core/map/map-view';
@@ -142,6 +143,7 @@ export class Planner {
   protected readonly format = inject(FormattingService);
   protected readonly location = inject(LocationStore);
   private readonly mapLayers = inject(MapLayers);
+  private readonly descentColours = inject(DescentColours);
   protected readonly profiles = PROFILES;
   protected readonly alternativeChoices = Array.from(
     { length: MAX_ALTERNATIVES },
@@ -544,6 +546,17 @@ export class Planner {
       driver?.setSurfaces(
         surfaces === null ? null : this.store.selectedGeometry(),
         surfaces,
+      );
+    });
+
+    // Or in the colours of its grade, like the elevation profile (no grade for a route without
+    // elevation). Descents follow the choice of the profile for each sport.
+    effect(() => {
+      const driver = this.driver();
+      const shown = this.mapLayers.grade() && this.store.elevationKnown();
+      driver?.setGrades(
+        shown ? this.store.selectedGeometry() : null,
+        this.descentColours.coloured(this.store.profile()),
       );
     });
   }

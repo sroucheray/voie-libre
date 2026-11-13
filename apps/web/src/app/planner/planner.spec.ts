@@ -1295,6 +1295,32 @@ describe('Planner', () => {
     expect(view.driver.surfaces?.surfaces).toBe('pu');
   });
 
+  it('draws the route in the colours of its grade when the user picks it, without the surface', async () => {
+    respond = () =>
+      json({
+        routes: [{ ...routes(1).routes[0], surfaces: 'pu' }],
+      });
+    const view = await render();
+    view.click(3.087, 45.777);
+    view.click(3.249, 45.544);
+    await view.settle();
+    expect(view.driver.grades).toBeNull();
+
+    TestBed.inject(MapLayers).setRouteColour('grade');
+    await view.settle();
+    expect(view.driver.surfaces).toBeNull();
+    expect(view.driver.grades?.geometry).toHaveLength(3);
+    // Road leaves the descents plain, trail colours them.
+    expect(view.driver.grades?.colourDescents).toBe(false);
+    TestBed.inject(PlannerStore).setProfile('trail');
+    await view.settle();
+    expect(view.driver.grades?.colourDescents).toBe(true);
+
+    TestBed.inject(MapLayers).setRouteColour('plain');
+    await view.settle();
+    expect(view.driver.grades).toBeNull();
+  });
+
   it('draws no surfaces for a route that does not say', async () => {
     const view = await render();
     view.click(3.087, 45.777);
@@ -1337,7 +1363,7 @@ describe('Planner', () => {
       view.fixture.detectChanges();
       TestBed.tick();
       const before = view.driver.fitted.length;
-      view.root.querySelector<HTMLButtonElement>('.stretch-zoom')!.click();
+      view.root.querySelector<HTMLButtonElement>('.bubble__zoom')!.click();
       view.fixture.detectChanges();
       TestBed.tick();
       expect(view.driver.fitted.length).toBe(before + 1);
@@ -2118,7 +2144,9 @@ describe('Planner', () => {
       adds(view.root)[0].click();
       view.fixture.detectChanges();
       (
-        view.root.querySelector('.points__new .point-remove') as HTMLButtonElement
+        view.root.querySelector(
+          '.points__new .point-remove',
+        ) as HTMLButtonElement
       ).click();
       view.fixture.detectChanges();
       expect(view.root.querySelector('.points__new')).toBeNull();

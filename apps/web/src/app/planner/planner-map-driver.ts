@@ -74,6 +74,12 @@ export interface PlannerMapDriver {
    */
   setSurfaces(geometry: LngLat3[] | null, surfaces: string | null): void;
   /**
+   * Draws the selected route in the colours of its grade, like the elevation profile, over its
+   * line; `null` removes it. With `colourDescents` false the descents take the colour of a flat
+   * stretch.
+   */
+  setGrades(geometry: LngLat3[] | null, colourDescents: boolean): void;
+  /**
    * The routes on screen are being replaced by a computation that takes a while: they are drawn
    * faded (and back to full when it is over), so that they do not pass for the answer.
    */
