@@ -68,7 +68,8 @@
     "supportTitle": "Support the project",
     "support": "Voie Libre is free and has no advertising. The server costs about 86 € a year before tax, and the domain name comes on top; the author pays both.",
     "donate": "Support the project",
-    "version": "Version {{version}}"
+    "version": "Version {{version}}",
+    "showWelcome": "Show the welcome screen"
   },
   "planner": {
     "title": "Route planner",
@@ -418,5 +419,20 @@
     "missing": "This route has no surface information (it was saved or imported without it). It can be calculated again between its points; the result may differ, and Undo brings the saved one back.",
     "compute": "Calculate the surface",
     "missingFixed": "This route has no surface information (it was saved or imported without it) and cannot be calculated again: a loop by distance is not kept with a saved route."
+  },
+  "welcome": {
+    "title": "Welcome to Voie Libre",
+    "intro": "Plan road, gravel and trail routes on a map made for it.",
+    "route": {
+      "title": "Plan a route",
+      "text": "Click the map to place a start, then a destination. Add stops anywhere, drag the markers, pick the profile and read the elevation."
+    },
+    "loop": {
+      "title": "Make a loop",
+      "text": "Place just a start and press “Make a loop”: choose a distance or a duration, a climb and a direction, and get a round trip from there."
+    },
+    "free": "Voie Libre is free, without advertising, and your routes stay on your device. The author pays for the server: if the app is useful to you, you can help.",
+    "donate": "Support the project",
+    "start": "Start planning"
   }
 }

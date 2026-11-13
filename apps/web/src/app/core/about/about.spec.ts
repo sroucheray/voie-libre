@@ -3,6 +3,7 @@ import { provideTestTransloco } from '../../../testing/transloco-testing';
 import { LanguageService } from '../i18n/language.service';
 import { ABOUT_LINKS, type AboutLinks } from './about-config';
 import { About } from './about';
+import { WelcomeScreen } from '../welcome/welcome-screen';
 
 function setup(links?: Partial<AboutLinks>) {
   TestBed.configureTestingModule({
@@ -95,5 +96,14 @@ describe('About', () => {
     expect(root.querySelector('.about__version')?.textContent?.trim()).toBe(
       'Version dev',
     );
+  });
+
+  it('brings the welcome screen back and closes itself', async () => {
+    const { root, open, fixture } = setup();
+    await open();
+    root.querySelector<HTMLButtonElement>('.about__welcome')?.click();
+    await fixture.whenStable();
+    expect(root.querySelector('[role="dialog"]')).toBeNull();
+    expect(TestBed.inject(WelcomeScreen).open()).toBe(true);
   });
 });

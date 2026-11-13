@@ -1,0 +1,60 @@
+@if (screen.open()) {
+<div class="welcome">
+  <button
+    type="button"
+    class="welcome__backdrop"
+    tabindex="-1"
+    aria-hidden="true"
+    (click)="screen.dismiss()"
+  ></button>
+  <div
+    #box
+    class="welcome__box"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="welcome-title"
+    tabindex="-1"
+    (keydown.escape)="screen.dismiss()"
+  >
+    <header class="welcome__header">
+      <img src="icons/logo.svg" alt="" width="44" height="44" />
+      <div>
+        <h2 id="welcome-title">{{ 'welcome.title' | transloco }}</h2>
+        <p>{{ 'welcome.intro' | transloco }}</p>
+      </div>
+    </header>
+
+    <div class="welcome__body">
+      <ul class="welcome__ways">
+        <li>
+          <strong>{{ 'welcome.route.title' | transloco }}</strong>
+          <span>{{ 'welcome.route.text' | transloco }}</span>
+        </li>
+        <li>
+          <strong>{{ 'welcome.loop.title' | transloco }}</strong>
+          <span>{{ 'welcome.loop.text' | transloco }}</span>
+        </li>
+      </ul>
+
+      <p class="welcome__free">{{ 'welcome.free' | transloco }}</p>
+
+      <div class="welcome__actions">
+        @if (links.donation; as donation) {
+        <a
+          class="welcome__donate"
+          [href]="donation"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <vl-icon name="heart" />
+          {{ 'welcome.donate' | transloco }}
+        </a>
+        }
+        <button type="button" class="welcome__start" (click)="screen.dismiss()">
+          {{ 'welcome.start' | transloco }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+}

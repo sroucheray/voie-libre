@@ -68,7 +68,8 @@
     "supportTitle": "Soutenir le projet",
     "support": "Voie Libre est gratuit et sans publicité. Le serveur coûte environ 86 € par an hors taxes, auxquels s'ajoute le nom de domaine ; l'auteur paie les deux.",
     "donate": "Soutenir le projet",
-    "version": "Version {{version}}"
+    "version": "Version {{version}}",
+    "showWelcome": "Revoir l'écran d'accueil"
   },
   "planner": {
     "title": "Planificateur de parcours",
@@ -418,5 +419,20 @@
     "missing": "Ce parcours n'a pas d'information de revêtement (il a été enregistré ou importé sans). On peut le recalculer entre ses points ; le résultat peut différer, et Annuler rend le parcours enregistré.",
     "compute": "Calculer le revêtement",
     "missingFixed": "Ce parcours n'a pas d'information de revêtement (il a été enregistré ou importé sans) et ne peut pas être recalculé : une boucle à distance n'est pas conservée avec le parcours enregistré."
+  },
+  "welcome": {
+    "title": "Bienvenue sur Voie Libre",
+    "intro": "Planifiez des parcours route, gravel et trail sur une carte faite pour ça.",
+    "route": {
+      "title": "Planifier un itinéraire",
+      "text": "Cliquez sur la carte pour placer un départ, puis une arrivée. Ajoutez des étapes n'importe où, déplacez les marqueurs, choisissez le profil et lisez le dénivelé."
+    },
+    "loop": {
+      "title": "Faire une boucle",
+      "text": "Placez seulement un départ et appuyez sur « Faire une boucle » : choisissez une distance ou une durée, un dénivelé et une direction, et obtenez un aller-retour depuis ce point."
+    },
+    "free": "Voie Libre est gratuit, sans publicité, et vos parcours restent sur votre appareil. L'auteur paie le serveur : si l'application vous est utile, vous pouvez l'aider.",
+    "donate": "Soutenir le projet",
+    "start": "Commencer"
   }
 }

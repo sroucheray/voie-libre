@@ -9,6 +9,7 @@ import { LanguageSwitch } from './core/language-switch/language-switch';
 import { About } from './core/about/about';
 import { ABOUT_LINKS } from './core/about/about-config';
 import { Icon } from './core/icons/icon';
+import { Welcome } from './core/welcome/welcome';
 
 @Component({
   imports: [
@@ -17,6 +18,7 @@ import { Icon } from './core/icons/icon';
     LanguageSwitch,
     About,
     Icon,
+    Welcome,
     ApiStatus,
     OfflineMap,
     UpdatePrompt,

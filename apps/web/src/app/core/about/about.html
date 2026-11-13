@@ -74,6 +74,10 @@
       </section>
       }
 
+      <button type="button" class="about__welcome" (click)="showWelcome()">
+        {{ 'about.showWelcome' | transloco }}
+      </button>
+
       <section aria-labelledby="about-source-title">
         <h3 id="about-source-title">{{ 'about.sourceTitle' | transloco }}</h3>
         <ul class="about__links">

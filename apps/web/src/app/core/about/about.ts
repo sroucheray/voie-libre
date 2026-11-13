@@ -10,6 +10,7 @@ import {
 import { TranslocoPipe } from '@jsverse/transloco';
 import { Icon } from '../icons/icon';
 import { ABOUT_LINKS } from './about-config';
+import { WelcomeScreen } from '../welcome/welcome-screen';
 import { APP_VERSION } from './version';
 
 /** The "i" button of the header and the window it opens: what the app is, its code, credits, support. */
@@ -23,6 +24,7 @@ import { APP_VERSION } from './version';
 export class About {
   protected readonly links = inject(ABOUT_LINKS);
   protected readonly version = APP_VERSION;
+  private readonly welcome = inject(WelcomeScreen);
   protected readonly open = signal(false);
   private readonly box = viewChild<ElementRef<HTMLElement>>('box');
 
@@ -36,6 +38,11 @@ export class About {
 
   protected show(): void {
     this.open.set(true);
+  }
+
+  protected showWelcome(): void {
+    this.open.set(false);
+    this.welcome.show();
   }
 
   protected close(): void {
