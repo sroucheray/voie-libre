@@ -26,6 +26,8 @@ const ALTERNATIVE_LAYER = 'planner-routes-alternative';
 const SELECTED_LAYER = 'planner-routes-selected';
 const SURFACE_SOURCE = 'planner-surfaces';
 const SURFACE_LAYER = 'planner-surfaces-line';
+const ARROW_LAYER = 'planner-route-arrows';
+const ARROW_IMAGE = 'planner-route-arrow';
 const HIGHLIGHT_SOURCE = 'planner-highlight';
 const HIGHLIGHT_LAYER = 'planner-highlight-line';
 const PREVIEW_SOURCE = 'planner-preview';
@@ -36,6 +38,32 @@ const ACCURACY_LINE_LAYER = 'planner-location-accuracy-line';
 /** Zoom the view reaches when it first moves to the user (it never zooms out). */
 const LOCATION_ZOOM = 15;
 const PLACE_ZOOM = 14;
+
+/**
+ * The chevron that points along the selected route: white, with a thin dark edge so that it reads
+ * on the route's colour and on the surface layer. Drawn once, pointing right (the line's direction).
+ * `null` where there is no canvas (tests).
+ */
+function arrowImage(): ImageData | null {
+  const size = 32;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const context = canvas.getContext('2d');
+  if (!context) return null;
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+  context.beginPath();
+  context.moveTo(9, 6);
+  context.lineTo(23, 16);
+  context.lineTo(9, 26);
+  context.strokeStyle = 'rgba(8, 51, 68, 0.55)';
+  context.lineWidth = 8;
+  context.stroke();
+  context.strokeStyle = '#ffffff';
+  context.lineWidth = 5;
+  context.stroke();
+  return context.getImageData(0, 0, size, size);
+}
 
 /** The circle of the accuracy as GeoJSON, empty without a fix. */
 function accuracyData(fix: LocationFix | null): GeoJSON.GeoJSON {
@@ -196,6 +224,28 @@ export async function createMapLibreDriver(
         'line-width': 6,
       },
     });
+    // Light arrows along the selected route, in the direction it is ridden, from a middle zoom on.
+    const arrow = map.hasImage(ARROW_IMAGE) ? null : arrowImage();
+    if (arrow) map.addImage(ARROW_IMAGE, arrow, { pixelRatio: 2 });
+    if (map.hasImage(ARROW_IMAGE)) {
+      map.addLayer({
+        id: ARROW_LAYER,
+        type: 'symbol',
+        source: SOURCE,
+        minzoom: 11,
+        filter: ['==', ['get', 'selected'], true],
+        layout: {
+          'symbol-placement': 'line',
+          'symbol-spacing': 80,
+          'icon-image': ARROW_IMAGE,
+          'icon-size': ['interpolate', ['linear'], ['zoom'], 11, 1, 16, 1.4],
+          'icon-rotation-alignment': 'map',
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+        },
+        paint: { 'icon-opacity': 0.9 },
+      });
+    }
     map.addSource(HIGHLIGHT_SOURCE, {
       type: 'geojson',
       data: routesToGeoJson(highlight ? [highlight] : [], 0),
@@ -242,6 +292,13 @@ export async function createMapLibreDriver(
       if (map.getLayer(id)) {
         map.setPaintProperty(id, 'line-opacity', stale ? STALE_OPACITY : 1);
       }
+    }
+    if (map.getLayer(ARROW_LAYER)) {
+      map.setPaintProperty(
+        ARROW_LAYER,
+        'icon-opacity',
+        stale ? STALE_OPACITY : 0.9,
+      );
     }
   };
 

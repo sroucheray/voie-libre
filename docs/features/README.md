@@ -21,6 +21,7 @@ A plan only stays whole while its work is open; when the work is done it is fold
 | [open-route.md](open-route.md)                               | Building a route point by point                                                   | done        |
 | [panel-stops-profile.md](panel-stops-profile.md)             | Stops anywhere and a descriptive profile choice                                   | done        |
 | [profile-colours-selection.md](profile-colours-selection.md) | Descent colours and the selection bubble on the profile                           | in progress |
+| [route-arrows.md](route-arrows.md)                           | Direction arrows on the route                                                     | done        |
 | [relief-france.md](relief-france.md)                         | The relief for all of France                                                      | done        |
 | [relief-public.md](relief-public.md)                         | The relief from public terrain tiles                                              | done        |
 | [relief.md](relief.md)                                       | Layer switcher and hillshade                                                      | done        |
