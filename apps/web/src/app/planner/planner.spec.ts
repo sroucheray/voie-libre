@@ -244,6 +244,76 @@ describe('Planner', () => {
     ).toBe('polite');
   });
 
+  describe('route panel', () => {
+    const order = (root: HTMLElement, selectors: string[]) =>
+      selectors.map((selector) => {
+        const element = root.querySelector(selector);
+        return element
+          ? Array.from(root.querySelectorAll('*')).indexOf(element)
+          : -1;
+      });
+
+    it('puts the places, then the loop, then the result, then the actions, in that order', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.click(3.249, 45.544);
+      await view.settle();
+      view.fixture.detectChanges();
+      const positions = order(view.root, [
+        'vl-profile-select',
+        '.route-fields',
+        '.loop',
+        '.result',
+        '.panel-footer',
+      ]);
+      expect(positions.every((position) => position >= 0)).toBe(true);
+      expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+    });
+
+    it('keeps the options about the result in its header', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.click(3.249, 45.544);
+      await view.settle();
+      view.fixture.detectChanges();
+      const header = view.root.querySelector('.result__header') as HTMLElement;
+      expect(header.querySelector('.alternatives select')).not.toBeNull();
+      expect(header.textContent).toContain('Route');
+    });
+
+    it('keeps save and clear all in a bar outside the scrolling part', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.click(3.249, 45.544);
+      await view.settle();
+      view.fixture.detectChanges();
+      const footer = view.root.querySelector('.panel-footer') as HTMLElement;
+      const scrolling = view.root.querySelector('.tab-route') as HTMLElement;
+      expect(scrolling.contains(footer)).toBe(false);
+      expect(footer.querySelector('.clear')).not.toBeNull();
+      expect(footer.querySelector('form.save, .saved-notice')).not.toBeNull();
+    });
+
+    it('folds the loop settings under a title that says the length', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.fixture.detectChanges();
+      (view.root.querySelector('.loop') as HTMLButtonElement).click();
+      view.fixture.detectChanges();
+      view.root
+        .querySelector<HTMLButtonElement>('.loop-dialog .loop-choice')
+        ?.click();
+      view.fixture.detectChanges();
+      await view.settle();
+      const details = view.root.querySelector(
+        'details.loop-settings',
+      ) as HTMLDetailsElement | null;
+      expect(details).not.toBeNull();
+      expect(details?.open).toBe(false);
+      expect(details?.querySelector('summary')?.textContent).toContain('km');
+    });
+  });
+
   describe('phone sheet', () => {
     const panel = (view: Awaited<ReturnType<typeof render>>) =>
       view.root.querySelector('.panel') as HTMLElement;
@@ -372,13 +442,11 @@ describe('Planner', () => {
       expect(hint()).toBe('Draw a loop of a set length from the start.');
       // The hint is the button's description, for screen readers.
       expect(button().getAttribute('aria-describedby')).toBe('loop-hint');
-      // Both buttons and the hint share one container, so that the hint stays under that row.
-      const actions = view.root.querySelector('.panel-actions')!;
-      expect(actions.contains(button())).toBe(true);
-      expect(actions.querySelector('.clear')).not.toBeNull();
-      expect(actions.contains(view.root.querySelector('#loop-hint'))).toBe(
+      // The hint stays inside the loop card; "Clear all" is not part of it any more.
+      expect(button().contains(view.root.querySelector('#loop-hint'))).toBe(
         true,
       );
+      expect(button().querySelector('.clear')).toBeNull();
       button().click();
       view.fixture.detectChanges();
       expect(

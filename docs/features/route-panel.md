@@ -24,11 +24,6 @@ Nothing else changes: same strings, same behaviour, same specs except for what m
 - A redesign of the place fields, of the profile choice, or of the loop dialog.
 - Moving undo and redo (they stay at the top on a wide screen and on the map on a phone).
 
-## Plan
+## How it went
 
-1. **Block 1.** The loop settings into a folded group with a summary; the loop card stays under the places; "Clear all" leaves the loop group.
-2. **Block 2.** The result section with its header (alternatives, recompute), status and error, routes and light profile.
-3. **Block 3.** The actions bar outside the scrolling part, with the save form and "Clear all".
-4. **Docs.** `docs/implementation.md`, this file folded into "How it went".
-
-Each step ends with lint, build and the targeted spec, then one commit.
+Built in one pass instead of three commits (the three blocks touch the same part of the template). Two things beyond the brief: the save form (`saved-routes.scss`) puts the name and the button on one row, so the pinned bar takes about 125 px and not 180 on a phone; and `planner.scss` was at 11.9 kB of its 12 kB budget, so the phone rules moved to `planner-phone.scss`. Seen in the browser pane, a route being made through the search fields (no WebGL, so no map click): wide screen and phone half sheet.

@@ -213,7 +213,8 @@
       "byDuration": "Duration",
       "durationLabel": "Duration (min)",
       "speedLabel": "Your speed (km/h)",
-      "durationEstimate": "About {{km}} km at this speed. The climb is not counted."
+      "durationEstimate": "About {{km}} km at this speed. The climb is not counted.",
+      "settings": "Loop settings: {{length}}"
     },
     "menu": {
       "label": "Place on the map",
@@ -242,6 +243,9 @@
     "fullscreen": {
       "enter": "Full screen map",
       "exit": "Leave full screen"
+    },
+    "result": {
+      "title": "Route"
     }
   },
   "saved": {

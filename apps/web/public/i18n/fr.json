@@ -213,7 +213,8 @@
       "byDuration": "Durée",
       "durationLabel": "Durée (min)",
       "speedLabel": "Votre vitesse (km/h)",
-      "durationEstimate": "Environ {{km}} km à cette vitesse. Le dénivelé n'est pas compté."
+      "durationEstimate": "Environ {{km}} km à cette vitesse. Le dénivelé n'est pas compté.",
+      "settings": "Réglages de la boucle : {{length}}"
     },
     "menu": {
       "label": "Placer sur la carte",
@@ -242,6 +243,9 @@
     "fullscreen": {
       "enter": "Carte en plein écran",
       "exit": "Quitter le plein écran"
+    },
+    "result": {
+      "title": "Itinéraire"
     }
   },
   "saved": {

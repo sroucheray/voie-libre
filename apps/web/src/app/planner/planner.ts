@@ -112,7 +112,7 @@ const SHEET_PEEK_REM = 4.25;
     ComputeBadge,
   ],
   templateUrl: './planner.html',
-  styleUrl: './planner.scss',
+  styleUrls: ['./planner.scss', './planner-phone.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // A phone's map with the whole screen: the sheet goes and what floated above it comes down.
   host: { '[class.map-fullscreen]': 'fullscreen.active()' },

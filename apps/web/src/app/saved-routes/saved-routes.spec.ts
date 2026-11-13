@@ -217,10 +217,10 @@ describe('Saved routes', () => {
       await view.settle(ROUTE_DEBOUNCE_MS + 10);
       expect(view.save().disabled).toBe(false);
       expect(view.nameInput().disabled).toBe(false);
-      // In the Route section, not in the list of saved routes.
-      expect(view.root.querySelector('.tab-route')?.contains(view.save())).toBe(
-        true,
-      );
+      // In the actions bar of the Route section, not in the list of saved routes.
+      expect(
+        view.root.querySelector('.panel-footer')?.contains(view.save()),
+      ).toBe(true);
     });
 
     it('proposes a name and saves the selected route', async () => {
@@ -346,8 +346,10 @@ describe('Saved routes', () => {
       (notice.querySelector('.saved-notice__link') as HTMLElement).click();
       view.fixture.detectChanges();
       expect(view.root.querySelector('.list li.fresh')).not.toBeNull();
-      // Editing the route brings the form back.
+      // Editing the route brings the form back (the actions bar shows with the Route section).
       await view.edit();
+      view.root.querySelector<HTMLButtonElement>('[role="tab"]')?.click();
+      view.fixture.detectChanges();
       expect(view.root.querySelector('.saved-notice')).toBeNull();
       expect(view.root.querySelector('.save')).not.toBeNull();
     });

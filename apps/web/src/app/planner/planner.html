@@ -537,134 +537,157 @@
           <vl-icon name="swap" />
         </button>
       </div>
-      @if (store.points().length > 0) { @if (store.loop(); as loop) { @if
-      (loop.mode === 'distance') {
-      <label class="loop-length">
-        {{ 'planner.loop.length' | transloco }}
-        <input
-          type="number"
-          [min]="distanceMinKm"
-          [max]="distanceMaxKm"
-          step="1"
-          [value]="loop.distanceMeters / 1000"
-          (change)="setLoopKm($any($event.target).value)"
-        />
-      </label>
-      <label class="loop-length">
-        {{ 'planner.loop.ascent' | transloco }}
-        <input
-          type="number"
-          min="0"
-          [max]="ascentMax"
-          step="100"
-          [placeholder]="'planner.loop.ascentAny' | transloco"
-          [value]="loop.ascentMeters ?? ''"
-          (change)="setLoopAscent($any($event.target).value)"
-        />
-      </label>
-      <label class="loop-length">
-        {{ 'planner.loop.direction' | transloco }}
-        <select
-          class="loop-direction"
-          (change)="setLoopDirection($any($event.target).value)"
+      @if (store.points().length > 0) { @if (canClose()) {
+      <!-- One card: the title and what it does stay together. -->
+      <button
+        type="button"
+        class="loop"
+        aria-labelledby="loop-title"
+        aria-describedby="loop-hint"
+        (click)="openLoopDialog()"
+      >
+        <vl-icon class="loop__icon" name="repeat" />
+        <span id="loop-title" class="loop__title"
+          >{{ loopLabelKey() | transloco }}</span
         >
-          <option value="" [selected]="!loop.direction">
-            {{ 'planner.loop.directions.any' | transloco }}
-          </option>
-          @for (direction of directions; track direction) {
-          <option [value]="direction" [selected]="loop.direction === direction">
-            {{ 'planner.loop.directions.' + direction | transloco }}
-          </option>
-          }
-        </select>
-      </label>
-      } }
-      <div class="panel-actions">
-        @if (canClose()) {
-        <!-- One card: the title and what it does stay together. -->
-        <button
-          type="button"
-          class="loop"
-          aria-labelledby="loop-title"
-          aria-describedby="loop-hint"
-          (click)="openLoopDialog()"
+        <span id="loop-hint" class="loop-hint"
+          >{{ loopLabelKey() + 'Hint' | transloco }}</span
         >
-          <vl-icon class="loop__icon" name="repeat" />
-          <span id="loop-title" class="loop__title"
-            >{{ loopLabelKey() | transloco }}</span
+      </button>
+      } @if (store.loop(); as loop) { @if (loop.mode === 'distance') {
+      <details class="loop-settings">
+        <summary>
+          {{ 'planner.loop.settings' | transloco : { length:
+          format.distance(loop.distanceMeters) } }}
+        </summary>
+        <label class="loop-length">
+          {{ 'planner.loop.length' | transloco }}
+          <input
+            type="number"
+            [min]="distanceMinKm"
+            [max]="distanceMaxKm"
+            step="1"
+            [value]="loop.distanceMeters / 1000"
+            (change)="setLoopKm($any($event.target).value)"
+          />
+        </label>
+        <label class="loop-length">
+          {{ 'planner.loop.ascent' | transloco }}
+          <input
+            type="number"
+            min="0"
+            [max]="ascentMax"
+            step="100"
+            [placeholder]="'planner.loop.ascentAny' | transloco"
+            [value]="loop.ascentMeters ?? ''"
+            (change)="setLoopAscent($any($event.target).value)"
+          />
+        </label>
+        <label class="loop-length">
+          {{ 'planner.loop.direction' | transloco }}
+          <select
+            class="loop-direction"
+            (change)="setLoopDirection($any($event.target).value)"
           >
-          <span id="loop-hint" class="loop-hint"
-            >{{ loopLabelKey() + 'Hint' | transloco }}</span
-          >
-        </button>
-        }
-        <button type="button" class="clear" (click)="store.clear()">
-          {{ 'planner.clear' | transloco }}
-        </button>
-      </div>
-      } @if (store.status() === 'loading') {
-      <p role="status">{{ 'planner.status.loading' | transloco }}</p>
-      } @if (store.errorCode(); as code) {
-      <p class="error" role="alert">
-        {{ 'planner.errors.' + code | transloco }}
-      </p>
-      } @if (store.points().length > 0) {
-      <div class="compute-options">
-        <label class="alternatives">
-          {{ 'planner.alternatives.label' | transloco }}
-          <select (change)="selectAlternatives($event)">
-            @for (count of alternativeChoices; track count) {
-            <option [value]="count" [selected]="count === store.alternatives()">
-              {{ format.number(count) }}
+            <option value="" [selected]="!loop.direction">
+              {{ 'planner.loop.directions.any' | transloco }}
+            </option>
+            @for (direction of directions; track direction) {
+            <option
+              [value]="direction"
+              [selected]="loop.direction === direction"
+            >
+              {{ 'planner.loop.directions.' + direction | transloco }}
             </option>
             }
           </select>
         </label>
-        @if (store.routes().length > 0 && store.canRecompute() && store.status()
-        === 'ready') {
-        <!-- An edit beside the route on a long trip only recomputes a stretch: this asks for it all. -->
-        <button
-          type="button"
-          class="recompute"
-          [title]="'planner.recompute.hint' | transloco"
-          (click)="store.recompute()"
-        >
-          {{ 'planner.recompute.button' | transloco }}
-        </button>
-        }
-      </div>
-      } @if (store.routes().length > 0) {
-      <ul class="routes" [attr.aria-label]="'planner.routes.label' | transloco">
-        @for (route of store.routes(); track $index; let i = $index) {
-        <li>
-          <button
-            type="button"
-            [attr.aria-pressed]="i === store.selectedIndex()"
-            (click)="store.showRoute(i)"
-          >
-            <strong
-              >{{ 'planner.routes.route' | transloco : { n: i + 1 } }}</strong
+      </details>
+      } }
+      <section class="result" aria-labelledby="result-title">
+        <div class="result__header">
+          <h3 id="result-title">{{ 'planner.result.title' | transloco }}</h3>
+          <div class="result__options">
+            <label class="alternatives">
+              {{ 'planner.alternatives.label' | transloco }}
+              <select (change)="selectAlternatives($event)">
+                @for (count of alternativeChoices; track count) {
+                <option
+                  [value]="count"
+                  [selected]="count === store.alternatives()"
+                >
+                  {{ format.number(count) }}
+                </option>
+                }
+              </select>
+            </label>
+            @if (store.routes().length > 0 && store.canRecompute() &&
+            store.status() === 'ready') {
+            <!-- An edit beside the route on a long trip only recomputes a stretch: this asks for it all. -->
+            <button
+              type="button"
+              class="recompute"
+              [title]="'planner.recompute.hint' | transloco"
+              (click)="store.recompute()"
             >
-            <span>
-              @if (route.ascentMeters === null) { {{
-              'planner.routes.summaryNoClimb' | transloco : { distance:
-              format.distance(route.distanceMeters), duration:
-              format.duration(route.durationSeconds) } }} } @else { {{
-              'planner.routes.summary' | transloco : { distance:
-              format.distance(route.distanceMeters), ascent:
-              format.elevation(route.ascentMeters), duration:
-              format.duration(route.durationSeconds) } }} }
-            </span>
-          </button>
-        </li>
+              {{ 'planner.recompute.button' | transloco }}
+            </button>
+            }
+          </div>
+        </div>
+        @if (store.status() === 'loading') {
+        <p role="status">{{ 'planner.status.loading' | transloco }}</p>
+        } @if (store.errorCode(); as code) {
+        <p class="error" role="alert">
+          {{ 'planner.errors.' + code | transloco }}
+        </p>
+        } @if (store.routes().length > 0) {
+        <ul
+          class="routes"
+          [attr.aria-label]="'planner.routes.label' | transloco"
+        >
+          @for (route of store.routes(); track $index; let i = $index) {
+          <li>
+            <button
+              type="button"
+              [attr.aria-pressed]="i === store.selectedIndex()"
+              (click)="store.showRoute(i)"
+            >
+              <strong
+                >{{ 'planner.routes.route' | transloco : { n: i + 1 } }}</strong
+              >
+              <span>
+                @if (route.ascentMeters === null) { {{
+                'planner.routes.summaryNoClimb' | transloco : { distance:
+                format.distance(route.distanceMeters), duration:
+                format.duration(route.durationSeconds) } }} } @else { {{
+                'planner.routes.summary' | transloco : { distance:
+                format.distance(route.distanceMeters), ascent:
+                format.elevation(route.ascentMeters), duration:
+                format.duration(route.durationSeconds) } }} }
+              </span>
+            </button>
+          </li>
+          }
+        </ul>
+        } @if (store.routes().length > 0) {
+        <vl-profile-mini />
         }
-      </ul>
-      } @if (store.routes().length > 0) {
-      <vl-profile-mini />
-      } @if (store.routes().length > 0 && savedRoutes(); as saved) {
-      <ng-container [ngTemplateOutlet]="saved.saveForm()" />
+      </section>
       }
     </div>
+
+    <!-- Always in reach: the actions do not scroll away with the list of routes. -->
+    @if (tab() === 'route' && store.points().length > 0) {
+    <div class="panel-footer">
+      @if (store.routes().length > 0 && savedRoutes(); as saved) {
+      <ng-container [ngTemplateOutlet]="saved.saveForm()" />
+      }
+      <button type="button" class="clear" (click)="store.clear()">
+        {{ 'planner.clear' | transloco }}
+      </button>
+    </div>
+    }
 
     <vl-saved-routes
       [hidden]="tab() !== 'saved'"

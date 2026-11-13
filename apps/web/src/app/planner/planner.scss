@@ -452,22 +452,11 @@ vl-saved-routes {
 }
 
 // The loop is one card, full width: the title and what it does are inside it, so that the two
-// can never be taken for two things. "Clear" is apart, under it, as a small red link.
-.panel-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.25rem;
-  margin-top: 0.5rem;
-
-  .clear {
-    align-self: flex-start;
-    margin-top: 0;
-  }
-}
-
+// can never be taken for two things.
 .loop {
   display: grid;
+  width: 100%;
+  margin-top: var(--space-3);
   grid-template-columns: auto 1fr;
   align-items: center;
   column-gap: var(--space-3);
@@ -499,23 +488,75 @@ vl-saved-routes {
   margin-top: 0.5rem;
 }
 
-// The number of alternatives and the whole-route button, on one row (the button wraps under on a narrow panel).
-.compute-options {
+// The loop settings, folded under the loop card; its title says the current length.
+.loop-settings {
+  margin-top: var(--space-2);
+
+  summary {
+    display: flex;
+    align-items: center;
+    min-height: var(--target, 2.75rem);
+    color: var(--color-accent);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+  }
+}
+
+// The result: its title, the options that are about it (alternatives, whole route) and the routes.
+.result {
+  margin-top: var(--space-3);
+
+  h3 {
+    margin: 0;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-2);
+  }
+}
+
+.result__header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
+  gap: var(--space-1) var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.result__options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
 
   .alternatives {
     margin-top: 0;
-    flex: 1 1 auto;
+    gap: var(--space-2);
   }
 
   .recompute {
     margin-top: 0;
-    flex: none;
+    min-height: 2rem;
+  }
+}
+
+// The actions stay at the foot of the card, out of the scrolling part: save, and clear all.
+.panel-footer {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: 0 var(--space-3) var(--space-2);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+
+  .clear {
+    align-self: flex-start;
+    margin-top: 0;
   }
 }
 
@@ -672,166 +713,4 @@ vl-saved-routes {
   button {
     flex: 1;
   }
-}
-
-// Phone: the panel becomes a bottom sheet that leaves the map visible until it is opened.
-@media (max-width: 40rem) {
-  .panel {
-    top: auto;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    width: auto;
-    // The three heights of the sheet; a drag sets the height by hand and the animation waits for the release.
-    height: 4.25rem;
-    max-height: none;
-    z-index: 3;
-    border-radius: var(--radius-md) var(--radius-md) 0 0;
-    overflow: hidden;
-    transition:
-      height 0.25s ease,
-      border-radius 0.25s ease;
-  }
-
-  .panel--half {
-    height: 50%;
-  }
-
-  .panel--full {
-    height: 100%;
-    border-radius: 0;
-  }
-
-  .panel--dragging {
-    transition: none;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .panel {
-      transition: none;
-    }
-  }
-
-  .panel--peek {
-    .tabs,
-    .tab-route,
-    vl-saved-routes {
-      display: none;
-    }
-  }
-
-  // The line of the closed sheet: a tap on it opens the sheet.
-  .sheet-summary {
-    display: block;
-    flex: none;
-    min-height: 0;
-    padding: var(--space-1) var(--space-3) var(--space-3);
-    border: 0;
-    border-radius: 0;
-    background: var(--color-surface);
-    color: var(--color-text);
-    font-size: var(--font-size-sm);
-    font-weight: 700;
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .sheet-handle {
-    flex: none;
-    display: grid;
-    place-items: center;
-    width: 100%;
-    min-height: 1.5rem;
-    padding: 0;
-    background: var(--color-surface);
-    border: 0;
-    border-radius: 0;
-
-    span {
-      width: 2.5rem;
-      height: 0.3125rem;
-      border-radius: var(--radius-pill);
-      background: var(--color-border);
-    }
-  }
-
-  // On a phone the profile lives in the sheet (`vl-profile-mini`): the strip under the map is for wide screens.
-  vl-elevation-panel {
-    display: none;
-  }
-
-  // Undo and redo move out of the closed sheet onto the map, top left.
-  .history {
-    display: none;
-  }
-
-  .map-history {
-    position: absolute;
-    top: 0.75rem;
-    // After the logo of the menu (2.75 rem and a gap), which floats top left.
-    left: 4.25rem;
-    z-index: 2;
-    display: flex;
-    gap: var(--space-2);
-
-    button {
-      display: grid;
-      place-items: center;
-      width: 2.75rem;
-      height: 2.75rem;
-      min-height: 0;
-      padding: 0;
-      font-size: 1.375rem;
-      line-height: 1;
-      color: var(--color-text);
-      border-color: transparent;
-      border-radius: var(--radius-sm);
-      box-shadow: var(--shadow-1);
-
-      &:disabled {
-        cursor: not-allowed;
-        opacity: 0.5;
-      }
-    }
-  }
-
-  // Everything that floats over the map stays above the closed sheet.
-  .help-bar,
-  .undo-toast,
-  .locate {
-    margin-bottom: 4.25rem;
-  }
-
-  // Full screen: the sheet is gone, so nothing needs to stay above it.
-  .panel--gone {
-    display: none;
-  }
-
-  :host(.map-fullscreen) {
-    .help-bar,
-    .undo-toast,
-    .locate {
-      margin-bottom: 0;
-    }
-  }
-}
-
-.loop-by {
-  display: flex;
-  gap: var(--space-4);
-  margin-bottom: var(--space-2);
-
-  label {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-  }
-}
-
-.loop-estimate {
-  margin: 0 0 var(--space-2);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-2);
 }
