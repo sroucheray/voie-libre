@@ -27,10 +27,6 @@ A route can be **open**: its last point is provisional, and the next place is ad
 - Reopening a loop; an "extend" mode that survives a reload (the flag is not saved with a route).
 - Appending by dragging the line past the last point.
 
-## Plan
+## How it went
 
-1. Store: `open` flag, `appendPoint`, `finish`, `continue`, history.
-2. Planner: clicks, "My position", fields, markers (the last point of an open route is a stop).
-3. Panel: "Next place…" row, tick, "+ Continue", strings.
-4. Map: the bubble in the driver, "Finish here" in the sheet summary.
-5. Docs.
+Built as planned, in one commit (the store flag, the click flow, the panel row and the bubble depend on one another). Two choices beyond the brief: `PlannerStore.addPoint` keeps its old meaning (insert before the end) and the click flow is a new `clickPoint`, so every other caller and spec is unchanged; and `nextRole` is now `start` then `waypoint` (a second click is a stop, not "B"), so the ghost, "My position" and the menu say "stop". Existing specs that made a closed route with two clicks now call `finish()` after the second. Seen in the browser pane (no WebGL, so no real click: points added through the store): the panel open and finished, in French; the bubble is covered by specs only.

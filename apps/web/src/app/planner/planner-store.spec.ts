@@ -89,9 +89,83 @@ describe('PlannerStore', () => {
     it('tells what the next click creates', () => {
       expect(store.nextRole()).toBe('start');
       store.addPoint([1, 1]);
-      expect(store.nextRole()).toBe('end');
-      store.addPoint([9, 9]);
       expect(store.nextRole()).toBe('waypoint');
+    });
+
+    describe('an open route, built point by point', () => {
+      it('goes on after the last point while it is open, and finishing closes it', () => {
+        store.clickPoint([1, 1]);
+        store.clickPoint([2, 2]);
+        store.clickPoint([3, 3]);
+        expect(store.points()).toEqual([
+          [1, 1],
+          [2, 2],
+          [3, 3],
+        ]);
+        expect(store.open()).toBe(true);
+        store.finish();
+        expect(store.open()).toBe(false);
+        // Closed: a click goes before the end, as before.
+        store.clickPoint([4, 4]);
+        expect(store.points()).toEqual([
+          [1, 1],
+          [2, 2],
+          [4, 4],
+          [3, 3],
+        ]);
+      });
+
+      it('is a single stop at the end of the list: undo removes the last point and brings the state back', () => {
+        store.clickPoint([1, 1]);
+        store.clickPoint([2, 2]);
+        store.clickPoint([3, 3]);
+        store.finish();
+        store.undo();
+        expect(store.open()).toBe(true);
+        store.undo();
+        expect(store.points()).toEqual([
+          [1, 1],
+          [2, 2],
+        ]);
+      });
+
+      it('can be opened again once finished, but not a loop', () => {
+        store.clickPoint([1, 1]);
+        store.clickPoint([2, 2]);
+        expect(store.canContinue()).toBe(false);
+        store.finish();
+        expect(store.canContinue()).toBe(true);
+        store.continueRoute();
+        store.clickPoint([3, 3]);
+        expect(store.points()).toEqual([
+          [1, 1],
+          [2, 2],
+          [3, 3],
+        ]);
+        store.finish();
+        store.closeLoop();
+        expect(store.canContinue()).toBe(false);
+        expect(store.open()).toBe(false);
+      });
+
+      it('is closed by an end set on purpose, which goes after the last point', () => {
+        store.clickPoint([1, 1]);
+        store.clickPoint([2, 2]);
+        store.setEnd([5, 5]);
+        expect(store.points()).toEqual([
+          [1, 1],
+          [2, 2],
+          [5, 5],
+        ]);
+        expect(store.open()).toBe(false);
+      });
+
+      it('is not open for the points of a saved route or the end typed in its field', () => {
+        store.addPoint([1, 1]);
+        store.setEnd([2, 2]);
+        expect(store.open()).toBe(false);
+        expect(store.canContinue()).toBe(true);
+      });
     });
 
     it('inserts a waypoint at the given index, never before the start or after the end', () => {

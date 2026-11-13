@@ -214,6 +214,7 @@ describe('Planner', () => {
     const view = await render();
     view.click(3.087, 45.777);
     view.click(3.249, 45.544);
+    TestBed.inject(PlannerStore).finish();
     view.click(3.15, 45.65);
     TestBed.tick();
     expect(
@@ -793,6 +794,7 @@ describe('Planner', () => {
     const view = await render();
     view.click(3.087, 45.777);
     view.click(3.249, 45.544);
+    TestBed.inject(PlannerStore).finish();
     view.click(3.15, 45.65);
     await view.settle();
     // The mocked route goes start, waypoint, end: drop one between the waypoint and the end.
@@ -873,7 +875,7 @@ describe('Planner', () => {
       view.fixture.detectChanges();
       expect(store.points()).toEqual([[3.1, 45.7]]);
 
-      expect(place()?.textContent).toContain('as the end');
+      expect(place()?.textContent).toContain('as a stop');
       geolocation.emit({ position: [3.2, 45.6] });
       view.fixture.detectChanges();
       place()!.click();
@@ -992,8 +994,9 @@ describe('Planner', () => {
     });
     view.click(3.087, 45.777);
     TestBed.tick();
-    expect(view.driver.ghost?.role).toBe('end');
+    expect(view.driver.ghost?.role).toBe('waypoint');
     view.click(3.249, 45.544);
+    TestBed.inject(PlannerStore).finish();
     view.click(3.2, 45.6);
     TestBed.tick();
     expect(view.driver.ghost).toEqual({
@@ -1415,6 +1418,7 @@ describe('Planner', () => {
     const view = await render();
     view.click(3.087, 45.777);
     view.click(3.15, 45.65);
+    TestBed.inject(PlannerStore).finish();
     view.click(3.249, 45.544);
     // The start and the end have their fields: only the stops are listed.
     expect(view.root.querySelectorAll('.points__stop')).toHaveLength(1);
@@ -1468,6 +1472,7 @@ describe('Planner', () => {
       const view = await render();
       view.click(3.0, 45.0);
       view.click(3.1, 45.1);
+      TestBed.inject(PlannerStore).finish();
       view.click(3.2, 45.2);
       view.click(3.3, 45.3);
       view.click(3.4, 45.4);
@@ -1578,6 +1583,7 @@ describe('Planner', () => {
       const view = await render();
       view.click(3.0, 45.0);
       view.click(3.1, 45.1);
+      TestBed.inject(PlannerStore).finish();
       view.click(3.2, 45.2);
       view.fixture.detectChanges();
       // A start, one stop and an end: nothing to reorder the stop with.
@@ -1597,7 +1603,46 @@ describe('Planner', () => {
       const view = await render();
       view.click(3.087, 45.777);
       view.click(3.249, 45.544);
+      TestBed.inject(PlannerStore).finish();
+      view.fixture.detectChanges();
       expect(view.root.querySelector('.points__stop')).toBeNull();
+    });
+  });
+
+  describe('a route built point by point', () => {
+    it('lists the clicked places as stops, then an empty row for the next one', async () => {
+      const view = await render();
+      view.click(3.0, 45.0);
+      view.click(3.1, 45.1);
+      view.click(3.2, 45.2);
+      view.fixture.detectChanges();
+      expect(view.root.querySelectorAll('.points__stop')).toHaveLength(2);
+      expect(view.root.querySelector('.next-place')).not.toBeNull();
+      expect(view.root.querySelectorAll('.point-finish')).toHaveLength(1);
+      expect(view.root.querySelector('.continue-route')).toBeNull();
+      // The last point is a numbered stop, with the "Finish here" bubble.
+      const last = view.driver.markers.at(-1)!;
+      expect([last.role, last.label]).toEqual(['waypoint', '2']);
+      expect(last.finish).toBe('Finish here');
+    });
+
+    it('finishes from the tick or the bubble: the last stop becomes the end, and "Continue" opens it again', async () => {
+      const view = await render();
+      view.click(3.0, 45.0);
+      view.click(3.1, 45.1);
+      view.fixture.detectChanges();
+      (view.root.querySelector('.point-finish') as HTMLButtonElement).click();
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.next-place')).toBeNull();
+      expect(view.driver.markers.map((m) => m.role)).toEqual(['start', 'end']);
+      expect(view.driver.markers.at(-1)!.finish).toBeUndefined();
+      (view.root.querySelector('.continue-route') as HTMLButtonElement).click();
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.next-place')).not.toBeNull();
+      view.click(3.2, 45.2);
+      expect(TestBed.inject(PlannerStore).points()).toHaveLength(3);
+      view.driver.handlers.onFinish();
+      expect(TestBed.inject(PlannerStore).open()).toBe(false);
     });
   });
 
@@ -1936,6 +1981,7 @@ describe('Planner', () => {
       const store = TestBed.inject(PlannerStore);
       view.click(3.0, 45.0);
       view.click(3.2, 45.2);
+      TestBed.inject(PlannerStore).finish();
       view.click(3.1, 45.1);
       view.fixture.detectChanges();
       const stop = () =>
@@ -1966,6 +2012,7 @@ describe('Planner', () => {
       view.fixture.detectChanges();
       expect(adds(view.root)).toHaveLength(0);
       view.click(3.2, 45.2);
+      TestBed.inject(PlannerStore).finish();
       view.fixture.detectChanges();
       expect(adds(view.root)).toHaveLength(1);
       expect(adds(view.root)[0].getAttribute('aria-label')).toBe(

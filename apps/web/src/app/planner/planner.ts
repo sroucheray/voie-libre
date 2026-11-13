@@ -78,7 +78,7 @@ const UNDO_MS = 6000;
 const REFUSED_MS = 4000;
 
 /** Where "My position" was asked: the start, the end, the stop at an index, or the new stop. */
-type PositionTarget = 'start' | 'end' | 'new' | number;
+type PositionTarget = 'start' | 'end' | 'new' | 'next' | number;
 
 /** Least time between two routes asked for during a drag: under the API's limit for `POST /route`. */
 export const LIVE_DRAG_INTERVAL_MS = 600;
@@ -205,7 +205,8 @@ export class Planner {
   protected readonly stops = computed(() =>
     this.store
       .points()
-      .slice(1, -1)
+      // An open route has no end yet: its last point is a stop too.
+      .slice(1, this.store.open() ? undefined : -1)
       .map((point, i) => ({ point, index: i + 1 })),
   );
   /**
@@ -363,7 +364,8 @@ export class Planner {
       const loop = isLoopOf(points);
       driver.setMarkers(
         points.flatMap((lngLat, index) => {
-          const role = pointRole(index, points.length);
+          const open = this.store.open() && index === points.length - 1;
+          const role = open ? 'waypoint' : pointRole(index, points.length);
           // A loop is drawn once: its end sits under its start.
           if (loop && role === 'end') return [];
           return [
@@ -380,6 +382,9 @@ export class Planner {
                       : `${index}`,
               ariaLabel: this.pointName(index),
               loop: loop && role === 'start',
+              finish: open
+                ? this.transloco.translate('planner.open.finish', {}, language)
+                : undefined,
               closable:
                 role === 'start' && this.canClose()
                   ? this.transloco.translate('planner.loop.hint', {}, language)
@@ -550,6 +555,7 @@ export class Planner {
           this.placeOnWay(point, (place) => this.addStopAt(place)),
         onSelectRoute: (index) => this.store.selectRoute(index),
         onCloseLoop: () => this.openLoopDialog(),
+        onFinish: () => this.store.finish(),
         onInsertPoint: (hit, to) => this.insertOnRoute(hit, to),
         onContextMenu: (point, screen) =>
           this.menu.set({ point, x: screen.x, y: screen.y }),
@@ -936,6 +942,7 @@ export class Planner {
     const count = this.store.points().length;
     if (target === 'start') this.store.setStart(point);
     else if (target === 'end') this.store.setEnd(point);
+    else if (target === 'next') this.store.appendPoint(point);
     else if (target === 'new') {
       const at = this.addingAt();
       this.newStopAt.set(null);
@@ -950,6 +957,13 @@ export class Planner {
   /** A place picked in the field of a stop: the stop moves there. */
   protected pickStop(index: number, place: FoundPlace): void {
     this.store.movePoint(index, place.point, true);
+    this.store.setLabel(place.point, place.label, place.short);
+    this.showPlace(place.point);
+  }
+
+  /** A place picked in the "next place" row of an open route: it goes after the last point. */
+  protected pickNext(place: FoundPlace): void {
+    this.store.appendPoint(place.point);
     this.store.setLabel(place.point, place.label, place.short);
     this.showPlace(place.point);
   }
@@ -1000,6 +1014,10 @@ export class Planner {
    */
   private addStopAt(place: LngLat, deliberate = false): void {
     const points = this.store.points();
+    if (points.length < 2 || this.store.open()) {
+      this.store.clickPoint(place);
+      return;
+    }
     const index =
       points.length >= 2 && this.store.status() === 'ready'
         ? insertionIndex(this.store.selectedGeometry(), points, place)

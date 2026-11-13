@@ -96,7 +96,8 @@ vl-saved-routes {
 
 // Only a phone has a handle and a summary line: the panel is a bottom sheet there.
 .sheet-handle,
-.sheet-summary {
+.sheet-summary,
+.sheet-finish {
   display: none;
 }
 

@@ -695,6 +695,29 @@ export async function createMapLibreDriver(
         element.setAttribute('role', 'img');
         element.setAttribute('aria-label', spec.ariaLabel);
       }
+      if (spec.finish) {
+        // The bubble of an open route: it must not start a drag, a long press or a click on the map.
+        const bubble = document.createElement('button');
+        bubble.type = 'button';
+        bubble.className = 'planner-marker__finish';
+        bubble.textContent = spec.finish;
+        for (const type of [
+          'mousedown',
+          'touchstart',
+          'pointerdown',
+          'contextmenu',
+          'dblclick',
+        ]) {
+          bubble.addEventListener(type, (event) => event.stopPropagation(), {
+            passive: true,
+          });
+        }
+        bubble.addEventListener('click', (event) => {
+          event.stopPropagation();
+          handlers.onFinish();
+        });
+        element.append(bubble);
+      }
       // Right click removes the point (the panel offers a button too).
       element.addEventListener('contextmenu', (event) => {
         event.preventDefault();

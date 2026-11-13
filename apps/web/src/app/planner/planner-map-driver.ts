@@ -16,6 +16,8 @@ export interface MarkerSpec {
   loop?: boolean;
   /** Set on the start marker when clicking it can close the loop: the translated hint. */
   closable?: string;
+  /** Set on the last point of an open route: the translated text of the "Finish here" bubble. */
+  finish?: string;
 }
 
 /** The translucent marker that follows the pointer and shows what the next click creates. */
@@ -37,6 +39,8 @@ export interface PlannerMapHandlers {
   onSelectRoute(index: number): void;
   /** The start marker was clicked while it offers to close the loop. */
   onCloseLoop(): void;
+  /** The "Finish here" bubble of the last point was clicked. */
+  onFinish(): void;
   /** The selected route was dragged from `hit` (on the route) and dropped at `to`. */
   onInsertPoint(hit: LngLat, to: LngLat): void;
   /** A right click or a long press on the map, at `point` (`screen`: pixels in the map). */

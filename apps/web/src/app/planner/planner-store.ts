@@ -176,6 +176,7 @@ interface Snapshot {
   loop: LoopMode | null;
   routes: PlannedRoute[] | null;
   selected: number;
+  open: boolean;
 }
 
 /** The selected route with what it was computed from: what "Save" stores. */
@@ -291,10 +292,28 @@ export class PlannerStore {
     return points.length === 2 ? mode : null;
   });
 
+  /**
+   * The last point is provisional: the next place goes after it (and it is a stop, not the end)
+   * until the user finishes the route. Set by clicks on the map, never for a loop.
+   */
+  private readonly openState = signal(false);
+  readonly open = computed(
+    () => this.openState() && this.pointsState().length >= 2 && !this.isLoop(),
+  );
+
+  /** A closed route with a start and an end that can be opened again to go on. */
+  readonly canContinue = computed(
+    () =>
+      !this.openState() &&
+      this.pointsState().length >= 2 &&
+      this.pointsState().length < MAX_POINTS &&
+      !this.isLoop() &&
+      !this.loop(),
+  );
+
   /** What the next click on the map will create. */
   readonly nextRole = computed<PointRole>(() => {
-    const count = this.pointsState().length;
-    return count === 0 ? 'start' : count === 1 ? 'end' : 'waypoint';
+    return this.pointsState().length === 0 ? 'start' : 'waypoint';
   });
 
   /** False for an imported route without elevation: its geometry carries zeros, not altitudes. */
@@ -464,6 +483,45 @@ export class PlannerStore {
   }
 
   /**
+   * A click on the map (or "My position"): the start, then stops that go on after the last point
+   * while the route is open. A closed route takes it as {@link addPoint} does.
+   */
+  clickPoint(point: LngLat): void {
+    const count = this.pointsState().length;
+    if (count < 2) {
+      this.addPoint(point);
+      // Clicks explore: the route stays open until it is finished.
+      this.openState.set(true);
+    } else if (this.open()) this.appendPoint(point);
+    else this.addPoint(point);
+  }
+
+  /** Adds a place after the last point (an open route goes on). Ignored beyond {@link MAX_POINTS}. */
+  appendPoint(point: LngLat): void {
+    const points = this.pointsState();
+    if (points.length < 1 || points.length >= MAX_POINTS) return;
+    this.setPoints([...points, point], {
+      kind: 'insert',
+      index: points.length,
+      point,
+    });
+  }
+
+  /** The last point becomes the end: the next place is inserted between two points. */
+  finish(): void {
+    if (!this.open()) return;
+    this.record();
+    this.openState.set(false);
+  }
+
+  /** Opens a finished route again: the next place goes after its end. */
+  continueRoute(): void {
+    if (!this.canContinue()) return;
+    this.record();
+    this.openState.set(true);
+  }
+
+  /**
    * Inserts a waypoint so that it ends up at `index` (1 to length - 1: never before the start or
    * after the end). Ignored beyond {@link MAX_POINTS}.
    */
@@ -491,6 +549,7 @@ export class PlannerStore {
       this.record();
       this.pointsState.set([points[0], points[0]]);
       this.loopState.set(mode);
+      this.openState.set(false);
       return;
     }
     if (points.length < 2) return;
@@ -498,6 +557,7 @@ export class PlannerStore {
     this.record();
     if (!isLoopOf(points)) this.pointsState.set([...points, points[0]]);
     this.loopState.set(mode ?? null);
+    this.openState.set(false);
   }
 
   /** Changes the length of a loop by distance, within the limits the API accepts. */
@@ -641,6 +701,13 @@ export class PlannerStore {
     if (points.length === 0) return;
     if (points.length === 1) {
       this.setPoints([...points, point]);
+      this.openState.set(false);
+      return;
+    }
+    if (this.open()) {
+      // An open route: the new place goes after the last point, and closes the route.
+      this.appendPoint(point);
+      this.openState.set(false);
       return;
     }
     const index = points.length - 1;
@@ -650,6 +717,7 @@ export class PlannerStore {
       from: points[index],
       point,
     });
+    this.openState.set(false);
   }
 
   /** Names the place at `point`, e.g. with the address the user picked or one found for a click. */
@@ -704,6 +772,7 @@ export class PlannerStore {
     if (!this.canReverse()) return;
     this.removedState.set(null);
     this.setPoints([...this.pointsState()].reverse());
+    this.openState.set(false);
   }
 
   /** Moves the point at `from` to the place `to` (after the move, it is at index `to`). */
@@ -751,6 +820,7 @@ export class PlannerStore {
     if (this.pointsState().length > 0 || this.loopState()) this.record();
     this.removedState.set(null);
     this.loopState.set(null);
+    this.openState.set(false);
     this.pointsState.set([]);
   }
 
@@ -797,6 +867,7 @@ export class PlannerStore {
     this.pointsState.set(saved.points.map((p) => [p[0], p[1]] as LngLat));
     // The loop mode kept with the route (routes saved before it was kept have none).
     this.loopState.set(saved.loop ?? null);
+    this.openState.set(false);
     this.noLookup.clear();
     for (const p of [saved.points[0], saved.points[saved.points.length - 1]]) {
       if (p) this.noLookup.add(labelKey([p[0], p[1]]));
@@ -853,6 +924,7 @@ export class PlannerStore {
       loop: this.loopState(),
       routes: upToDate ? this.routesState() : null,
       selected: this.selectedState(),
+      open: this.openState(),
     };
   }
 
@@ -956,6 +1028,7 @@ export class PlannerStore {
     this.lastEdit = null;
     this.removedState.set(null);
     this.loopState.set(snapshot.loop);
+    this.openState.set(snapshot.open);
     this.pointsState.set(snapshot.points);
     this.profileState.set(snapshot.profile);
     this.alternativesState.set(snapshot.alternatives);

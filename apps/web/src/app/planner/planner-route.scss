@@ -180,3 +180,46 @@
     margin-top: 0;
   }
 }
+
+// An open route: "Finish here" is a round tick on its last stop; a finished one offers to go on.
+.point-finish {
+  --icon-size: 1.125rem;
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  min-height: 0;
+  padding: 0;
+  border-color: var(--color-accent);
+  border-radius: 50%;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -0.25rem;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--color-accent);
+    color: var(--color-surface);
+  }
+}
+
+.continue-route {
+  --icon-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  align-self: flex-start;
+  min-height: 0;
+  padding: 0.25rem 0.5rem;
+  border-color: transparent;
+  background: none;
+  color: var(--color-accent);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}

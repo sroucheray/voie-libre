@@ -67,6 +67,24 @@
     text-overflow: ellipsis;
   }
 
+  .sheet-summary--open {
+    padding-right: 8.5rem;
+  }
+
+  // "Finish here" of an open route, on the summary line of the folded sheet.
+  .sheet-finish {
+    display: block;
+    position: absolute;
+    right: var(--space-3);
+    bottom: var(--space-2);
+    z-index: 1;
+    min-height: 2.25rem;
+    padding: 0.25rem 0.875rem;
+    border-radius: 999px;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+  }
+
   // The panel is a sheet: its width is the screen's.
   .panel-resize {
     display: none;

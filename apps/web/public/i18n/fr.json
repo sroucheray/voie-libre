@@ -170,6 +170,10 @@
       "rate_limited": "Trop de requêtes. Patientez un instant avant de modifier à nouveau le parcours.",
       "unknown": "Le parcours n'a pas pu être calculé."
     },
+    "open": {
+      "finish": "Terminer ici",
+      "continue": "Continuer le parcours"
+    },
     "ghost": {
       "start": "Cliquer pour placer le départ",
       "end": "Cliquer pour placer l'arrivée",

@@ -326,7 +326,12 @@
     </button>
     <!-- Closed, the sheet is its handle and one line: what the route comes to, or what to do first. -->
     @if (sheetState() === 'peek') {
-    <button type="button" class="sheet-summary" (click)="raiseSheet()">
+    <button
+      type="button"
+      class="sheet-summary"
+      [class.sheet-summary--open]="store.open()"
+      (click)="raiseSheet()"
+    >
       @if (peekRoute(); as route) { @if (route.ascentMeters === null) { {{
       'planner.routes.summaryNoClimb' | transloco : { distance:
       format.distance(route.distanceMeters), duration:
@@ -338,7 +343,12 @@
       === 'loading') { {{ 'planner.sheet.pending' | transloco }} } @else { {{
       'planner.sheet.empty' | transloco }} }
     </button>
-    }
+    @if (store.open()) {
+    <!-- The bubble on the map may be hidden by the sheet: the same button, beside the summary. -->
+    <button type="button" class="sheet-finish" (click)="store.finish()">
+      {{ 'planner.open.finish' | transloco }}
+    </button>
+    } }
     <!-- The right edge: pull it to widen the panel, double click for the original width (a wide screen). -->
     <button
       type="button"
@@ -475,6 +485,17 @@
                 (picked)="pickStop(stop.index, $event)"
                 (position)="usePosition(stop.index)"
               />
+              @if (store.open() && stop.index === store.points().length - 1) {
+              <button
+                type="button"
+                class="point-finish"
+                (click)="store.finish()"
+                [title]="'planner.open.finish' | transloco"
+                [attr.aria-label]="'planner.open.finish' | transloco"
+              >
+                <vl-icon name="check" />
+              </button>
+              }
               <button
                 type="button"
                 class="point-remove"
@@ -484,11 +505,12 @@
                 <vl-icon name="x" />
               </button>
             </li>
-            }
+            } @if (!store.open()) {
             <ng-container
               [ngTemplateOutlet]="gap"
               [ngTemplateOutletContext]="{ $implicit: stops().length + 1 }"
             />
+            }
           </ol>
           <p class="visually-hidden" aria-live="polite">
             {{ moveAnnouncement() }}
@@ -533,6 +555,17 @@
             </li>
             }
           </ng-template>
+          @if (store.open()) {
+          <!-- An open route has no end yet: an empty row for the next place, after the last stop. -->
+          <vl-place-field
+            class="next-place"
+            role="stop"
+            [number]="store.points().length"
+            [near]="store.points()[store.points().length - 1]"
+            (picked)="pickNext($event)"
+            (position)="usePosition('next')"
+          />
+          } @else {
           <vl-place-field
             role="end"
             [label]="endLabel()"
@@ -541,6 +574,16 @@
             (picked)="pickEnd($event)"
             (position)="usePosition('end')"
           />
+          } @if (store.canContinue()) {
+          <button
+            type="button"
+            class="continue-route"
+            (click)="store.continueRoute()"
+          >
+            <vl-icon name="plus" />
+            {{ 'planner.open.continue' | transloco }}
+          </button>
+          }
         </div>
         <button
           type="button"
