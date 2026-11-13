@@ -116,6 +116,14 @@ main {
 }
 
 @media (max-width: 40rem) {
+  // The map has the whole screen: no header, no offline bar.
+  :host(.map-fullscreen) {
+    .app-header,
+    .status-bar {
+      display: none;
+    }
+  }
+
   .app-header .donate {
     width: 2.25rem;
     padding: 0;

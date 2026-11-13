@@ -39,6 +39,16 @@
     >
       ↷
     </button>
+    <button
+      type="button"
+      class="map-history__fullscreen"
+      [attr.aria-pressed]="fullscreen.active()"
+      [attr.aria-label]="(fullscreen.active() ? 'planner.fullscreen.exit' : 'planner.fullscreen.enter') | transloco"
+      [title]="(fullscreen.active() ? 'planner.fullscreen.exit' : 'planner.fullscreen.enter') | transloco"
+      (click)="fullscreen.toggle()"
+    >
+      <vl-icon [name]="fullscreen.active() ? 'shrink' : 'expand'" />
+    </button>
   </div>
 
   <p class="help-bar" aria-live="polite">{{ helpKey() | transloco }}</p>
@@ -290,6 +300,7 @@
   <section
     #panel
     class="panel"
+    [class.panel--gone]="fullscreen.active()"
     [class.panel--peek]="sheetState() === 'peek'"
     [class.panel--half]="sheetState() === 'half'"
     [class.panel--full]="sheetState() === 'full'"

@@ -238,6 +238,10 @@
       "toggle": "Show or hide the panel",
       "empty": "Open to search a place or pick a profile.",
       "pending": "Computing the route…"
+    },
+    "fullscreen": {
+      "enter": "Full screen map",
+      "exit": "Leave full screen"
     }
   },
   "saved": {

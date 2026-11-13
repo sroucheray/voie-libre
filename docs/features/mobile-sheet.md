@@ -52,3 +52,7 @@ Built in 5 commits: the snapping rule (`sheet-snap.ts`); the drag directive (`sh
 A second commit pair added `ProfileMini` to the open sheet (curve plus one line of figures). The strip of the full profile under the map is no longer shown on a phone, only in the sheet. The strip's gradient shadow is gone on every screen (a plain 1 px top border, like the status bar). Not seen with a real route in the browser pane (no WebGL, so no route can be placed): checked by specs only. The `planner.scss` file is now at 11 kB of its 12 kB error budget: the next change to the planner styles should split it.
 
 The same light profile (`compact`, curve only) also fills the folded profile bar on a wide screen, between the title and the chevron.
+
+### Item 7: full screen
+
+An `expand`/`shrink` button beside undo and redo (phone only) gives the map the whole screen: the header, the offline bar and the sheet go away, the map buttons and the same button stay. It hides the app's chrome only; the browser's full screen API was left out on purpose (not on iPhone Safari). Seen in the browser pane at phone size.
