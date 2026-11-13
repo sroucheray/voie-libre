@@ -65,14 +65,23 @@
   box-sizing: border-box;
   width: max-content;
   max-width: 16rem;
-  padding: var(--space-3);
   background: var(--color-surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-2);
   font-size: var(--font-size-base);
-  // Never taller than the window (`layersMaxHeight`): what does not fit scrolls inside.
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  // The panel rounds and clips; the content inside scrolls, so that its scroll bar stays within the
+  // corners instead of squaring the right, top and bottom edges.
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  // Never taller than the window (`layersMaxHeight` on the panel): what does not fit scrolls here.
+  .layers-scroll {
+    min-height: 0;
+    padding: var(--space-3);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
 
   .route-colour {
     margin: 0;

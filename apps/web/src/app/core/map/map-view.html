@@ -82,129 +82,131 @@
       role="group"
       [attr.aria-label]="'map.layers.title' | transloco"
     >
-      <p class="layers-title">{{ 'map.layers.title' | transloco }}</p>
-      <label>
-        <input
-          type="checkbox"
-          [checked]="reliefShown()"
-          [disabled]="!reliefAvailable()"
-          [attr.aria-describedby]="reliefAvailable() ? null : 'map-layers-relief-note'"
-          (change)="setRelief($event)"
-        />
-        {{ 'map.layers.relief' | transloco }}
-      </label>
-      @if (reliefKind === 'public') {
-      <p id="map-layers-relief-note" class="layers-note">
-        {{ 'map.layers.reliefPublicNote' | transloco }}
-      </p>
-      } @else if (!reliefAvailable()) {
-      <p id="map-layers-relief-note" class="layers-note">
-        {{ 'map.layers.reliefUnavailable' | transloco }}
-      </p>
-      }
-      <label>
-        <input
-          type="checkbox"
-          class="imagery-checkbox"
-          [checked]="layers.imagery()"
-          [disabled]="!online()"
-          aria-describedby="map-layers-imagery-note"
-          (change)="setImagery($event)"
-        />
-        {{ 'map.layers.imagery' | transloco }}
-      </label>
-      <p id="map-layers-imagery-note" class="layers-note">
-        {{ 'map.layers.imageryNote' | transloco }} @if (!online()) { {{
-        'map.layers.imageryOffline' | transloco }} }
-      </p>
-      <label>
-        <input
-          type="checkbox"
-          class="ways-checkbox"
-          [checked]="layers.ways()"
-          [disabled]="!waysProfile()"
-          (change)="setWays($event)"
-        />
-        {{ 'map.layers.ways' | transloco }}
-      </label>
-      @if (waysShown()) {
-      <ul
-        class="ways-legend"
-        [attr.aria-label]="'map.layers.waysLegend' | transloco"
-      >
-        @for (item of wayLevels; track item.level) {
-        <li>
-          <span
-            class="ways-legend__swatch"
-            [class.ways-legend__swatch--dashed]="item.level === 'avoid'"
-            [style.--way-color]="item.color"
-            aria-hidden="true"
-          ></span>
-          {{ 'map.layers.ways_' + item.level | transloco }}
-        </li>
-        }
-      </ul>
-      }
-      <fieldset class="route-colour">
-        <legend>{{ 'map.layers.routeColour' | transloco }}</legend>
-        @for (choice of routeColours; track choice) {
+      <div class="layers-scroll">
+        <p class="layers-title">{{ 'map.layers.title' | transloco }}</p>
         <label>
           <input
-            type="radio"
-            name="route-colour"
-            [class]="'route-colour-' + choice"
-            [checked]="layers.routeColour() === choice"
-            (change)="layers.setRouteColour(choice)"
+            type="checkbox"
+            [checked]="reliefShown()"
+            [disabled]="!reliefAvailable()"
+            [attr.aria-describedby]="reliefAvailable() ? null : 'map-layers-relief-note'"
+            (change)="setRelief($event)"
           />
-          {{ 'map.layers.routeColour_' + choice | transloco }}
+          {{ 'map.layers.relief' | transloco }}
         </label>
+        @if (reliefKind === 'public') {
+        <p id="map-layers-relief-note" class="layers-note">
+          {{ 'map.layers.reliefPublicNote' | transloco }}
+        </p>
+        } @else if (!reliefAvailable()) {
+        <p id="map-layers-relief-note" class="layers-note">
+          {{ 'map.layers.reliefUnavailable' | transloco }}
+        </p>
         }
-      </fieldset>
-      @if (layers.surface() && surfaceMissing()) {
-      <p class="layers-note surface-note">
-        @if (surfaceComputable()) { {{ 'surface.missing' | transloco }}
-        <button
-          type="button"
-          class="layers-action"
-          (click)="computeSurface.emit()"
+        <label>
+          <input
+            type="checkbox"
+            class="imagery-checkbox"
+            [checked]="layers.imagery()"
+            [disabled]="!online()"
+            aria-describedby="map-layers-imagery-note"
+            (change)="setImagery($event)"
+          />
+          {{ 'map.layers.imagery' | transloco }}
+        </label>
+        <p id="map-layers-imagery-note" class="layers-note">
+          {{ 'map.layers.imageryNote' | transloco }} @if (!online()) { {{
+          'map.layers.imageryOffline' | transloco }} }
+        </p>
+        <label>
+          <input
+            type="checkbox"
+            class="ways-checkbox"
+            [checked]="layers.ways()"
+            [disabled]="!waysProfile()"
+            (change)="setWays($event)"
+          />
+          {{ 'map.layers.ways' | transloco }}
+        </label>
+        @if (waysShown()) {
+        <ul
+          class="ways-legend"
+          [attr.aria-label]="'map.layers.waysLegend' | transloco"
         >
-          {{ 'surface.compute' | transloco }}
-        </button>
-        } @else { {{ 'surface.missingFixed' | transloco }} }
-      </p>
-      } @if (layers.surface()) {
-      <ul
-        class="ways-legend surface-legend"
-        [attr.aria-label]="'map.layers.surfaceLegend' | transloco"
-      >
-        @for (item of surfaceLegend; track item.code) {
-        <li>
-          <span
-            class="ways-legend__swatch"
-            [style.--way-color]="item.color"
-            aria-hidden="true"
-          ></span>
-          {{ item.key | transloco }}
-        </li>
+          @for (item of wayLevels; track item.level) {
+          <li>
+            <span
+              class="ways-legend__swatch"
+              [class.ways-legend__swatch--dashed]="item.level === 'avoid'"
+              [style.--way-color]="item.color"
+              aria-hidden="true"
+            ></span>
+            {{ 'map.layers.ways_' + item.level | transloco }}
+          </li>
+          }
+        </ul>
         }
-      </ul>
-      } @if (layers.grade()) {
-      <ul
-        class="ways-legend grade-legend"
-        [attr.aria-label]="'map.layers.gradeLegend' | transloco"
-      >
-        @for (item of gradeLegend; track item.band) {
-        <li>
-          <span
-            class="ways-legend__swatch"
-            [style.--way-color]="item.color"
-            aria-hidden="true"
-          ></span>
-          {{ 'map.layers.gradeBand_' + item.band | transloco }}
-        </li>
+        <fieldset class="route-colour">
+          <legend>{{ 'map.layers.routeColour' | transloco }}</legend>
+          @for (choice of routeColours; track choice) {
+          <label>
+            <input
+              type="radio"
+              name="route-colour"
+              [class]="'route-colour-' + choice"
+              [checked]="layers.routeColour() === choice"
+              (change)="layers.setRouteColour(choice)"
+            />
+            {{ 'map.layers.routeColour_' + choice | transloco }}
+          </label>
+          }
+        </fieldset>
+        @if (layers.surface() && surfaceMissing()) {
+        <p class="layers-note surface-note">
+          @if (surfaceComputable()) { {{ 'surface.missing' | transloco }}
+          <button
+            type="button"
+            class="layers-action"
+            (click)="computeSurface.emit()"
+          >
+            {{ 'surface.compute' | transloco }}
+          </button>
+          } @else { {{ 'surface.missingFixed' | transloco }} }
+        </p>
+        } @if (layers.surface()) {
+        <ul
+          class="ways-legend surface-legend"
+          [attr.aria-label]="'map.layers.surfaceLegend' | transloco"
+        >
+          @for (item of surfaceLegend; track item.code) {
+          <li>
+            <span
+              class="ways-legend__swatch"
+              [style.--way-color]="item.color"
+              aria-hidden="true"
+            ></span>
+            {{ item.key | transloco }}
+          </li>
+          }
+        </ul>
+        } @if (layers.grade()) {
+        <ul
+          class="ways-legend grade-legend"
+          [attr.aria-label]="'map.layers.gradeLegend' | transloco"
+        >
+          @for (item of gradeLegend; track item.band) {
+          <li>
+            <span
+              class="ways-legend__swatch"
+              [style.--way-color]="item.color"
+              aria-hidden="true"
+            ></span>
+            {{ 'map.layers.gradeBand_' + item.band | transloco }}
+          </li>
+          }
+        </ul>
         }
-      </ul>
-      }
+      </div>
     </div>
     }
   </div>
