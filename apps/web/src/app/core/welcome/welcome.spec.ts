@@ -29,7 +29,11 @@ describe('Welcome', () => {
   it('closes, remembers it, and stays closed on the next visit', async () => {
     const { fixture, root } = setup();
     await fixture.whenStable();
-    root.querySelector<HTMLButtonElement>('.welcome__start')?.click();
+    // The window must be there before it is closed: a missing button must fail here, not later.
+    const start = root.querySelector<HTMLButtonElement>('.welcome__start');
+    expect(start).not.toBeNull();
+    start!.click();
+    fixture.detectChanges();
     await fixture.whenStable();
     expect(root.querySelector('[role="dialog"]')).toBeNull();
     expect(localStorage.getItem(WELCOME_SEEN_KEY)).toBe('1');
