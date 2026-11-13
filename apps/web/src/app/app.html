@@ -4,6 +4,18 @@
   <span class="spacer"></span>
   <vl-api-status />
   <vl-language-switch />
+  @if (donation) {
+  <a
+    class="donate"
+    [href]="donation"
+    target="_blank"
+    rel="noopener noreferrer"
+    [title]="'about.donate' | transloco"
+  >
+    <vl-icon name="heart" />
+    <span>{{ 'about.donate' | transloco }}</span>
+  </a>
+  }
   <vl-about />
 </header>
 <vl-update-prompt />

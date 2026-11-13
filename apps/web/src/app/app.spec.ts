@@ -43,6 +43,17 @@ describe('App', () => {
     );
   });
 
+  it('offers the donation in the header, opened by the visitor in a new tab', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const link = (
+      fixture.nativeElement as HTMLElement
+    ).querySelector<HTMLAnchorElement>('.app-header .donate');
+    expect(link?.href).toBe('https://liberapay.com/sroucheray');
+    expect(link?.target).toBe('_blank');
+    expect(link?.rel).toContain('noopener');
+  });
+
   it('switches the whole page to French through the language selector', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { UpdatePrompt } from './core/offline/update-prompt';
@@ -7,6 +7,8 @@ import { ApiStatus } from './core/api-status/api-status';
 import { Planner } from './planner/planner';
 import { LanguageSwitch } from './core/language-switch/language-switch';
 import { About } from './core/about/about';
+import { ABOUT_LINKS } from './core/about/about-config';
+import { Icon } from './core/icons/icon';
 
 @Component({
   imports: [
@@ -14,6 +16,7 @@ import { About } from './core/about/about';
     TranslocoPipe,
     LanguageSwitch,
     About,
+    Icon,
     ApiStatus,
     OfflineMap,
     UpdatePrompt,
@@ -23,4 +26,7 @@ import { About } from './core/about/about';
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
-export class App {}
+export class App {
+  /** The donation link of the header, from the same place as the About window. */
+  protected readonly donation = inject(ABOUT_LINKS).donation;
+}
