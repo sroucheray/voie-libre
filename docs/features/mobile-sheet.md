@@ -36,13 +36,13 @@ On a phone the panel is a bottom sheet that only toggles: a swipe opens it or cl
 - The elevation profile in the sheet, the full-screen map, a resizable profile.
 - A bottom bar with tabs.
 
-## Plan
+## How it went
 
-1. **Snapping rule.** A pure `sheet-snap.ts`: the three heights from the stage height, `snapTo(height, velocity)` and `nextState(state)`, with its spec.
-2. **Drag directive.** `vlSheetDrag`: pointer events, reports the live height and the release (height, velocity); a spec.
-3. **State and layout.** `sheetState` (`peek` | `half` | `full`) in the planner replaces the boolean (`sheetOpen` becomes derived), CSS driven by a height variable, animation on release, tap and keys on the handle, reduced motion.
-4. **Peek summary.** The one-line summary in the strings (`planner.sheet.*`, English then French).
-5. **Automatic moves.** Down on the map touch from half, up to half on a field focus or the loop dialog.
-6. **Docs.** `docs/implementation.md` (planner), one line in `CLAUDE.md` if the summary changes, this file folded into "How it went".
+Built in 5 commits: the snapping rule (`sheet-snap.ts`); the drag directive (`sheet-drag.ts`); the three states and the height animation in the planner; the one-line summary of the closed sheet; the touch of the map taking the half-open sheet down.
 
-Each step ends with lint, build and the targeted spec, then one commit.
+### Changes from the brief
+
+- The sheet does not rise by itself when a search field gets the focus: the fields are not shown at peek, so they cannot take the focus there. Choosing a tab raises it to half.
+- A long press that places a point at half first takes the sheet down (the press starts with a touch of the map).
+- With no route, the summary line says "Open to search a place or pick a profile" (the help bar above already tells how to place the start).
+- Seen in the browser pane with emulated touch sizes: dragging, the three heights, the summary. The pane has no WebGL (no map), and its CSS transitions stall while the pane is hidden, so the animation itself is not seen; it is checked by the final heights only.
