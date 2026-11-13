@@ -29,13 +29,11 @@ A runner thinks "one hour", a cyclist "three hours", not kilometres. And the num
 - Climb in the duration (Naismith, Minetti); a pace in min/km for runners (a speed in km/h only, for now).
 - Loops by duration for the modes "back" and "avoid outbound".
 
-## Plan
+## How it went
 
-1. **Duration maths.** A pure `loop-duration.ts` (default speeds, `distanceFor(duration, speed)`, `durationFor(distance, speed)`) with its spec.
-2. **Speed setting.** A small store of the speed per profile on the device, with its spec.
-3. **Dialog and panel.** The switch distance/duration and the speed field, strings in `en.json` then `fr.json`.
-4. **Alternatives in the dialog.** The same select as the panel, bound to `store.alternatives`.
-5. **Estimated duration on the result.** Shown beside the distance for loops.
-6. **Docs.** `docs/implementation.md` (planner section), one line in `CLAUDE.md`, this file folded into "How it went".
+Built in 5 commits: duration maths (`loop-duration.ts`); speeds per profile on the device (`LoopSpeeds`); the distance/duration switch with speed field in the loop dialog; the alternatives select in the dialog; documentation.
 
-Each step ends with lint, build and the targeted spec, then one commit.
+### Changes from the brief
+
+- The duration is entered in the dialog only. The panel keeps the distance field of a loop, so there is no switch there.
+- No second "estimated duration" on the result: every route summary already shows the engine's duration, which counts the climb, so the gap with the asked duration is visible there.
