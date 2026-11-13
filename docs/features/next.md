@@ -19,6 +19,8 @@ Ideas noted after the first release (`v0.1.0`). Nothing here is started; each it
    - a bottom bar with two tabs (Map, Route) as a simpler alternative to the sheet;
    - the full-screen map mode (item 7) as a fourth state, left by a tap on a small button.
 
+9. **Version in the About window.** The About window shows the version of the app (for example "Version 0.1.0"). To decide: where it comes from (the `v*` tag the deploy builds from, injected at build time, rather than a number kept by hand) and what a local development build shows.
+
 ## Constraints
 
 - The rules of `CLAUDE.md`: no hard-coded label, local first (a speed is a setting kept on the device).
