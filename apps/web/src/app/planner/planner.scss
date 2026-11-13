@@ -232,10 +232,10 @@ vl-saved-routes {
     justify-content: flex-start;
     gap: 0.25rem;
     box-sizing: border-box;
-    width: 2.5rem;
+    width: 2.75rem;
     min-height: 2rem;
     margin-right: 0.25rem;
-    padding-left: 0.125rem;
+    padding-left: 0.25rem;
     border-radius: 1rem;
     user-select: none;
     cursor: grab;
@@ -278,8 +278,9 @@ vl-saved-routes {
     flex: none;
     display: grid;
     place-items: center;
-    width: 1.5rem;
-    height: 1.5rem;
+    // As large as the markers of A and B in the fields, so that the numbers line up with them.
+    width: 1.75rem;
+    height: 1.75rem;
     border-radius: 50%;
     background: var(--map-marker-waypoint);
     color: var(--color-accent-ink);

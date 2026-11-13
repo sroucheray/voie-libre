@@ -223,3 +223,8 @@
   font-size: var(--font-size-sm);
   font-weight: 600;
 }
+
+// The row for the next place ends where the fields of the stops do (the room of their remove button).
+.next-place {
+  margin-right: 2.25rem;
+}
