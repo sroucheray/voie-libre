@@ -33,10 +33,14 @@ describe('Welcome', () => {
     const start = root.querySelector<HTMLButtonElement>('.welcome__start');
     expect(start).not.toBeNull();
     start!.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-    expect(root.querySelector('[role="dialog"]')).toBeNull();
+    // The state first, then what is drawn: a failure says which of the two did not follow.
+    expect(TestBed.inject(WelcomeScreen).open()).toBe(false);
     expect(localStorage.getItem(WELCOME_SEEN_KEY)).toBe('1');
+    await vi.waitFor(async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(root.querySelector('[role="dialog"]')).toBeNull();
+    });
     TestBed.resetTestingModule();
     expect(TestBed.inject(WelcomeScreen).open()).toBe(false);
   });
