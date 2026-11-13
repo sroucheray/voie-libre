@@ -9,6 +9,16 @@ Ideas noted after the first release (`v0.1.0`). Nothing here is started; each it
 3. **Loop by duration.** A loop can be asked by time as well as by distance: a 1 hour run, a 3 hour ride. The duration is turned into a distance with the speed of the athlete, which depends on the profile (road, gravel, trail) and can be changed by the user. To decide: the default speeds, whether the speed takes the climb into account, and whether the duration is shown next to the distance on the result.
 4. **Donation in the header.** A donation button in the top bar, beside the About button, linking to the same Liberapay page. To decide: how discreet it is on a phone, where the header is already tight.
 
+5. **Mobile drawer as a real sheet.** On a phone the panel follows the finger: dragging it up or down moves it with the pointer, it settles on release with an animation (a swipe flick decides the direction), and it can cover the whole map when fully open. Today the swipe only toggles it.
+6. **Elevation profile integrated on mobile.** Keep the fold-out profile over the map as today, and add a lighter version inside the open drawer: smaller, with fewer figures (distance, ascent, descent; no stretch selection or zoom buttons).
+7. **Full screen on mobile.** A way to hide the chrome (header, buttons, help bar) to give the map the whole screen, for example for checking a route on the move. To study: the real uses (browsing the map, following a route) and whether the browser's own full screen API is needed or a hidden header is enough.
+8. **Moving between map and panel.** Proposals to compare in the brief, to make the change of mode as natural as possible on a phone:
+   - three snap heights for the sheet (peek with the summary, half, full), as in common map apps, with the handle as the only control;
+   - a tap on the route summary peeks the sheet up; a tap on the map lowers it to the peek;
+   - the sheet goes to the peek by itself while the map is dragged or points are placed, and rises when a field is focused;
+   - a bottom bar with two tabs (Map, Route) as a simpler alternative to the sheet;
+   - the full-screen map mode (item 7) as a fourth state, left by a tap on a small button.
+
 ## Constraints
 
 - The rules of `CLAUDE.md`: no hard-coded label, local first (a speed is a setting kept on the device).
