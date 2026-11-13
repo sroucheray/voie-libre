@@ -269,6 +269,11 @@ describe('Saved routes', () => {
     it('credits the elevation source: SRTM for a planned route, kept when saved and reopened', async () => {
       const view = await render();
       await view.plan();
+      // The profile starts folded: open it to read its credit.
+      view.root
+        .querySelector<HTMLButtonElement>('vl-elevation-panel header button')
+        ?.click();
+      await view.settle();
       expect(
         view.root.querySelector('.profile .source')?.textContent,
       ).toContain('SRTM');
@@ -1260,6 +1265,11 @@ describe('Saved routes', () => {
       const [saved] = await routeStore.list();
       expect(saved.ascentMeters).toBe(20);
       expect(saved.elevationSource).toBe('copernicus');
+      // The profile starts folded: open it to read its credit.
+      view.root
+        .querySelector<HTMLButtonElement>('vl-elevation-panel header button')
+        ?.click();
+      await view.settle();
       expect(
         view.root.querySelector('.profile .source')?.textContent,
       ).toContain('Copernicus');
