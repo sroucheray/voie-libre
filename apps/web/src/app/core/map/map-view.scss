@@ -57,6 +57,9 @@
 
 .layers-panel {
   position: absolute;
+  // Over the attribution line, which comes after it: a map made short by the open profile has the
+  // panel run down to it.
+  z-index: 2;
   top: 0;
   right: 3.25rem;
   width: max-content;
