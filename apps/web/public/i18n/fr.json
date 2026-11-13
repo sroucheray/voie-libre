@@ -67,7 +67,8 @@
     },
     "supportTitle": "Soutenir le projet",
     "support": "Voie Libre est gratuit et sans publicité. Le serveur coûte environ 86 € par an hors taxes, auxquels s'ajoute le nom de domaine ; l'auteur paie les deux.",
-    "donate": "Soutenir le projet"
+    "donate": "Soutenir le projet",
+    "version": "Version {{version}}"
   },
   "planner": {
     "title": "Planificateur de parcours",

@@ -10,6 +10,7 @@ import {
 import { TranslocoPipe } from '@jsverse/transloco';
 import { Icon } from '../icons/icon';
 import { ABOUT_LINKS } from './about-config';
+import { APP_VERSION } from './version';
 
 /** The "i" button of the header and the window it opens: what the app is, its code, credits, support. */
 @Component({
@@ -21,6 +22,7 @@ import { ABOUT_LINKS } from './about-config';
 })
 export class About {
   protected readonly links = inject(ABOUT_LINKS);
+  protected readonly version = APP_VERSION;
   protected readonly open = signal(false);
   private readonly box = viewChild<ElementRef<HTMLElement>>('box');
 

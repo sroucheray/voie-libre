@@ -88,4 +88,12 @@ describe('About', () => {
       expect(root.querySelector('[role="dialog"]')).toBeNull();
     }
   });
+
+  it('shows the version of the app', async () => {
+    const { root, open } = setup();
+    await open();
+    expect(root.querySelector('.about__version')?.textContent?.trim()).toBe(
+      'Version dev',
+    );
+  });
 });

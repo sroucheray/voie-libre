@@ -67,7 +67,8 @@
     },
     "supportTitle": "Support the project",
     "support": "Voie Libre is free and has no advertising. The server costs about 86 € a year before tax, and the domain name comes on top; the author pays both.",
-    "donate": "Support the project"
+    "donate": "Support the project",
+    "version": "Version {{version}}"
   },
   "planner": {
     "title": "Route planner",

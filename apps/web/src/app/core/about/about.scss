@@ -85,6 +85,12 @@
     font-size: var(--font-size-sm);
     opacity: 0.92;
   }
+
+  .about__version {
+    margin-top: var(--space-1);
+    font-size: var(--font-size-xs);
+    opacity: 0.75;
+  }
 }
 
 .about__close {
