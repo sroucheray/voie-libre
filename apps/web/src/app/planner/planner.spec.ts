@@ -360,6 +360,20 @@ describe('Planner', () => {
       });
     });
 
+    it('asks the number of alternatives in the loop dialog, shared with the panel', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.fixture.detectChanges();
+      (view.root.querySelector('.loop') as HTMLButtonElement).click();
+      view.fixture.detectChanges();
+      const select = view.root.querySelector<HTMLSelectElement>(
+        '.loop-dialog .loop-alternatives',
+      ) as HTMLSelectElement;
+      select.value = '3';
+      select.dispatchEvent(new Event('change'));
+      expect(TestBed.inject(PlannerStore).alternatives()).toBe(3);
+    });
+
     it('goes straight to the length when the start marker is clicked', async () => {
       const view = await render();
       view.click(3.087, 45.777);

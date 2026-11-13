@@ -257,6 +257,16 @@
           }
         </select>
       </label>
+      <label class="loop-length">
+        {{ 'planner.alternatives.label' | transloco }}
+        <select class="loop-alternatives" (change)="selectAlternatives($event)">
+          @for (count of alternativeChoices; track count) {
+          <option [value]="count" [selected]="count === store.alternatives()">
+            {{ format.number(count) }}
+          </option>
+          }
+        </select>
+      </label>
       <button type="button" class="loop-choice" (click)="drawLoopByDistance()">
         <strong>{{ 'planner.loop.draw' | transloco }}</strong>
       </button>
