@@ -96,7 +96,7 @@ the name button is stretched over the whole card (`::after`), so a click anywher
 
 ## About
 
-(`apps/web/src/app/core/about`): an "i" button on the header opens a window with what the app is, what goes where (the server gets the points and the searches; relief and aerial photos come from third-party servers), the GitHub repository, issues and licence, credits, and a donation link. The link is `ABOUT_LINKS.donation` (the Liberapay page; `null` hides the support part): only a link, no payment and no third-party call before the click.
+(`apps/web/src/app/core/about`): an "i" button on the header opens a window with what the app is, what goes where (the server gets the points and the searches; relief and aerial photos come from third-party servers), the GitHub repository, issues and licence, credits, and a donation link. The link is `ABOUT_LINKS.donation` (the Liberapay page; `null` hides the support part): only a link, no payment and no third-party call before the click. **Version**: the window shows `APP_VERSION` (`version.ts`, `dev` in the repository); the deploy workflow rewrites that line with the tag (`v0.1.0` gives `0.1.0`) before `nx build web`, so a local build says `dev`. **Donation in the header**: a heart pill (round on a phone) beside the "i", from the same `ABOUT_LINKS.donation`. **Welcome screen** (`core/welcome`, `WelcomeScreen`): opens on the first visit, says what the app does (route, loop), that it is free, and offers the donation; closing it is remembered in `localStorage` (`voie-libre.welcome-seen`) and "Show the welcome screen" in the About window brings it back.
 
 ## Design
 
