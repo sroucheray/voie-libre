@@ -257,3 +257,10 @@
   font-size: var(--font-size-sm);
   font-weight: 600;
 }
+
+// On a phone the header is gone: the menu over the map opens this window.
+@media (max-width: 40rem) {
+  .about-button {
+    display: none;
+  }
+}

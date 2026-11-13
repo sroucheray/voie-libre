@@ -10,6 +10,7 @@ import { About } from './core/about/about';
 import { ABOUT_LINKS } from './core/about/about-config';
 import { Icon } from './core/icons/icon';
 import { FullscreenMap } from './core/fullscreen/fullscreen-map';
+import { PhoneMenu } from './core/phone-menu/phone-menu';
 import { Welcome } from './core/welcome/welcome';
 
 @Component({
@@ -20,6 +21,7 @@ import { Welcome } from './core/welcome/welcome';
     About,
     Icon,
     Welcome,
+    PhoneMenu,
     ApiStatus,
     OfflineMap,
     UpdatePrompt,

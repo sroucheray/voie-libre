@@ -3,19 +3,19 @@
   class="about-button"
   [attr.aria-label]="'about.open' | transloco"
   [title]="'about.open' | transloco"
-  (click)="show()"
+  (click)="screen.show()"
 >
   <vl-icon name="info" />
 </button>
 
-@if (open()) {
+@if (screen.open()) {
 <div class="about">
   <button
     type="button"
     class="about__backdrop"
     tabindex="-1"
     aria-hidden="true"
-    (click)="close()"
+    (click)="screen.close()"
   ></button>
   <div
     #box
@@ -24,7 +24,7 @@
     aria-modal="true"
     aria-labelledby="about-title"
     tabindex="-1"
-    (keydown.escape)="close()"
+    (keydown.escape)="screen.close()"
   >
     <header class="about__header">
       <img
@@ -46,7 +46,7 @@
         class="about__close"
         [attr.aria-label]="'about.close' | transloco"
         [title]="'about.close' | transloco"
-        (click)="close()"
+        (click)="screen.close()"
       >
         <vl-icon name="x" />
       </button>

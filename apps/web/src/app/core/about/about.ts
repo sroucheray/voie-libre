@@ -4,12 +4,12 @@ import {
   ElementRef,
   effect,
   inject,
-  signal,
   viewChild,
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { Icon } from '../icons/icon';
 import { ABOUT_LINKS } from './about-config';
+import { AboutScreen } from './about-screen';
 import { WelcomeScreen } from '../welcome/welcome-screen';
 import { APP_VERSION } from './version';
 
@@ -25,7 +25,7 @@ export class About {
   protected readonly links = inject(ABOUT_LINKS);
   protected readonly version = APP_VERSION;
   private readonly welcome = inject(WelcomeScreen);
-  protected readonly open = signal(false);
+  protected readonly screen = inject(AboutScreen);
   private readonly box = viewChild<ElementRef<HTMLElement>>('box');
 
   constructor() {
@@ -36,16 +36,8 @@ export class About {
     });
   }
 
-  protected show(): void {
-    this.open.set(true);
-  }
-
   protected showWelcome(): void {
-    this.open.set(false);
+    this.screen.close();
     this.welcome.show();
-  }
-
-  protected close(): void {
-    this.open.set(false);
   }
 }

@@ -1,0 +1,71 @@
+<button
+  type="button"
+  class="logo-button"
+  [attr.aria-expanded]="open()"
+  [attr.aria-label]="'menu.open' | transloco"
+  [title]="'menu.open' | transloco"
+  [attr.data-status]="health.status()"
+  (click)="toggle()"
+>
+  <img src="icons/logo.svg" alt="" width="32" height="32" />
+</button>
+
+@if (open()) {
+<button
+  type="button"
+  class="menu__backdrop"
+  tabindex="-1"
+  aria-hidden="true"
+  (click)="close()"
+></button>
+<div
+  #box
+  class="menu"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="'menu.title' | transloco"
+  tabindex="-1"
+  (keydown.escape)="close()"
+>
+  <header>
+    <h2>{{ 'app.title' | transloco }}</h2>
+    <p class="status" [attr.data-status]="health.status()" role="status">
+      {{ 'api.status.' + health.status() | transloco }}
+    </p>
+  </header>
+
+  <div
+    class="language"
+    role="group"
+    [attr.aria-label]="'language.label' | transloco"
+  >
+    @for (language of languages.supported; track language) {
+    <button
+      type="button"
+      [attr.aria-pressed]="language === languages.current()"
+      (click)="languages.use(language)"
+    >
+      {{ name(language) }}
+    </button>
+    }
+  </div>
+
+  <section class="offline" [attr.aria-label]="'offline.title' | transloco">
+    <h3>{{ 'menu.offline' | transloco }}</h3>
+    <vl-offline-map />
+  </section>
+
+  <div class="links">
+    @if (links.donation; as donation) {
+    <a [href]="donation" target="_blank" rel="noopener noreferrer">
+      <vl-icon name="heart" />
+      {{ 'about.donate' | transloco }}
+    </a>
+    }
+    <button type="button" (click)="showAbout()">
+      <vl-icon name="info" />
+      {{ 'about.open' | transloco }}
+    </button>
+  </div>
+</div>
+}

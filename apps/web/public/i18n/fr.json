@@ -441,5 +441,10 @@
     "free": "Voie Libre est gratuit, sans publicité, et vos parcours restent sur votre appareil. L'auteur paie le serveur : si l'application vous est utile, vous pouvez l'aider.",
     "donate": "Soutenir le projet",
     "start": "Commencer"
+  },
+  "menu": {
+    "open": "Menu",
+    "title": "Menu",
+    "offline": "Garder hors ligne"
   }
 }

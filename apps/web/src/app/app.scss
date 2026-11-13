@@ -116,12 +116,31 @@ main {
 }
 
 @media (max-width: 40rem) {
-  // The map has the whole screen: no header, no offline bar.
-  :host(.map-fullscreen) {
-    .app-header,
-    .status-bar {
-      display: none;
-    }
+  // No header and no offline bar: the logo floats over the map and its menu holds what they held.
+  // The header's own box goes (`contents`), its About window stays reachable from the menu.
+  .app-header {
+    display: contents;
+  }
+
+  // (`:host` raises the weight over the rules that style each child on a wide screen.)
+  :host .app-header > :not(vl-about) {
+    display: none;
+  }
+
+  .status-bar {
+    display: none;
+  }
+
+  .phone-menu {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 5;
+  }
+
+  // The map has the whole screen: not even the logo.
+  :host(.map-fullscreen) .phone-menu {
+    display: none;
   }
 
   .app-header .donate {

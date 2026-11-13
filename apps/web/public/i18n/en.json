@@ -441,5 +441,10 @@
     "free": "Voie Libre is free, without advertising, and your routes stay on your device. The author pays for the server: if the app is useful to you, you can help.",
     "donate": "Support the project",
     "start": "Start planning"
+  },
+  "menu": {
+    "open": "Menu",
+    "title": "Menu",
+    "offline": "Keep offline"
   }
 }

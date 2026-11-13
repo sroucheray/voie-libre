@@ -770,7 +770,8 @@ vl-saved-routes {
   .map-history {
     position: absolute;
     top: 0.75rem;
-    left: 0.75rem;
+    // After the logo of the menu (2.75 rem and a gap), which floats top left.
+    left: 4.25rem;
     z-index: 2;
     display: flex;
     gap: var(--space-2);
