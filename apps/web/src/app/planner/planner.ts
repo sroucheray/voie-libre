@@ -1095,6 +1095,11 @@ export class Planner {
     if (this.sheetState() === 'peek') this.sheetState.set('half');
   }
 
+  /** A touch of the map takes the half-open sheet back down, to give the map its room. */
+  protected lowerSheet(): void {
+    if (this.sheetState() === 'half') this.sheetState.set('peek');
+  }
+
   protected cycleSheet(): void {
     this.sheetState.set(nextState(this.sheetState()));
   }

@@ -1,6 +1,7 @@
 <div class="map-area">
   <vl-map-view
     class="map"
+    (pointerdown)="lowerSheet()"
     [waysProfile]="store.profile()"
     [surfaceMissing]="store.surfaceMissing()"
     [surfaceComputable]="store.canRecompute()"

@@ -296,6 +296,25 @@ describe('Planner', () => {
       expect(view.root.querySelector('.sheet-summary')).toBeNull();
     });
 
+    it('goes back down to peek when the map is touched at half, and stays at full', async () => {
+      const view = await render();
+      const handle = view.root.querySelector(
+        '.sheet-handle',
+      ) as HTMLButtonElement;
+      const map = view.root.querySelector('vl-map-view') as HTMLElement;
+      handle.click();
+      view.fixture.detectChanges();
+      map.dispatchEvent(new Event('pointerdown'));
+      view.fixture.detectChanges();
+      expect(panel(view).classList).toContain('panel--peek');
+      handle.click();
+      handle.click();
+      view.fixture.detectChanges();
+      map.dispatchEvent(new Event('pointerdown'));
+      view.fixture.detectChanges();
+      expect(panel(view).classList).toContain('panel--full');
+    });
+
     it('rises to half when a tab is chosen', async () => {
       const view = await render();
       view.root.querySelectorAll<HTMLButtonElement>('[role="tab"]')[1].click();
