@@ -160,6 +160,60 @@
         <span>{{ 'planner.loop.distanceDescription' | transloco }}</span>
       </button>
       } @else {
+      <div
+        class="loop-by"
+        role="radiogroup"
+        [attr.aria-label]="'planner.loop.byLabel' | transloco"
+      >
+        <label>
+          <input
+            type="radio"
+            name="loop-by"
+            value="distance"
+            [checked]="loopBy() === 'distance'"
+            (change)="loopBy.set('distance')"
+          />
+          {{ 'planner.loop.byDistance' | transloco }}
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="loop-by"
+            value="duration"
+            [checked]="loopBy() === 'duration'"
+            (change)="loopBy.set('duration')"
+          />
+          {{ 'planner.loop.byDuration' | transloco }}
+        </label>
+      </div>
+      @if (loopBy() === 'duration') {
+      <label class="loop-length">
+        {{ 'planner.loop.durationLabel' | transloco }}
+        <input
+          type="number"
+          min="10"
+          max="1200"
+          step="15"
+          [value]="loopMinutes()"
+          (input)="loopMinutes.set(+$any($event.target).value)"
+        />
+      </label>
+      <label class="loop-length">
+        {{ 'planner.loop.speedLabel' | transloco }}
+        <input
+          type="number"
+          min="3"
+          max="60"
+          step="1"
+          [value]="loopSpeed()"
+          (change)="setLoopSpeed($any($event.target).value)"
+        />
+      </label>
+      <p class="loop-estimate">
+        {{ 'planner.loop.durationEstimate' | transloco: { km:
+        loopKmFromDuration().toFixed(1) } }}
+      </p>
+      } @else {
       <label class="loop-length">
         {{ 'planner.loop.distanceLabel' | transloco }}
         <input
@@ -171,6 +225,7 @@
           (input)="loopKm.set(+$any($event.target).value)"
         />
       </label>
+      }
       <label class="loop-length">
         {{ 'planner.loop.ascentLabel' | transloco }}
         <input

@@ -331,6 +331,35 @@ describe('Planner', () => {
       expect(view.root.querySelectorAll('.loop-choice')).toHaveLength(1);
     });
 
+    it('draws a loop by duration with the speed of the profile', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.fixture.detectChanges();
+      (view.root.querySelector('.loop') as HTMLButtonElement).click();
+      view.fixture.detectChanges();
+      const duration = view.root.querySelector<HTMLInputElement>(
+        '.loop-by input[value="duration"]',
+      );
+      duration?.click();
+      view.fixture.detectChanges();
+      const [minutes] = Array.from(
+        view.root.querySelectorAll<HTMLInputElement>(
+          '.loop-dialog .loop-length input',
+        ),
+      );
+      minutes.value = '60';
+      minutes.dispatchEvent(new Event('input'));
+      view.fixture.detectChanges();
+      expect(view.root.querySelector('.loop-estimate')?.textContent).toContain(
+        '22.0 km',
+      );
+      view.root.querySelector<HTMLButtonElement>('.loop-choice')?.click();
+      expect(TestBed.inject(PlannerStore).loop()).toMatchObject({
+        mode: 'distance',
+        distanceMeters: 22_000,
+      });
+    });
+
     it('goes straight to the length when the start marker is clicked', async () => {
       const view = await render();
       view.click(3.087, 45.777);
@@ -385,7 +414,7 @@ describe('Planner', () => {
       view.root.querySelectorAll<HTMLButtonElement>('.loop-choice')[2].click();
       view.fixture.detectChanges();
       const input = view.root.querySelector(
-        '.loop-dialog input',
+        '.loop-dialog .loop-length input',
       ) as HTMLInputElement;
       expect(input.value).toBe('30');
       input.value = '45';

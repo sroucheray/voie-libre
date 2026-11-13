@@ -205,7 +205,13 @@
         "sw": "South-west",
         "w": "West",
         "nw": "North-west"
-      }
+      },
+      "byLabel": "Length given as",
+      "byDistance": "Distance",
+      "byDuration": "Duration",
+      "durationLabel": "Duration (min)",
+      "speedLabel": "Your speed (km/h)",
+      "durationEstimate": "About {{km}} km at this speed. The climb is not counted."
     },
     "menu": {
       "label": "Place on the map",

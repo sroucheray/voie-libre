@@ -21,6 +21,8 @@ import { map, switchMap } from 'rxjs';
 import { FormattingService } from '../core/format/formatting.service';
 import type { LngLat, MapLike } from '../core/map/map-factory';
 import { MapLayers } from '../core/map/map-layers';
+import { distanceFor } from './loop-duration';
+import { LoopSpeeds } from './loop-speeds';
 import { MapView } from '../core/map/map-view';
 import { LocationStore } from '../location/location-store';
 import {
@@ -206,6 +208,19 @@ export class Planner {
   protected readonly loopDialogOpen = signal(false);
   protected readonly loopStep = signal<'choose' | 'distance'>('choose');
   protected readonly loopKm = signal(LOOP_DISTANCE_DEFAULT_METERS / 1000);
+  /** Whether the dialog asks the length of the loop as a distance or as a duration. */
+  protected readonly loopBy = signal<'distance' | 'duration'>('distance');
+  /** The duration asked in the dialog, in minutes. */
+  protected readonly loopMinutes = signal(120);
+  private readonly loopSpeeds = inject(LoopSpeeds);
+  /** The speed of the profile in km/h: what turns the duration into a distance. */
+  protected readonly loopSpeed = computed(() =>
+    this.loopSpeeds.speed(this.store.profile()),
+  );
+  /** The distance in km a duration at the speed of the profile comes to. */
+  protected readonly loopKmFromDuration = computed(
+    () => distanceFor(this.loopMinutes(), this.loopSpeed()) / 1000,
+  );
   /** Climb asked in the dialog, in meters; empty text means none. */
   protected readonly loopAscent = signal('');
   /** The direction asked in the dialog; empty leaves it to the engine. */
@@ -951,7 +966,8 @@ export class Planner {
   }
 
   protected drawLoopByDistance(): void {
-    const km = this.loopKm();
+    const km =
+      this.loopBy() === 'duration' ? this.loopKmFromDuration() : this.loopKm();
     const meters = Number.isFinite(km)
       ? Math.round(km * 1000)
       : LOOP_DISTANCE_DEFAULT_METERS;
@@ -981,6 +997,10 @@ export class Planner {
         ? (value as LoopDirection)
         : null,
     );
+  }
+
+  protected setLoopSpeed(value: string): void {
+    this.loopSpeeds.set(this.store.profile(), value);
   }
 
   protected setLoopKm(value: string): void {
