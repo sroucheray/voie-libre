@@ -105,7 +105,8 @@
       }
     },
     "alternatives": {
-      "label": "Alternatives"
+      "label": "Alternatives",
+      "offered": "Parcours proposés"
     },
     "points": {
       "label": "Points du parcours",
@@ -152,7 +153,8 @@
     "clear": "Effacer tous les points",
     "recompute": {
       "button": "Recalculer tout le parcours",
-      "hint": "Redemande le meilleur itinéraire par tous vos points. Annuler ramène le précédent."
+      "hint": "Redemande le meilleur itinéraire par tous vos points. Annuler ramène le précédent.",
+      "short": "Recalculer"
     },
     "status": {
       "loading": "Calcul du parcours…"

@@ -105,7 +105,8 @@
       }
     },
     "alternatives": {
-      "label": "Alternatives"
+      "label": "Alternatives",
+      "offered": "Routes offered"
     },
     "points": {
       "label": "Route points",
@@ -152,7 +153,8 @@
     "clear": "Clear all points",
     "recompute": {
       "button": "Compute the whole route again",
-      "hint": "Asks for the best route through all your points again. Undo brings the previous one back."
+      "hint": "Asks for the best route through all your points again. Undo brings the previous one back.",
+      "short": "Recompute"
     },
     "status": {
       "loading": "Computing the route…"

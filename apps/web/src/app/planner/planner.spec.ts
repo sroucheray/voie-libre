@@ -270,15 +270,23 @@ describe('Planner', () => {
       expect([...positions].sort((a, b) => a - b)).toEqual(positions);
     });
 
-    it('keeps the options about the result in its header', async () => {
+    it('puts the title and the recompute action in the header, and the number of routes under the cards', async () => {
       const view = await render();
       view.click(3.087, 45.777);
       view.click(3.249, 45.544);
       await view.settle();
       view.fixture.detectChanges();
       const header = view.root.querySelector('.result__header') as HTMLElement;
-      expect(header.querySelector('.alternatives select')).not.toBeNull();
       expect(header.textContent).toContain('Route');
+      // The number of routes asked for sits under the cards, as a row of choices.
+      const offered = view.root.querySelector(
+        '.result .offered',
+      ) as HTMLElement;
+      expect(offered.querySelectorAll('.segmented button')).toHaveLength(3);
+      expect(
+        header.compareDocumentPosition(offered) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
     });
 
     it('keeps save and clear all in a bar outside the scrolling part', async () => {
@@ -1009,11 +1017,13 @@ describe('Planner', () => {
     view.click(3.087, 45.777);
     view.click(3.249, 45.544);
     await view.settle();
-    const select = view.root.querySelector('select') as HTMLSelectElement;
-    select.value = '3';
-    select.dispatchEvent(new Event('change'));
+    const three = Array.from(
+      view.root.querySelectorAll<HTMLButtonElement>('.offered button'),
+    ).find((button) => button.textContent?.trim() === '3') as HTMLButtonElement;
+    three.click();
     await view.settle();
     expect(requests.at(-1)?.alternatives).toBe(3);
+    expect(three.getAttribute('aria-pressed')).toBe('true');
     expect(view.driver.routes).toHaveLength(3);
 
     const buttons = Array.from(

@@ -526,21 +526,66 @@ vl-saved-routes {
   margin-bottom: var(--space-2);
 }
 
-.result__options {
-  display: flex;
-  flex-wrap: wrap;
+// "Compute again" is about the result: a small link-like button on the right of its title.
+.result__header .recompute {
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-1) var(--space-3);
+  gap: var(--space-1);
+  min-height: 2rem;
+  margin-top: 0;
+  padding: 0 var(--space-2);
+  border-color: transparent;
+  background: none;
+  color: var(--color-accent);
   font-size: var(--font-size-sm);
+  font-weight: 600;
 
-  .alternatives {
-    margin-top: 0;
-    gap: var(--space-2);
+  vl-icon {
+    --icon-size: 0.875rem;
   }
 
-  .recompute {
-    margin-top: 0;
+  &:hover:not(:disabled) {
+    background: var(--color-accent-soft);
+  }
+}
+
+// How many routes to ask for: a row of 1 2 3 under the cards, level with the question.
+.offered {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-2);
+}
+
+.segmented {
+  display: inline-flex;
+
+  button {
+    min-width: 2.25rem;
     min-height: 2rem;
+    margin-top: 0;
+    margin-left: -1px;
+    padding: 0;
+    border-radius: 0;
+
+    &:first-child {
+      margin-left: 0;
+      border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    }
+
+    &:last-child {
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    &[aria-pressed='true'] {
+      position: relative;
+      border-color: var(--color-accent);
+      background: var(--color-accent);
+      color: var(--color-accent-ink);
+    }
   }
 }
 

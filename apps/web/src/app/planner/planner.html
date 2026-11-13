@@ -607,33 +607,20 @@
       <section class="result" aria-labelledby="result-title">
         <div class="result__header">
           <h3 id="result-title">{{ 'planner.result.title' | transloco }}</h3>
-          <div class="result__options">
-            <label class="alternatives">
-              {{ 'planner.alternatives.label' | transloco }}
-              <select (change)="selectAlternatives($event)">
-                @for (count of alternativeChoices; track count) {
-                <option
-                  [value]="count"
-                  [selected]="count === store.alternatives()"
-                >
-                  {{ format.number(count) }}
-                </option>
-                }
-              </select>
-            </label>
-            @if (store.routes().length > 0 && store.canRecompute() &&
-            store.status() === 'ready') {
-            <!-- An edit beside the route on a long trip only recomputes a stretch: this asks for it all. -->
-            <button
-              type="button"
-              class="recompute"
-              [title]="'planner.recompute.hint' | transloco"
-              (click)="store.recompute()"
-            >
-              {{ 'planner.recompute.button' | transloco }}
-            </button>
-            }
-          </div>
+          @if (store.routes().length > 0 && store.canRecompute() &&
+          store.status() === 'ready') {
+          <!-- An edit beside the route on a long trip only recomputes a stretch: this asks for it all. -->
+          <button
+            type="button"
+            class="recompute"
+            [attr.aria-label]="'planner.recompute.button' | transloco"
+            [title]="'planner.recompute.hint' | transloco"
+            (click)="store.recompute()"
+          >
+            <vl-icon name="refresh" />
+            {{ 'planner.recompute.short' | transloco }}
+          </button>
+          }
         </div>
         @if (store.status() === 'loading') {
         <p role="status">{{ 'planner.status.loading' | transloco }}</p>
@@ -673,6 +660,26 @@
         } @if (store.routes().length > 0) {
         <vl-profile-mini />
         }
+        <div
+          class="offered"
+          role="group"
+          [attr.aria-label]="'planner.alternatives.offered' | transloco"
+        >
+          <span class="offered__label"
+            >{{ 'planner.alternatives.offered' | transloco }}</span
+          >
+          <span class="segmented">
+            @for (count of alternativeChoices; track count) {
+            <button
+              type="button"
+              [attr.aria-pressed]="count === store.alternatives()"
+              (click)="store.setAlternatives(count)"
+            >
+              {{ format.number(count) }}
+            </button>
+            }
+          </span>
+        </div>
       </section>
       }
     </div>

@@ -76,6 +76,10 @@ export const ICONS = {
   shrink: {
     paths: ['m14 10 7-7', 'M20 10h-6V4', 'm3 21 7-7', 'M4 14h6v6'],
   },
+  // One arrow turning back on itself: calculate again.
+  refresh: {
+    paths: ['M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8', 'M21 3v5h-5'],
+  },
   // A magnifier with a plus: zoom on the selected stretch.
   zoomIn: {
     paths: [
