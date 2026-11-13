@@ -373,6 +373,8 @@
     "band": "{{from}}–{{to}}",
     "bandLast": "{{from}} et plus",
     "selection": "Sélection : {{distance}} · ↑ {{ascent}} · ↓ {{descent}} · {{grade}} en moyenne",
+    "bubble": "{{distance}} · ↑ {{ascent}} · ↓ {{descent}} · {{grade}}",
+    "descents": "Colorer les descentes",
     "selectHint": "Faites glisser sur le graphique pour mesurer une portion.",
     "source": {
       "copernicus": "Altitude : Copernicus DEM GLO-30, fourni dans le cadre de COPERNICUS par l'Union européenne et l'ESA.",

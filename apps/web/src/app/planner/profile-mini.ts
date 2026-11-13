@@ -15,6 +15,7 @@ import {
   profilePaths,
   stretchStats,
 } from './elevation-profile';
+import { DescentColours } from './descent-colours';
 import { PlannerStore } from './planner-store';
 
 /**
@@ -32,6 +33,7 @@ import { PlannerStore } from './planner-store';
 export class ProfileMini {
   protected readonly store = inject(PlannerStore);
   protected readonly format = inject(FormattingService);
+  private readonly descents = inject(DescentColours);
   /** Only the curve, without the line of figures: for the header of the folded profile strip. */
   readonly compact = input(false, { transform: booleanAttribute });
   protected readonly viewBox = `0 0 ${PROFILE_WIDTH} ${PROFILE_HEIGHT}`;
@@ -47,7 +49,10 @@ export class ProfileMini {
     if (!profile) return null;
     const totals = stretchStats(profile, 0, profile.samples.length - 1);
     return {
-      paths: profilePaths(profile),
+      paths: profilePaths(
+        profile,
+        this.descents.coloured(this.store.profile()),
+      ),
       distance: profile.totalDistance,
       ascent: totals.ascent,
       descent: totals.descent,

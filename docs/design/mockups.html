@@ -1,220 +1,868 @@
 <!doctype html>
 <html lang="fr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Voie Libre — design directions</title>
-<!-- Static mockups for docs/features/design.md, phase 2. No dependency, no network. Open this file in a browser. -->
-<style>
-  * { box-sizing: border-box; }
-  body { margin: 0; font: 15px/1.4 system-ui, sans-serif; background: #e9eaec; color: #1d2433; }
-  .page-head { padding: 24px 32px 0; max-width: 1500px; }
-  .page-head h1 { margin: 0 0 4px; font-size: 22px; }
-  .page-head p { margin: 0; color: #55607a; max-width: 70ch; }
-  .dir { padding: 32px; max-width: 1500px; }
-  .dir > h2 { margin: 0 0 4px; font-size: 18px; }
-  .dir > .note { margin: 0 0 16px; color: #55607a; max-width: 90ch; }
-  .swatches { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
-  .sw { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #55607a; }
-  .sw i { width: 22px; height: 22px; border-radius: 6px; border: 1px solid rgb(0 0 0 / 15%); display: block; }
-  .row { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
-  .frame-label { font-size: 12px; color: #55607a; margin: 0 0 6px; }
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Voie Libre — design directions</title>
+    <!-- Static mockups for docs/features/design.md, phase 2. No dependency, no network. Open this file in a browser. -->
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font:
+          15px/1.4 system-ui,
+          sans-serif;
+        background: #e9eaec;
+        color: #1d2433;
+      }
+      .page-head {
+        padding: 24px 32px 0;
+        max-width: 1500px;
+      }
+      .page-head h1 {
+        margin: 0 0 4px;
+        font-size: 22px;
+      }
+      .page-head p {
+        margin: 0;
+        color: #55607a;
+        max-width: 70ch;
+      }
+      .dir {
+        padding: 32px;
+        max-width: 1500px;
+      }
+      .dir > h2 {
+        margin: 0 0 4px;
+        font-size: 18px;
+      }
+      .dir > .note {
+        margin: 0 0 16px;
+        color: #55607a;
+        max-width: 90ch;
+      }
+      .swatches {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+      .sw {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #55607a;
+      }
+      .sw i {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        border: 1px solid rgb(0 0 0 / 15%);
+        display: block;
+      }
+      .row {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      .frame-label {
+        font-size: 12px;
+        color: #55607a;
+        margin: 0 0 6px;
+      }
 
-  /* ================= tokens, one set per direction ================= */
-  .dir-a {
-    --bg: #f5f6f8; --surface: #fff; --surface-2: #f2f4f7; --border: #d5d9e0; --text: #101828; --text-2: #475467;
-    --accent: #175cd3; --accent-ink: #fff; --accent-soft: #eaf2ff; --danger: #b42318;
-    --route: #1570ef; --radius: 8px; --radius-sm: 6px; --shadow: 0 1px 2px rgb(16 24 40 / 10%), 0 4px 14px rgb(16 24 40 / 12%);
-    --land: #eef0ec; --green: #d7e6cf; --water: #bcd7ea; --road: #fff; --road-2: #f7d9a8;
-    --font: system-ui, "Segoe UI", Roboto, sans-serif; --head-bg: #fff; --head-text: #101828; --logo: #175cd3;
-  }
-  .dir-b {
-    --bg: #f6f4f1; --surface: #fff; --surface-2: #f1eeea; --border: #d9d3cb; --text: #211b16; --text-2: #5c5249;
-    --accent: #c2410c; --accent-ink: #fff; --accent-soft: #fdeee3; --danger: #b42318;
-    --route: #d9480f; --radius: 4px; --radius-sm: 3px; --shadow: 0 1px 0 rgb(33 27 22 / 12%), 0 3px 10px rgb(33 27 22 / 14%);
-    --land: #f0ede6; --green: #dde3cc; --water: #c5d9df; --road: #fffdf9; --road-2: #f2d8b0;
-    --font: system-ui, "Segoe UI", Roboto, sans-serif; --head-bg: #211b16; --head-text: #fff; --logo: #ff8a4c;
-  }
-  .dir-c {
-    --bg: #f3f6f5; --surface: #fff; --surface-2: #eef3f1; --border: #d3dcd8; --text: #0f2420; --text-2: #46605a;
-    --accent: #0f766e; --accent-ink: #fff; --accent-soft: #e1f4f1; --danger: #b42318;
-    --route: #0e7490; --radius: 14px; --radius-sm: 10px; --shadow: 0 2px 4px rgb(15 36 32 / 8%), 0 8px 24px rgb(15 36 32 / 14%);
-    --land: #eef2ee; --green: #d3e5d2; --water: #bcd9e4; --road: #fff; --road-2: #f3dfb8;
-    --font: ui-rounded, system-ui, "Segoe UI", Roboto, sans-serif; --head-bg: #fff; --head-text: #0f2420; --logo: #0f766e;
-  }
-  /* semantic map colours, same in all directions (checked for colour-blind safety in phase 3) */
-  .dir { --way-good: #12b76a; --way-fair: #f79009; --way-avoid: #d92d20;
-    --s-p: #667085; --s-c: #12b76a; --s-u: #f79009; --s-s: #93370d; --s-q: #d0d5dd;
-    --g0: #dbeafe; --g1: #bbf7d0; --g2: #fde68a; --g3: #fdba74; --g4: #fca5a5; }
+      /* ================= tokens, one set per direction ================= */
+      .dir-a {
+        --bg: #f5f6f8;
+        --surface: #fff;
+        --surface-2: #f2f4f7;
+        --border: #d5d9e0;
+        --text: #101828;
+        --text-2: #475467;
+        --accent: #175cd3;
+        --accent-ink: #fff;
+        --accent-soft: #eaf2ff;
+        --danger: #b42318;
+        --route: #1570ef;
+        --radius: 8px;
+        --radius-sm: 6px;
+        --shadow: 0 1px 2px rgb(16 24 40 / 10%), 0 4px 14px rgb(16 24 40 / 12%);
+        --land: #eef0ec;
+        --green: #d7e6cf;
+        --water: #bcd7ea;
+        --road: #fff;
+        --road-2: #f7d9a8;
+        --font: system-ui, 'Segoe UI', Roboto, sans-serif;
+        --head-bg: #fff;
+        --head-text: #101828;
+        --logo: #175cd3;
+      }
+      .dir-b {
+        --bg: #f6f4f1;
+        --surface: #fff;
+        --surface-2: #f1eeea;
+        --border: #d9d3cb;
+        --text: #211b16;
+        --text-2: #5c5249;
+        --accent: #c2410c;
+        --accent-ink: #fff;
+        --accent-soft: #fdeee3;
+        --danger: #b42318;
+        --route: #d9480f;
+        --radius: 4px;
+        --radius-sm: 3px;
+        --shadow: 0 1px 0 rgb(33 27 22 / 12%), 0 3px 10px rgb(33 27 22 / 14%);
+        --land: #f0ede6;
+        --green: #dde3cc;
+        --water: #c5d9df;
+        --road: #fffdf9;
+        --road-2: #f2d8b0;
+        --font: system-ui, 'Segoe UI', Roboto, sans-serif;
+        --head-bg: #211b16;
+        --head-text: #fff;
+        --logo: #ff8a4c;
+      }
+      .dir-c {
+        --bg: #f3f6f5;
+        --surface: #fff;
+        --surface-2: #eef3f1;
+        --border: #d3dcd8;
+        --text: #0f2420;
+        --text-2: #46605a;
+        --accent: #0f766e;
+        --accent-ink: #fff;
+        --accent-soft: #e1f4f1;
+        --danger: #b42318;
+        --route: #0e7490;
+        --radius: 14px;
+        --radius-sm: 10px;
+        --shadow: 0 2px 4px rgb(15 36 32 / 8%), 0 8px 24px rgb(15 36 32 / 14%);
+        --land: #eef2ee;
+        --green: #d3e5d2;
+        --water: #bcd9e4;
+        --road: #fff;
+        --road-2: #f3dfb8;
+        --font: ui-rounded, system-ui, 'Segoe UI', Roboto, sans-serif;
+        --head-bg: #fff;
+        --head-text: #0f2420;
+        --logo: #0f766e;
+      }
+      /* semantic map colours, same in all directions (checked for colour-blind safety in phase 3) */
+      .dir {
+        --way-good: #12b76a;
+        --way-fair: #f79009;
+        --way-avoid: #d92d20;
+        --s-p: #667085;
+        --s-c: #12b76a;
+        --s-u: #f79009;
+        --s-s: #93370d;
+        --s-q: #d0d5dd;
+        --g0: #dbeafe;
+        --g1: #bbf7d0;
+        --g2: #fde68a;
+        --g3: #fdba74;
+        --g4: #fca5a5;
+      }
 
-  /* ================= components (same markup in every direction) ================= */
-  .app { font-family: var(--font); color: var(--text); background: var(--bg); position: relative; overflow: hidden;
-    border: 1px solid rgb(0 0 0 / 18%); border-radius: 10px; display: flex; flex-direction: column; font-size: 14px; }
-  .desktop { width: 1180px; height: 700px; }
-  .phone { width: 375px; height: 760px; border-radius: 28px; border-width: 6px; border-color: #1d2433; }
-  .hdr { height: 52px; display: flex; align-items: center; gap: 12px; padding: 0 16px; background: var(--head-bg); color: var(--head-text);
-    border-bottom: 1px solid var(--border); flex: none; z-index: 5; }
-  .hdr .mark { width: 30px; height: 30px; color: var(--logo); flex: none; }
-  .hdr .word { font-weight: 700; font-size: 17px; letter-spacing: -.01em; }
-  .hdr .word span { font-weight: 400; opacity: .75; }
-  .hdr .sp { flex: 1; }
-  .hdr .status { font-size: 12px; opacity: .8; display: flex; align-items: center; gap: 6px; }
-  .hdr .status i { width: 8px; height: 8px; border-radius: 50%; background: #12b76a; display: block; }
-  .btn { font: inherit; font-weight: 600; font-size: 13px; min-height: 36px; padding: 0 14px; border-radius: var(--radius-sm);
-    border: 1px solid var(--border); background: var(--surface); color: var(--text); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-  .btn.ghost { background: transparent; border-color: transparent; color: var(--accent); }
-  .btn.danger { color: var(--danger); }
-  .btn.sm { min-height: 32px; padding: 0 10px; font-size: 12px; }
-  .hdr .btn { background: transparent; border-color: rgb(127 127 127 / 40%); color: inherit; }
-  .hdr select { font: inherit; font-size: 13px; min-height: 36px; border-radius: var(--radius-sm); border: 1px solid rgb(127 127 127 / 40%); background: transparent; color: inherit; padding: 0 8px; }
-  .hdr select option { color: #000; }
-  .body { flex: 1; position: relative; display: flex; min-height: 0; }
-  .map { position: absolute; inset: 0; background: var(--land); }
-  .map svg { width: 100%; height: 100%; display: block; }
-  .panel { position: relative; z-index: 3; width: 336px; margin: 12px 0 12px 12px; background: var(--surface); border-radius: var(--radius);
-    box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; flex: none; }
-  .panel-scroll { overflow: hidden; padding: 14px 14px 6px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
-  .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-2); margin: 0 0 6px; }
-  .undo { display: flex; gap: 6px; }
-  .undo .btn { flex: 1; justify-content: center; }
-  .select { width: 100%; text-align: left; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); padding: 8px 12px;
-    display: flex; align-items: center; gap: 10px; min-height: 48px; font: inherit; color: var(--text); }
-  .select b { display: block; font-size: 14px; } .select small { display: block; color: var(--text-2); font-size: 12px; line-height: 1.25; }
-  .select svg { margin-left: auto; flex: none; }
-  .ico { width: 20px; height: 20px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-  .pts { display: flex; flex-direction: column; gap: 6px; }
-  .pt { display: flex; align-items: center; gap: 8px; }
-  .dot { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #fff; flex: none; border: 2px solid #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / 25%); }
-  .dot.a { background: #12b76a; } .dot.b { background: var(--accent); } .dot.s { background: var(--text-2); }
-  .field { flex: 1; min-height: 40px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 12px; display: flex; align-items: center; background: var(--surface); color: var(--text); font-size: 14px; }
-  .field.ph { color: var(--text-2); }
-  .swap { width: 36px; height: 36px; border: 1px solid var(--border); border-radius: var(--radius-sm); display: grid; place-items: center; background: var(--surface); color: var(--text-2); }
-  .add { margin-left: 34px; display: flex; align-items: center; gap: 6px; color: var(--accent); font-size: 12px; font-weight: 600; }
-  .result { border: 1px solid var(--accent); background: var(--accent-soft); border-radius: var(--radius-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
-  .result .big { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
-  .result .big small { font-size: 13px; font-weight: 500; color: var(--text-2); margin-left: 6px; }
-  .result .sub { color: var(--text-2); font-size: 12.5px; }
-  .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 14px; gap: 18px; flex: none; }
-  .tab { padding: 10px 0 9px; font-weight: 600; font-size: 13px; color: var(--text-2); border-bottom: 2px solid transparent; margin-bottom: -1px; }
-  .tab.on { color: var(--accent); border-color: var(--accent); }
-  .card { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--surface); }
-  .card h4 { margin: 0; font-size: 14px; } .card p { margin: 0; color: var(--text-2); font-size: 12.5px; }
-  .card .acts { display: flex; gap: 6px; }
-  .bar { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; } .bar i { display: block; height: 100%; background: var(--accent); }
+      /* ================= components (same markup in every direction) ================= */
+      .app {
+        font-family: var(--font);
+        color: var(--text);
+        background: var(--bg);
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgb(0 0 0 / 18%);
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        font-size: 14px;
+      }
+      .desktop {
+        width: 1180px;
+        height: 700px;
+      }
+      .phone {
+        width: 375px;
+        height: 760px;
+        border-radius: 28px;
+        border-width: 6px;
+        border-color: #1d2433;
+      }
+      .hdr {
+        height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 16px;
+        background: var(--head-bg);
+        color: var(--head-text);
+        border-bottom: 1px solid var(--border);
+        flex: none;
+        z-index: 5;
+      }
+      .hdr .mark {
+        width: 30px;
+        height: 30px;
+        color: var(--logo);
+        flex: none;
+      }
+      .hdr .word {
+        font-weight: 700;
+        font-size: 17px;
+        letter-spacing: -0.01em;
+      }
+      .hdr .word span {
+        font-weight: 400;
+        opacity: 0.75;
+      }
+      .hdr .sp {
+        flex: 1;
+      }
+      .hdr .status {
+        font-size: 12px;
+        opacity: 0.8;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .hdr .status i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #12b76a;
+        display: block;
+      }
+      .btn {
+        font: inherit;
+        font-weight: 600;
+        font-size: 13px;
+        min-height: 36px;
+        padding: 0 14px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+      }
+      .btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--accent-ink);
+      }
+      .btn.ghost {
+        background: transparent;
+        border-color: transparent;
+        color: var(--accent);
+      }
+      .btn.danger {
+        color: var(--danger);
+      }
+      .btn.sm {
+        min-height: 32px;
+        padding: 0 10px;
+        font-size: 12px;
+      }
+      .hdr .btn {
+        background: transparent;
+        border-color: rgb(127 127 127 / 40%);
+        color: inherit;
+      }
+      .hdr select {
+        font: inherit;
+        font-size: 13px;
+        min-height: 36px;
+        border-radius: var(--radius-sm);
+        border: 1px solid rgb(127 127 127 / 40%);
+        background: transparent;
+        color: inherit;
+        padding: 0 8px;
+      }
+      .hdr select option {
+        color: #000;
+      }
+      .body {
+        flex: 1;
+        position: relative;
+        display: flex;
+        min-height: 0;
+      }
+      .map {
+        position: absolute;
+        inset: 0;
+        background: var(--land);
+      }
+      .map svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .panel {
+        position: relative;
+        z-index: 3;
+        width: 336px;
+        margin: 12px 0 12px 12px;
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        flex: none;
+      }
+      .panel-scroll {
+        overflow: hidden;
+        padding: 14px 14px 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        flex: 1;
+      }
+      .lbl {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-2);
+        margin: 0 0 6px;
+      }
+      .undo {
+        display: flex;
+        gap: 6px;
+      }
+      .undo .btn {
+        flex: 1;
+        justify-content: center;
+      }
+      .select {
+        width: 100%;
+        text-align: left;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 48px;
+        font: inherit;
+        color: var(--text);
+      }
+      .select b {
+        display: block;
+        font-size: 14px;
+      }
+      .select small {
+        display: block;
+        color: var(--text-2);
+        font-size: 12px;
+        line-height: 1.25;
+      }
+      .select svg {
+        margin-left: auto;
+        flex: none;
+      }
+      .ico {
+        width: 20px;
+        height: 20px;
+        flex: none;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .pts {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .pt {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .dot {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        font-weight: 700;
+        color: #fff;
+        flex: none;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 1px rgb(0 0 0 / 25%);
+      }
+      .dot.a {
+        background: #12b76a;
+      }
+      .dot.b {
+        background: var(--accent);
+      }
+      .dot.s {
+        background: var(--text-2);
+      }
+      .field {
+        flex: 1;
+        min-height: 40px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+        background: var(--surface);
+        color: var(--text);
+        font-size: 14px;
+      }
+      .field.ph {
+        color: var(--text-2);
+      }
+      .swap {
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        display: grid;
+        place-items: center;
+        background: var(--surface);
+        color: var(--text-2);
+      }
+      .add {
+        margin-left: 34px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .result {
+        border: 1px solid var(--accent);
+        background: var(--accent-soft);
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .result .big {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .result .big small {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-2);
+        margin-left: 6px;
+      }
+      .result .sub {
+        color: var(--text-2);
+        font-size: 12.5px;
+      }
+      .tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+        padding: 0 14px;
+        gap: 18px;
+        flex: none;
+      }
+      .tab {
+        padding: 10px 0 9px;
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--text-2);
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+      }
+      .tab.on {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+      .card {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        background: var(--surface);
+      }
+      .card h4 {
+        margin: 0;
+        font-size: 14px;
+      }
+      .card p {
+        margin: 0;
+        color: var(--text-2);
+        font-size: 12.5px;
+      }
+      .card .acts {
+        display: flex;
+        gap: 6px;
+      }
+      .bar {
+        height: 8px;
+        border-radius: 4px;
+        background: var(--surface-2);
+        overflow: hidden;
+      }
+      .bar i {
+        display: block;
+        height: 100%;
+        background: var(--accent);
+      }
 
-  .ctrls { position: absolute; right: 12px; top: 12px; z-index: 3; display: flex; flex-direction: column; gap: 8px; }
-  .cbtn { width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--surface); box-shadow: var(--shadow); display: grid; place-items: center; color: var(--text); }
-  .cbtn.pair { height: 80px; grid-template-rows: 1fr 1fr; padding: 0; }
-  .cbtn.pair span { display: grid; place-items: center; width: 40px; font-size: 20px; line-height: 1; }
-  .cbtn.pair span + span { border-top: 1px solid var(--border); }
-  .layers { position: absolute; right: 60px; top: 12px; z-index: 4; width: 250px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 14px; }
-  .layers h5 { margin: 0 0 8px; font-size: 13px; }
-  .chk { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; min-height: 32px; font-size: 13px; }
-  .chk i { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 4px; background: var(--surface); flex: none; margin-top: 1px; display: grid; place-items: center; }
-  .chk i.on { background: var(--accent); border-color: var(--accent); }
-  .chk i.on::after { content: ""; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px, -1px); }
-  .chk small { display: block; color: var(--text-2); font-size: 11.5px; line-height: 1.3; }
-  .legend { display: flex; gap: 10px; font-size: 11.5px; color: var(--text-2); padding-left: 28px; flex-wrap: wrap; }
-  .legend b { display: inline-block; width: 14px; height: 0; border-top: 3px solid; vertical-align: middle; margin-right: 4px; }
-  .help { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 2; background: rgb(16 24 40 / 88%); color: #fff; font-size: 12.5px; padding: 8px 14px; border-radius: 999px; white-space: nowrap; }
-  .profile { position: absolute; z-index: 3; left: 360px; right: 12px; bottom: 12px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 10px 14px 10px; }
-  .profile.phone-p { position: static; box-shadow: none; padding: 0; }
-  .ph-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
-  .ph-head b { font-size: 13px; } .ph-head span { color: var(--text-2); font-size: 12px; }
-  .stats { display: flex; gap: 14px; margin-left: auto; font-size: 12px; color: var(--text-2); }
-  .stats b { color: var(--text); }
-  .chart { display: block; width: 100%; height: 100px; }
-  .surf { display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin: 6px 0 4px; }
-  .surf i { display: block; height: 100%; }
-  .keys { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: var(--text-2); }
-  .keys b { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+      .ctrls {
+        position: absolute;
+        right: 12px;
+        top: 12px;
+        z-index: 3;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .cbtn {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        box-shadow: var(--shadow);
+        display: grid;
+        place-items: center;
+        color: var(--text);
+      }
+      .cbtn.pair {
+        height: 80px;
+        grid-template-rows: 1fr 1fr;
+        padding: 0;
+      }
+      .cbtn.pair span {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        font-size: 20px;
+        line-height: 1;
+      }
+      .cbtn.pair span + span {
+        border-top: 1px solid var(--border);
+      }
+      .layers {
+        position: absolute;
+        right: 60px;
+        top: 12px;
+        z-index: 4;
+        width: 250px;
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 12px 14px;
+      }
+      .layers h5 {
+        margin: 0 0 8px;
+        font-size: 13px;
+      }
+      .chk {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 6px 0;
+        min-height: 32px;
+        font-size: 13px;
+      }
+      .chk i {
+        width: 18px;
+        height: 18px;
+        border: 2px solid var(--border);
+        border-radius: 4px;
+        background: var(--surface);
+        flex: none;
+        margin-top: 1px;
+        display: grid;
+        place-items: center;
+      }
+      .chk i.on {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+      .chk i.on::after {
+        content: '';
+        width: 4px;
+        height: 8px;
+        border: solid #fff;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg) translate(-1px, -1px);
+      }
+      .chk small {
+        display: block;
+        color: var(--text-2);
+        font-size: 11.5px;
+        line-height: 1.3;
+      }
+      .legend {
+        display: flex;
+        gap: 10px;
+        font-size: 11.5px;
+        color: var(--text-2);
+        padding-left: 28px;
+        flex-wrap: wrap;
+      }
+      .legend b {
+        display: inline-block;
+        width: 14px;
+        height: 0;
+        border-top: 3px solid;
+        vertical-align: middle;
+        margin-right: 4px;
+      }
+      .help {
+        position: absolute;
+        left: 50%;
+        bottom: 14px;
+        transform: translateX(-50%);
+        z-index: 2;
+        background: rgb(16 24 40 / 88%);
+        color: #fff;
+        font-size: 12.5px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+      .profile {
+        position: absolute;
+        z-index: 3;
+        left: 360px;
+        right: 12px;
+        bottom: 12px;
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 10px 14px 10px;
+      }
+      .profile.phone-p {
+        position: static;
+        box-shadow: none;
+        padding: 0;
+      }
+      .ph-head {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        margin-bottom: 4px;
+      }
+      .ph-head b {
+        font-size: 13px;
+      }
+      .ph-head span {
+        color: var(--text-2);
+        font-size: 12px;
+      }
+      .stats {
+        display: flex;
+        gap: 14px;
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--text-2);
+      }
+      .stats b {
+        color: var(--text);
+      }
+      .chart {
+        display: block;
+        width: 100%;
+        height: 100px;
+      }
+      .surf {
+        display: flex;
+        height: 10px;
+        border-radius: 5px;
+        overflow: hidden;
+        margin: 6px 0 4px;
+      }
+      .surf i {
+        display: block;
+        height: 100%;
+      }
+      .keys {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        font-size: 11.5px;
+        color: var(--text-2);
+      }
+      .keys b {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        margin-right: 4px;
+        vertical-align: -1px;
+      }
 
-  /* phone sheet */
-  .sheet { position: absolute; z-index: 4; left: 0; right: 0; bottom: 0; background: var(--surface); border-radius: 18px 18px 0 0; box-shadow: 0 -4px 20px rgb(16 24 40 / 20%); display: flex; flex-direction: column; }
-  .sheet .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--border); margin: 8px auto 6px; flex: none; }
-  .sheet .inner { padding: 4px 14px 12px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
-  .phone .cbtn { width: 44px; height: 44px; }
-  .phone .cbtn.pair { height: 88px; } .phone .cbtn.pair span { width: 44px; }
-  .phone .layers { right: 64px; }
-  .phone .btn { min-height: 44px; } .phone .field { min-height: 44px; } .phone .swap { width: 44px; height: 44px; }
-  .phone .hdr { height: 48px; padding: 0 12px; } .phone .hdr .btn { min-height: 44px; padding: 0 10px; }
-</style>
-</head>
-<body>
-<div class="page-head">
-  <h1>Voie Libre — trois directions</h1>
-  <p>Maquettes statiques (ordinateur d'abord, téléphone ensuite) pour <code>docs/features/design.md</code>. Même contenu, même structure dans les trois : seuls changent les jetons (couleurs, rayons, ombres, en-tête). Les couleurs sémantiques de la carte (voies bonnes / moyennes / à éviter, revêtement, pente) sont communes ; le tracé et l'accent suivent la direction.</p>
-</div>
-<div id="root"></div>
+      /* phone sheet */
+      .sheet {
+        position: absolute;
+        z-index: 4;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--surface);
+        border-radius: 18px 18px 0 0;
+        box-shadow: 0 -4px 20px rgb(16 24 40 / 20%);
+        display: flex;
+        flex-direction: column;
+      }
+      .sheet .grab {
+        width: 40px;
+        height: 5px;
+        border-radius: 3px;
+        background: var(--border);
+        margin: 8px auto 6px;
+        flex: none;
+      }
+      .sheet .inner {
+        padding: 4px 14px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        overflow: hidden;
+      }
+      .phone .cbtn {
+        width: 44px;
+        height: 44px;
+      }
+      .phone .cbtn.pair {
+        height: 88px;
+      }
+      .phone .cbtn.pair span {
+        width: 44px;
+      }
+      .phone .layers {
+        right: 64px;
+      }
+      .phone .btn {
+        min-height: 44px;
+      }
+      .phone .field {
+        min-height: 44px;
+      }
+      .phone .swap {
+        width: 44px;
+        height: 44px;
+      }
+      .phone .hdr {
+        height: 48px;
+        padding: 0 12px;
+      }
+      .phone .hdr .btn {
+        min-height: 44px;
+        padding: 0 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-head">
+      <h1>Voie Libre — trois directions</h1>
+      <p>
+        Maquettes statiques (ordinateur d'abord, téléphone ensuite) pour
+        <code>docs/features/design.md</code>. Même contenu, même structure dans
+        les trois : seuls changent les jetons (couleurs, rayons, ombres,
+        en-tête). Les couleurs sémantiques de la carte (voies bonnes / moyennes
+        / à éviter, revêtement, pente) sont communes ; le tracé et l'accent
+        suivent la direction.
+      </p>
+    </div>
+    <div id="root"></div>
 
-<script>
-const I = {
-  undo: '<svg class="ico" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>',
-  redo: '<svg class="ico" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg>',
-  down: '<svg class="ico" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>',
-  swap: '<svg class="ico" viewBox="0 0 24 24"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg>',
-  layers: '<svg class="ico" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg>',
-  loc: '<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>',
-  plus: '<svg class="ico" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 5v14M5 12h14"/></svg>',
-  dl: '<svg class="ico" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 21h16"/></svg>',
-  road: '<svg class="ico" viewBox="0 0 24 24"><circle cx="6" cy="17" r="3.5"/><circle cx="18" cy="17" r="3.5"/><path d="M6 17 10 8h5l3 9M10 8 8 5H6"/></svg>',
-};
-const mark = `<svg class="mark" viewBox="0 0 32 32" fill="none" aria-label="Voie Libre"><rect width="32" height="32" rx="8" fill="currentColor"/>
+    <script>
+      const I = {
+        undo: '<svg class="ico" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>',
+        redo: '<svg class="ico" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg>',
+        down: '<svg class="ico" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>',
+        swap: '<svg class="ico" viewBox="0 0 24 24"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg>',
+        layers:
+          '<svg class="ico" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg>',
+        loc: '<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>',
+        plus: '<svg class="ico" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 5v14M5 12h14"/></svg>',
+        dl: '<svg class="ico" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 21h16"/></svg>',
+        road: '<svg class="ico" viewBox="0 0 24 24"><circle cx="6" cy="17" r="3.5"/><circle cx="18" cy="17" r="3.5"/><path d="M6 17 10 8h5l3 9M10 8 8 5H6"/></svg>',
+      };
+      const mark = `<svg class="mark" viewBox="0 0 32 32" fill="none" aria-label="Voie Libre"><rect width="32" height="32" rx="8" fill="currentColor"/>
   <path d="M7 23c5 0 5-8 9-8s3 6 7 6c1.6 0 2.6-1 3-2" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><circle cx="25" cy="10" r="3" fill="#fff"/></svg>`;
 
-const mapSvg = (w, h, route) => `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid slice">
+      const mapSvg = (
+        w,
+        h,
+        route,
+      ) => `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid slice">
   <defs><radialGradient id="hs${w}" cx="30%" cy="40%"><stop offset="0" stop-color="#000" stop-opacity=".10"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>
   <rect width="${w}" height="${h}" fill="var(--land)"/>
-  <ellipse cx="${w*.62}" cy="${h*.3}" rx="${w*.13}" ry="${h*.2}" fill="var(--green)"/>
-  <ellipse cx="${w*.88}" cy="${h*.72}" rx="${w*.1}" ry="${h*.2}" fill="var(--green)"/>
-  <ellipse cx="${w*.45}" cy="${h*.86}" rx="${w*.14}" ry="${h*.1}" fill="var(--green)"/>
-  <path d="M${w*.52} 0 C${w*.58} ${h*.3} ${w*.5} ${h*.5} ${w*.62} ${h*.7} S${w*.7} ${h*.95} ${w*.72} ${h}" stroke="var(--water)" stroke-width="${w*.018}" fill="none"/>
-  <circle cx="${w*.28}" cy="${h*.45}" r="${h*.38}" fill="url(#hs${w})"/>
-  <g stroke="var(--road)" stroke-width="3" fill="none"><path d="M0 ${h*.50} L${w} ${h*.4}"/><path d="M${w*.2} 0 L${w*.42} ${h}"/><path d="M${w*.8} 0 L${w*.55} ${h}"/><path d="M0 ${h*.2} L${w} ${h*.12}"/></g>
-  <g stroke="var(--road-2)" stroke-width="4.5" fill="none"><path d="M0 ${h*.85} C${w*.3} ${h*.8} ${w*.6} ${h*.55} ${w} ${h*.50}"/></g>
-  <g stroke="var(--road)" stroke-width="1.5" fill="none" opacity=".9"><path d="M${w*.1} ${h*.1} L${w*.3} ${h*.5}"/><path d="M${w*.6} ${h*.2} L${w*.95} ${h*.5}"/><path d="M${w*.35} ${h*.3} L${w*.7} ${h*.85}"/></g>
+  <ellipse cx="${w * 0.62}" cy="${h * 0.3}" rx="${w * 0.13}" ry="${h * 0.2}" fill="var(--green)"/>
+  <ellipse cx="${w * 0.88}" cy="${h * 0.72}" rx="${w * 0.1}" ry="${h * 0.2}" fill="var(--green)"/>
+  <ellipse cx="${w * 0.45}" cy="${h * 0.86}" rx="${w * 0.14}" ry="${h * 0.1}" fill="var(--green)"/>
+  <path d="M${w * 0.52} 0 C${w * 0.58} ${h * 0.3} ${w * 0.5} ${h * 0.5} ${w * 0.62} ${h * 0.7} S${w * 0.7} ${h * 0.95} ${w * 0.72} ${h}" stroke="var(--water)" stroke-width="${w * 0.018}" fill="none"/>
+  <circle cx="${w * 0.28}" cy="${h * 0.45}" r="${h * 0.38}" fill="url(#hs${w})"/>
+  <g stroke="var(--road)" stroke-width="3" fill="none"><path d="M0 ${h * 0.5} L${w} ${h * 0.4}"/><path d="M${w * 0.2} 0 L${w * 0.42} ${h}"/><path d="M${w * 0.8} 0 L${w * 0.55} ${h}"/><path d="M0 ${h * 0.2} L${w} ${h * 0.12}"/></g>
+  <g stroke="var(--road-2)" stroke-width="4.5" fill="none"><path d="M0 ${h * 0.85} C${w * 0.3} ${h * 0.8} ${w * 0.6} ${h * 0.55} ${w} ${h * 0.5}"/></g>
+  <g stroke="var(--road)" stroke-width="1.5" fill="none" opacity=".9"><path d="M${w * 0.1} ${h * 0.1} L${w * 0.3} ${h * 0.5}"/><path d="M${w * 0.6} ${h * 0.2} L${w * 0.95} ${h * 0.5}"/><path d="M${w * 0.35} ${h * 0.3} L${w * 0.7} ${h * 0.85}"/></g>
   ${route}
 </svg>`;
-const routeD = (w, h) => `M${w*.36} ${h*.58} C${w*.42} ${h*.36} ${w*.48} ${h*.50} ${w*.55} ${h*.36} S${w*.68} ${h*.22} ${w*.78} ${h*.30} S${w*.84} ${h*.42} ${w*.78} ${h*.50}`;
-const routeSvg = (w, h) => `<path d="${routeD(w,h)}" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="${routeD(w,h)}" fill="none" stroke="var(--route)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <g font-size="11" font-weight="700" text-anchor="middle" fill="#fff"><circle cx="${w*.36}" cy="${h*.58}" r="11" fill="#12b76a" stroke="#fff" stroke-width="2.5"/><text x="${w*.36}" y="${h*.58+4}">A</text>
-  <circle cx="${w*.78}" cy="${h*.50}" r="11" fill="var(--accent)" stroke="#fff" stroke-width="2.5"/><text x="${w*.78}" y="${h*.50+4}">B</text>
-  <circle cx="${w*.55}" cy="${h*.36}" r="9" fill="var(--text-2)" stroke="#fff" stroke-width="2.5"/><text x="${w*.55}" y="${h*.36+3.5}" font-size="10">1</text></g>`;
+      const routeD = (w, h) =>
+        `M${w * 0.36} ${h * 0.58} C${w * 0.42} ${h * 0.36} ${w * 0.48} ${h * 0.5} ${w * 0.55} ${h * 0.36} S${w * 0.68} ${h * 0.22} ${w * 0.78} ${h * 0.3} S${w * 0.84} ${h * 0.42} ${w * 0.78} ${h * 0.5}`;
+      const routeSvg = (
+        w,
+        h,
+      ) => `<path d="${routeD(w, h)}" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="${routeD(w, h)}" fill="none" stroke="var(--route)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <g font-size="11" font-weight="700" text-anchor="middle" fill="#fff"><circle cx="${w * 0.36}" cy="${h * 0.58}" r="11" fill="#12b76a" stroke="#fff" stroke-width="2.5"/><text x="${w * 0.36}" y="${h * 0.58 + 4}">A</text>
+  <circle cx="${w * 0.78}" cy="${h * 0.5}" r="11" fill="var(--accent)" stroke="#fff" stroke-width="2.5"/><text x="${w * 0.78}" y="${h * 0.5 + 4}">B</text>
+  <circle cx="${w * 0.55}" cy="${h * 0.36}" r="9" fill="var(--text-2)" stroke="#fff" stroke-width="2.5"/><text x="${w * 0.55}" y="${h * 0.36 + 3.5}" font-size="10">1</text></g>`;
 
-const chart = (h) => `<svg class="chart" style="height:${h}px" viewBox="0 0 600 100" preserveAspectRatio="none"><defs><clipPath id="c${h}"><path d="M0 70 C40 60 70 40 110 52 S170 78 220 60 S280 30 330 36 S400 70 450 50 S540 20 600 34 V100 H0Z"/></clipPath></defs>
+      const chart = (
+        h,
+      ) => `<svg class="chart" style="height:${h}px" viewBox="0 0 600 100" preserveAspectRatio="none"><defs><clipPath id="c${h}"><path d="M0 70 C40 60 70 40 110 52 S170 78 220 60 S280 30 330 36 S400 70 450 50 S540 20 600 34 V100 H0Z"/></clipPath></defs>
   <g clip-path="url(#c${h})"><rect width="600" height="100" fill="var(--g0)"/><rect x="40" width="36" height="100" fill="var(--g1)"/><rect x="250" width="60" height="100" fill="var(--g1)"/><rect x="262" width="22" height="100" fill="var(--g2)"/><rect x="470" width="46" height="100" fill="var(--g2)"/><rect x="486" width="12" height="100" fill="var(--g3)"/><rect x="540" width="30" height="100" fill="var(--g1)"/></g>
   <path d="M0 70 C40 60 70 40 110 52 S170 78 220 60 S280 30 330 36 S400 70 450 50 S540 20 600 34" fill="none" stroke="var(--route)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
-const surf = `<div class="surf"><i style="width:58%;background:var(--s-p)"></i><i style="width:14%;background:var(--s-c)"></i><i style="width:16%;background:var(--s-u)"></i><i style="width:9%;background:var(--s-s)"></i><i style="width:3%;background:var(--s-q)"></i></div>
+      const surf = `<div class="surf"><i style="width:58%;background:var(--s-p)"></i><i style="width:14%;background:var(--s-c)"></i><i style="width:16%;background:var(--s-u)"></i><i style="width:9%;background:var(--s-s)"></i><i style="width:3%;background:var(--s-q)"></i></div>
   <div class="keys"><span><b style="background:var(--s-p)"></b>Revêtue 58 %</span><span><b style="background:var(--s-c)"></b>Piste cyclable 14 %</span><span><b style="background:var(--s-u)"></b>Non revêtue 16 %</span><span><b style="background:var(--s-s)"></b>Chemin 9 %</span></div>`;
-const gradeKeys = `<div class="keys" style="margin-top:2px"><span><b style="background:var(--g0)"></b>0–3 %</span><span><b style="background:var(--g1)"></b>3–6 %</span><span><b style="background:var(--g2)"></b>6–10 %</span><span><b style="background:var(--g3)"></b>10–15 %</span><span><b style="background:var(--g4)"></b>15 %+</span></div>`;
+      const gradeKeys = `<div class="keys" style="margin-top:2px"><span><b style="background:var(--g0)"></b>0–3 %</span><span><b style="background:var(--g1)"></b>3–6 %</span><span><b style="background:var(--g2)"></b>6–10 %</span><span><b style="background:var(--g3)"></b>10–15 %</span><span><b style="background:var(--g4)"></b>15 %+</span></div>`;
 
-const header = (compact) => `<div class="hdr">${mark}<div class="word">Voie <span>Libre</span></div><div class="sp"></div>
+      const header = (
+        compact,
+      ) => `<div class="hdr">${mark}<div class="word">Voie <span>Libre</span></div><div class="sp"></div>
   ${compact ? '' : '<div class="status"><i></i>API en ligne</div>'}
   ${compact ? `<button class="btn" aria-label="Hors ligne">${I.dl}</button>` : `<button class="btn">${I.dl} Garder hors ligne</button>`}
   <select><option>FR</option></select></div>`;
 
-const profileSel = `<div><p class="lbl">Profil</p><div class="select">${I.road}<div><b>Route</b><small>Vélo de route : routes revêtues, au plus rapide</small></div>${I.down}</div></div>`;
-const points = `<div><p class="lbl">Itinéraire</p><div class="pts">
+      const profileSel = `<div><p class="lbl">Profil</p><div class="select">${I.road}<div><b>Route</b><small>Vélo de route : routes revêtues, au plus rapide</small></div>${I.down}</div></div>`;
+      const points = `<div><p class="lbl">Itinéraire</p><div class="pts">
   <div class="pt"><span class="dot a">A</span><div class="field">Pavezin, Rhône</div><span class="swap">${I.swap}</span></div>
   <div class="add">${I.plus} Ajouter une étape</div>
   <div class="pt"><span class="dot s">1</span><div class="field">Col de la Croix-Régis</div></div>
   <div class="pt"><span class="dot b">B</span><div class="field">Clermont-Ferrand</div></div></div></div>`;
-const result = `<div class="result"><span class="big">173 km<small>1 101 m D+ · 6 h 40</small></span><span class="sub">Parcours 1 · 58 % revêtu · alternative 1 sur 1</span></div>`;
-const saved = `<div><p class="lbl">Parcours enregistrés</p><div style="display:flex;flex-direction:column;gap:8px">
+      const result = `<div class="result"><span class="big">173 km<small>1 101 m D+ · 6 h 40</small></span><span class="sub">Parcours 1 · 58 % revêtu · alternative 1 sur 1</span></div>`;
+      const saved = `<div><p class="lbl">Parcours enregistrés</p><div style="display:flex;flex-direction:column;gap:8px">
   <div class="card"><h4>Pavezin → Clermont</h4><p>173 km · 1 101 m D+ · 11 nov.</p><div class="acts"><button class="btn sm">Exporter</button><button class="btn sm">Renommer</button><button class="btn sm danger">Supprimer</button></div></div>
   <div class="card"><h4>Route, 70,7 km</h4><p>70,7 km · 539 m D+ · 8 nov.</p></div></div></div>`;
-const offline = `<div class="card"><h4>Zone hors ligne</h4><p>Autour du parcours, 5 km de chaque côté · environ 11,3 Mo</p><div class="bar"><i style="width:62%"></i></div><div class="acts"><button class="btn sm primary">Garder</button><button class="btn sm">Annuler</button></div></div>`;
-const layersCard = `<div class="layers"><h5>Couches</h5>
+      const offline = `<div class="card"><h4>Zone hors ligne</h4><p>Autour du parcours, 5 km de chaque côté · environ 11,3 Mo</p><div class="bar"><i style="width:62%"></i></div><div class="acts"><button class="btn sm primary">Garder</button><button class="btn sm">Annuler</button></div></div>`;
+      const layersCard = `<div class="layers"><h5>Couches</h5>
   <div class="chk"><i class="on"></i><div>Relief</div></div>
   <div class="chk"><i></i><div>Photos aériennes (IGN)<small>Le serveur de l'IGN voit votre adresse et la zone regardée.</small></div></div>
   <div class="chk"><i class="on"></i><div>Voies du profil</div></div>
   <div class="legend"><span><b style="color:var(--way-good)"></b>Bonne</span><span><b style="color:var(--way-fair)"></b>Moyenne</span><span><b style="color:var(--way-avoid);border-top-style:dashed"></b>À éviter</span></div>
   <div class="chk"><i></i><div>Revêtement du tracé</div></div></div>`;
-const ctrls = `<div class="ctrls"><div class="cbtn pair"><span>+</span><span>−</span></div><div class="cbtn">${I.layers}</div><div class="cbtn">${I.loc}</div></div>`;
+      const ctrls = `<div class="ctrls"><div class="cbtn pair"><span>+</span><span>−</span></div><div class="cbtn">${I.layers}</div><div class="cbtn">${I.loc}</div></div>`;
 
-const desktop = () => `<div class="app desktop">${header(false)}<div class="body">
+      const desktop =
+        () => `<div class="app desktop">${header(false)}<div class="body">
   <div class="map">${mapSvg(1180, 640, routeSvg(1180, 640))}</div>
   <div class="panel"><div class="tabs"><div class="tab on">Itinéraire</div><div class="tab">Enregistrés</div><div class="tab">Hors ligne</div></div>
     <div class="panel-scroll"><div class="undo"><button class="btn sm">${I.undo} Annuler</button><button class="btn sm">${I.redo} Rétablir</button></div>
@@ -225,33 +873,57 @@ const desktop = () => `<div class="app desktop">${header(false)}<div class="body
     ${chart(92)}${surf}${gradeKeys}</div>
 </div></div>`;
 
-const phoneA = () => `<div class="app phone">${header(true)}<div class="body"><div class="map">${mapSvg(375, 700, routeSvg(375, 700))}</div>${ctrls}
-  <div class="sheet" style="height:206px"><div class="grab"></div><div class="inner">${result.replace('big','big')}
+      const phoneA =
+        () => `<div class="app phone">${header(true)}<div class="body"><div class="map">${mapSvg(375, 700, routeSvg(375, 700))}</div>${ctrls}
+  <div class="sheet" style="height:206px"><div class="grab"></div><div class="inner">${result.replace('big', 'big')}
   <div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;justify-content:center">Enregistrer</button><button class="btn" style="flex:1;justify-content:center">Profil d'altitude</button></div></div></div></div></div>`;
-const phoneB = () => `<div class="app phone">${header(true)}<div class="body"><div class="map">${mapSvg(375, 700, routeSvg(375, 700))}</div>${ctrls}${layersCard.replace('class="layers"','class="layers" style="top:12px"')}
+      const phoneB =
+        () => `<div class="app phone">${header(true)}<div class="body"><div class="map">${mapSvg(375, 700, routeSvg(375, 700))}</div>${ctrls}${layersCard.replace('class="layers"', 'class="layers" style="top:12px"')}
   <div class="sheet" style="top:150px"><div class="grab"></div><div class="tabs"><div class="tab on">Itinéraire</div><div class="tab">Enregistrés</div><div class="tab">Hors ligne</div></div>
   <div class="inner" style="padding-top:12px">${profileSel}${points}${result}
   <div class="profile phone-p"><div class="ph-head"><b>Profil d'altitude</b></div>${chart(60)}${surf}</div></div></div></div></div>`;
-const phoneC = () => `<div class="app phone">${header(true)}<div class="body" style="flex-direction:column"><div class="map">${mapSvg(375, 700, routeSvg(375, 700))}</div>
+      const phoneC =
+        () => `<div class="app phone">${header(true)}<div class="body" style="flex-direction:column"><div class="map">${mapSvg(375, 700, routeSvg(375, 700))}</div>
   <div class="sheet" style="top:150px"><div class="grab"></div><div class="tabs"><div class="tab">Itinéraire</div><div class="tab on">Enregistrés</div><div class="tab">Hors ligne</div></div>
   <div class="inner" style="padding-top:12px">${saved}${offline}</div></div></div></div>`;
 
-const dirs = [
-  { c: 'dir-a', t: 'A · Bleu route', n: "Neutre froid, accent bleu sobre (le bleu actuel, un cran plus profond), en-tête blanc, rayons moyens (8 px). La plus proche d'aujourd'hui et de Google Maps / Ride with GPS. Risque : le tracé bleu se confond avec l'eau de la carte.", sw: ['--accent','--route','--surface','--border','--text'] },
-  { c: 'dir-b', t: 'B · Braise', n: "Neutres chauds (pierre), accent orange brûlé et tracé orange, en-tête sombre, angles francs (4 px). Plus d'outil que d'appli grand public, le tracé ressort sur le fond gris-vert. Risque : l'orange est aussi la couleur des voies « moyennes » et du revêtement non revêtu.", sw: ['--accent','--route','--head-bg','--border','--text'] },
-  { c: 'dir-c', t: 'C · Sous-bois', n: "Neutres verdâtres, accent vert profond, tracé bleu-vert, rayons larges (14 px), police arrondie du système. La plus accueillante (Komoot). Risque : vert = voies « bonnes » ; l'accent est volontairement plus sombre pour ne pas se confondre.", sw: ['--accent','--route','--surface-2','--border','--text'] },
-];
-const root = document.getElementById('root');
-dirs.forEach(d => {
-  const el = document.createElement('section'); el.className = 'dir ' + d.c;
-  el.innerHTML = `<h2>${d.t}</h2><p class="note">${d.n}</p>
+      const dirs = [
+        {
+          c: 'dir-a',
+          t: 'A · Bleu route',
+          n: "Neutre froid, accent bleu sobre (le bleu actuel, un cran plus profond), en-tête blanc, rayons moyens (8 px). La plus proche d'aujourd'hui et de Google Maps / Ride with GPS. Risque : le tracé bleu se confond avec l'eau de la carte.",
+          sw: ['--accent', '--route', '--surface', '--border', '--text'],
+        },
+        {
+          c: 'dir-b',
+          t: 'B · Braise',
+          n: "Neutres chauds (pierre), accent orange brûlé et tracé orange, en-tête sombre, angles francs (4 px). Plus d'outil que d'appli grand public, le tracé ressort sur le fond gris-vert. Risque : l'orange est aussi la couleur des voies « moyennes » et du revêtement non revêtu.",
+          sw: ['--accent', '--route', '--head-bg', '--border', '--text'],
+        },
+        {
+          c: 'dir-c',
+          t: 'C · Sous-bois',
+          n: "Neutres verdâtres, accent vert profond, tracé bleu-vert, rayons larges (14 px), police arrondie du système. La plus accueillante (Komoot). Risque : vert = voies « bonnes » ; l'accent est volontairement plus sombre pour ne pas se confondre.",
+          sw: ['--accent', '--route', '--surface-2', '--border', '--text'],
+        },
+      ];
+      const root = document.getElementById('root');
+      dirs.forEach((d) => {
+        const el = document.createElement('section');
+        el.className = 'dir ' + d.c;
+        el.innerHTML = `<h2>${d.t}</h2><p class="note">${d.n}</p>
     <div class="swatches" data-sw="${d.sw.join(',')}"></div>
     <div class="row"><div><p class="frame-label">Ordinateur 1180×700 : panneau, couches ouvertes, profil et revêtement</p>${desktop()}</div></div>
     <div class="row" style="margin-top:24px"><div><p class="frame-label">Téléphone 375 : repli</p>${phoneA()}</div><div><p class="frame-label">Téléphone : feuille ouverte + couches</p>${phoneB()}</div><div><p class="frame-label">Téléphone : enregistrés et hors ligne</p>${phoneC()}</div></div>`;
-  root.appendChild(el);
-  const cs = getComputedStyle(el);
-  el.querySelector('.swatches').innerHTML = d.sw.map(v => `<span class="sw"><i style="background:${cs.getPropertyValue(v)}"></i>${v} ${cs.getPropertyValue(v).trim()}</span>`).join('');
-});
-</script>
-</body>
+        root.appendChild(el);
+        const cs = getComputedStyle(el);
+        el.querySelector('.swatches').innerHTML = d.sw
+          .map(
+            (v) =>
+              `<span class="sw"><i style="background:${cs.getPropertyValue(v)}"></i>${v} ${cs.getPropertyValue(v).trim()}</span>`,
+          )
+          .join('');
+      });
+    </script>
+  </body>
 </html>

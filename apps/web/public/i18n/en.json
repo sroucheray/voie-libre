@@ -373,6 +373,8 @@
     "band": "{{from}}–{{to}}",
     "bandLast": "{{from}} and more",
     "selection": "Selection: {{distance}} · ↑ {{ascent}} · ↓ {{descent}} · {{grade}} on average",
+    "bubble": "{{distance}} · ↑ {{ascent}} · ↓ {{descent}} · {{grade}}",
+    "descents": "Colour the descents",
     "selectHint": "Drag over the chart to measure a stretch.",
     "source": {
       "copernicus": "Elevation: Copernicus DEM GLO-30, provided under COPERNICUS by the European Union and ESA.",

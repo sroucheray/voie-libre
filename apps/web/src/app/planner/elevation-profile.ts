@@ -151,11 +151,16 @@ export interface GradeRun {
 }
 
 /** The profile cut into runs of one grade band; a run ends on the sample the next one starts at. */
-export function gradeRuns(profile: ElevationProfile): GradeRun[] {
+export function gradeRuns(
+  profile: ElevationProfile,
+  colourDescents = true,
+): GradeRun[] {
   const { samples } = profile;
   const runs: GradeRun[] = [];
   for (let i = 0; i < samples.length - 1; i++) {
-    const band = gradeBand((samples[i].grade + samples[i + 1].grade) / 2);
+    const grade = (samples[i].grade + samples[i + 1].grade) / 2;
+    // A descent that is not coloured takes the colour of a flat stretch.
+    const band = grade < 0 && !colourDescents ? 0 : gradeBand(grade);
     const last = runs[runs.length - 1];
     if (last && last.band === band) last.to = i + 1;
     else runs.push({ band, from: i, to: i + 1 });
@@ -214,8 +219,14 @@ export interface ProfilePaths {
   areas: { band: number; d: string }[];
 }
 
-/** The line and the coloured areas of a profile, in a `PROFILE_WIDTH` by `PROFILE_HEIGHT` box. */
-export function profilePaths(profile: ElevationProfile): ProfilePaths {
+/**
+ * The line and the coloured areas of a profile, in a `PROFILE_WIDTH` by `PROFILE_HEIGHT` box.
+ * With `colourDescents` false the descents are not coloured by their steepness.
+ */
+export function profilePaths(
+  profile: ElevationProfile,
+  colourDescents = true,
+): ProfilePaths {
   const span = Math.max(profile.maxElevation - profile.minElevation, 1);
   const points = profile.samples.map((sample) => {
     const x = (sample.distance / profile.totalDistance) * PROFILE_WIDTH;
@@ -224,7 +235,7 @@ export function profilePaths(profile: ElevationProfile): ProfilePaths {
       ((sample.elevation - profile.minElevation) / span) * PROFILE_HEIGHT;
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   });
-  const areas = gradeRuns(profile).map((run) => {
+  const areas = gradeRuns(profile, colourDescents).map((run) => {
     const first = points[run.from].split(',')[0];
     const last = points[run.to].split(',')[0];
     const top = points.slice(run.from, run.to + 1).join('L');

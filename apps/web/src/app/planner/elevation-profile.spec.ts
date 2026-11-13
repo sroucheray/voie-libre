@@ -104,6 +104,19 @@ describe('grade bands and stretches', () => {
     expect(runs.length).toBeGreaterThan(1);
   });
 
+  it('can leave the descents out of the colours: they take the band of a flat stretch', () => {
+    const down = buildProfile(
+      Array.from({ length: 6 }, (_, i) => [3, 45 + i * 0.001, 300 - i * 20]),
+    )!;
+    expect(gradeRuns(down).some((run) => run.band > 0)).toBe(true);
+    expect(gradeRuns(down, false)).toEqual([{ band: 0, from: 0, to: 5 }]);
+    // Climbs keep their bands.
+    const up = buildProfile(
+      Array.from({ length: 6 }, (_, i) => [3, 45 + i * 0.001, 100 + i * 20]),
+    )!;
+    expect(gradeRuns(up, false)).toEqual(gradeRuns(up));
+  });
+
   it('adds up a stretch, in either order', () => {
     const stats = stretchStats(profile, 4, 1);
     expect(stats.distance).toBeCloseTo(300, 0);

@@ -19,6 +19,7 @@ import {
   type ElevationProfile,
   type ProfileSample,
 } from './elevation-profile';
+import { DescentColours } from './descent-colours';
 import { PlannerStore } from './planner-store';
 import { ProfileMini } from './profile-mini';
 import { Icon } from '../core/icons/icon';
@@ -48,6 +49,11 @@ const KEY_STEPS = 100;
 export class ElevationPanel {
   protected readonly store = inject(PlannerStore);
   protected readonly format = inject(FormattingService);
+  protected readonly descents = inject(DescentColours);
+  /** Whether the descents of the current profile are coloured by their steepness. */
+  protected readonly colourDescents = computed(() =>
+    this.descents.coloured(this.store.profile()),
+  );
   /** Folded by default: the bar shows the curve, a tap opens the whole profile. */
   protected readonly open = signal(false);
 
@@ -58,7 +64,7 @@ export class ElevationPanel {
   /** The line and the filled areas, in a box stretched to the panel. */
   protected readonly paths = computed(() => {
     const profile = this.profile();
-    return profile ? profilePaths(profile) : null;
+    return profile ? profilePaths(profile, this.colourDescents()) : null;
   });
 
   /**
@@ -106,9 +112,15 @@ export class ElevationPanel {
     const from = profile.samples[stretch.from];
     const to = profile.samples[stretch.to];
     if (!from || !to) return null;
+    const left = (from.distance / profile.totalDistance) * 100;
+    const width = ((to.distance - from.distance) / profile.totalDistance) * 100;
+    const middle = left + width / 2;
     return {
-      left: (from.distance / profile.totalDistance) * 100,
-      width: ((to.distance - from.distance) / profile.totalDistance) * 100,
+      left,
+      width,
+      // The bubble is centred on the stretch, or leans on its edge near the ends of the chart.
+      align: middle < 30 ? 'start' : middle > 70 ? 'end' : 'middle',
+      anchor: middle < 30 ? left : middle > 70 ? left + width : middle,
       stats: stretchStats(profile, stretch.from, stretch.to),
     };
   });
@@ -151,6 +163,11 @@ export class ElevationPanel {
 
   protected percent(value: number): string {
     return `${this.format.number(value)} %`;
+  }
+
+  /** The bubble over the chart is not the chart: it starts, moves and ends no selection. */
+  protected keepOut(event: Event): void {
+    event.stopPropagation();
   }
 
   protected onPointerDown(event: PointerEvent): void {

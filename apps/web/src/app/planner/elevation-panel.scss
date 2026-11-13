@@ -249,20 +249,59 @@
   color: var(--color-text);
 }
 
-// The button that shows the selected stretch on the map, after the figures of the selection.
-.stretch-zoom {
+// Whether the descents are coloured by their steepness (a choice for each profile).
+.descents {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  margin-left: 0.5rem;
-  padding: 0.125rem 0.5rem;
-  font: inherit;
-  font-size: var(--font-size-xs);
+  gap: 0.375rem;
+  margin-top: var(--space-1);
+  color: var(--color-text);
   cursor: pointer;
-  vertical-align: middle;
+}
 
-  vl-icon {
-    --icon-size: 1rem;
+// By the selection, over the chart: its figures and the button that zooms the map on it.
+.bubble {
+  position: absolute;
+  bottom: 0.25rem;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: calc(100% - 0.5rem);
+  padding: 0.125rem 0.25rem 0.125rem var(--space-2);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: var(--color-tooltip);
+  color: var(--color-surface);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-2);
+  cursor: default;
+
+  &--start {
+    transform: none;
+  }
+
+  &--end {
+    transform: translateX(-100%);
+  }
+}
+
+.bubble__zoom {
+  --icon-size: 1rem;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  min-height: 0;
+  padding: 0;
+  border-color: transparent;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--color-surface) 25%, transparent);
   }
 }
 

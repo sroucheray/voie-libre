@@ -18,3 +18,7 @@
 ## Out of scope
 
 - Colours of the route line on the map; the stretch details on the phone's light profile (it has no selection).
+
+## How it went
+
+Built as briefed in one commit. The switch sits beside the legend, not in the folded header (the header is a tap target that folds the profile). A descent that is not coloured takes band 0, so no new colour or CSS class was needed. Seen in the browser pane with a made-up route: the bubble over a selected descent, the descent pale, the switch unchecked on road.

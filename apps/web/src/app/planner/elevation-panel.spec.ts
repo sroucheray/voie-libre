@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideTestTransloco } from '../../testing/transloco-testing';
 import { LanguageService } from '../core/i18n/language.service';
+import { DESCENT_COLOURS_KEY } from './descent-colours';
 import { ElevationPanel } from './elevation-panel';
 import { PlannerStore } from './planner-store';
 
@@ -36,6 +37,9 @@ async function setup(withRoute = true, surfaces?: string, open = true) {
 }
 
 describe('ElevationPanel', () => {
+  beforeEach(() => localStorage.removeItem(DESCENT_COLOURS_KEY));
+  afterEach(() => localStorage.removeItem(DESCENT_COLOURS_KEY));
+
   it('shows nothing without a route', async () => {
     const { root } = await setup(false);
     expect(root.querySelector('.profile')).toBeNull();
@@ -168,7 +172,7 @@ describe('ElevationPanel', () => {
 
     expect(store.stretch()).toEqual({ from: 2, to: 6 });
     expect(root.querySelector('.selection')).not.toBeNull();
-    const text = root.querySelector('.stretch')!.textContent!;
+    const text = root.querySelector('.bubble')!.textContent!;
     expect(text).toContain('445 m');
     expect(text).toContain('↑ 40 m');
     expect(text).toContain('↓ 0 m');
@@ -186,13 +190,13 @@ describe('ElevationPanel', () => {
 
   it('offers to zoom the map on the selected stretch, only once there is one, and never by itself', async () => {
     const { store, fixture, root } = await setup();
-    expect(root.querySelector('.stretch-zoom')).toBeNull();
+    expect(root.querySelector('.bubble')).toBeNull();
     store.selectStretch([2, 6]);
     await fixture.whenStable();
     // Selecting does not move the map.
     expect(store.viewRequest()).toBeNull();
-    const button = root.querySelector<HTMLButtonElement>('.stretch-zoom')!;
-    expect(button.textContent).toContain('Zoom on the map');
+    const button = root.querySelector<HTMLButtonElement>('.bubble__zoom')!;
+    expect(button.title).toBe('Zoom on the map');
     expect(button.getAttribute('aria-label')).toBe(
       'Zoom the map on the selected stretch',
     );
@@ -204,8 +208,73 @@ describe('ElevationPanel', () => {
     const id = store.viewRequest()!.id;
     store.selectStretch(null);
     await fixture.whenStable();
-    expect(root.querySelector('.stretch-zoom')).toBeNull();
+    expect(root.querySelector('.bubble')).toBeNull();
     expect(store.viewRequest()?.id).toBe(id);
+  });
+
+  it('puts the bubble by the selection, leaning on the edge near the ends, and keeps it out of the selection', async () => {
+    const { store, fixture, root } = await setup();
+    store.selectStretch([4, 6]);
+    await fixture.whenStable();
+    const bubble = () => root.querySelector<HTMLElement>('.bubble')!;
+    expect(bubble().classList.contains('bubble--start')).toBe(false);
+    expect(bubble().classList.contains('bubble--end')).toBe(false);
+    expect(bubble().style.left).toBe('50%');
+    store.selectStretch([0, 2]);
+    await fixture.whenStable();
+    expect(bubble().classList.contains('bubble--start')).toBe(true);
+    store.selectStretch([8, 10]);
+    await fixture.whenStable();
+    expect(bubble().classList.contains('bubble--end')).toBe(true);
+    // A press on the bubble does not reach the chart: it neither starts nor ends a selection.
+    bubble().dispatchEvent(
+      new PointerEvent('pointerdown', { button: 0, bubbles: true }),
+    );
+    bubble().dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+    expect(store.stretch()).toEqual({ from: 8, to: 10 });
+  });
+
+  describe('descent colours', () => {
+    // Up, then down: one run of climbs, one of descents.
+    const hill: [number, number, number][] = Array.from(
+      { length: 11 },
+      (_, i) => [3, 45 + i * 0.001, 100 + (i <= 5 ? i : 10 - i) * 20],
+    );
+    const bands = (root: HTMLElement) =>
+      Array.from(root.querySelectorAll('path.area')).map((path) =>
+        path.getAttribute('class'),
+      );
+
+    it('leaves the descents neutral on road and colours them on trail, with a switch for each profile', async () => {
+      const { store, fixture, root } = await setup();
+      store.setRoutes([
+        {
+          geometry: hill,
+          distanceMeters: 1110,
+          ascentMeters: 100,
+          durationSeconds: 300,
+        },
+      ]);
+      await fixture.whenStable();
+      const switchBox = () =>
+        root.querySelector<HTMLInputElement>('.descents input')!;
+      expect(switchBox().checked).toBe(false);
+      // Steep climbs keep their colour; the descent takes the flat one.
+      expect(bands(root)[0]).toBe('area area--4');
+      expect(bands(root).at(-1)).toBe('area area--0');
+      const roadBands = bands(root);
+      store.setProfile('trail');
+      await fixture.whenStable();
+      expect(switchBox().checked).toBe(true);
+      expect(bands(root)).not.toEqual(roadBands);
+      // The choice is for the profile: turning it off on trail leaves road as it was.
+      switchBox().click();
+      await fixture.whenStable();
+      expect(bands(root)).toEqual(roadBands);
+      store.setProfile('road');
+      await fixture.whenStable();
+      expect(switchBox().checked).toBe(false);
+    });
   });
 
   it('selects with Shift and the arrow keys, and Escape clears', async () => {

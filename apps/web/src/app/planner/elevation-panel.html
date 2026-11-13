@@ -60,6 +60,33 @@
         [style.left.%]="s.left"
         [style.width.%]="s.width"
       ></div>
+      <!-- The figures of the stretch and the zoom button, by the selection. -->
+      <div
+        class="bubble"
+        [class.bubble--start]="s.align === 'start'"
+        [class.bubble--end]="s.align === 'end'"
+        [style.left.%]="s.anchor"
+        (pointerdown)="keepOut($event)"
+        (pointermove)="keepOut($event)"
+        (pointerup)="keepOut($event)"
+        (click)="keepOut($event)"
+      >
+        <span aria-hidden="true"
+          >{{ 'profile.bubble' | transloco : { distance:
+          format.distance(s.stats.distance), ascent:
+          format.elevation(s.stats.ascent), descent:
+          format.elevation(s.stats.descent), grade: grade(s.stats) } }}</span
+        >
+        <button
+          type="button"
+          class="bubble__zoom"
+          (click)="store.fitStretch()"
+          [title]="'profile.zoomOnStretch' | transloco"
+          [attr.aria-label]="'profile.zoomOnStretchLabel' | transloco"
+        >
+          <vl-icon name="zoomIn" />
+        </button>
+      </div>
       } @if (cursor(); as c) {
       <div class="cursor" [style.left.%]="cursorLeft()"></div>
       <div
@@ -102,21 +129,24 @@
         }
       </ul>
       <p class="stretch" role="status">
-        @if (stretch(); as s) { {{ 'profile.selection' | transloco : { distance:
-        format.distance(s.stats.distance), ascent:
-        format.elevation(s.stats.ascent), descent:
-        format.elevation(s.stats.descent), grade: grade(s.stats) } }}
-        <button
-          type="button"
-          class="stretch-zoom"
-          (click)="store.fitStretch()"
-          [attr.aria-label]="'profile.zoomOnStretchLabel' | transloco"
+        @if (stretch(); as s) {
+        <!-- The bubble over the chart shows it; this is for screen readers. -->
+        <span class="visually-hidden"
+          >{{ 'profile.selection' | transloco : { distance:
+          format.distance(s.stats.distance), ascent:
+          format.elevation(s.stats.ascent), descent:
+          format.elevation(s.stats.descent), grade: grade(s.stats) } }}</span
         >
-          <vl-icon name="zoomIn" />
-          {{ 'profile.zoomOnStretch' | transloco }}
-        </button>
         } @else { {{ 'profile.selectHint' | transloco }} }
       </p>
+      <label class="descents">
+        <input
+          type="checkbox"
+          [checked]="colourDescents()"
+          (change)="descents.set(store.profile(), $any($event.target).checked)"
+        />
+        {{ 'profile.descents' | transloco }}
+      </label>
     </div>
     @if (surface(); as s) {
     <ul class="surface-legend" [attr.aria-label]="'surface.title' | transloco">
