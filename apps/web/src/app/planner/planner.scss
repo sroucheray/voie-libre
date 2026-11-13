@@ -8,7 +8,7 @@
   position: relative;
   flex: 1;
   // Room for the column of map buttons and the closed sheet over it (12 + 4 × 44 + 3 × 8 + 68 px):
-  // an open elevation profile shrinks before the map does, whatever the size of the window.
+  // an open elevation profile (wide screens) shrinks before the map does, whatever the size of the window.
   min-height: min(18.5rem, 55dvh);
 }
 
@@ -750,8 +750,8 @@ vl-saved-routes {
     }
   }
 
-  // The open sheet takes the room of the elevation profile (it comes back when the sheet closes).
-  :host(.sheet-open) vl-elevation-panel {
+  // On a phone the profile lives in the sheet (`vl-profile-mini`): the strip under the map is for wide screens.
+  vl-elevation-panel {
     display: none;
   }
 

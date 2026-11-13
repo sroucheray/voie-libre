@@ -49,4 +49,4 @@ Built in 5 commits: the snapping rule (`sheet-snap.ts`); the drag directive (`sh
 
 ### Item 6: the light profile
 
-A second commit pair added `ProfileMini` to the open sheet (curve plus one line of figures; the full profile stays hidden while the sheet is open, as before). Not seen with a real route in the browser pane (no WebGL, so no route can be placed): checked by specs only. The `planner.scss` file is now at 11 kB of its 12 kB error budget: the next change to the planner styles should split it.
+A second commit pair added `ProfileMini` to the open sheet (curve plus one line of figures). The strip of the full profile under the map is no longer shown on a phone, only in the sheet. The strip's gradient shadow is gone on every screen (a plain 1 px top border, like the status bar). Not seen with a real route in the browser pane (no WebGL, so no route can be placed): checked by specs only. The `planner.scss` file is now at 11 kB of its 12 kB error budget: the next change to the planner styles should split it.
