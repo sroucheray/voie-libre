@@ -92,6 +92,25 @@ export const COMPUTING_DELAY_MS = 300;
 /** Where a drag in progress puts its point. */
 type DragChange = { kind: 'move' | 'insert'; index: number; point: LngLat };
 
+/** Where the width of the side panel is kept on the device. */
+const PANEL_WIDTH_KEY = 'voie-libre.panel-width';
+/** The original width of the side panel (21 rem) and the widest it can be pulled. */
+const PANEL_MIN_PX = 336;
+const PANEL_MAX_PX = 720;
+/** What one arrow key press adds to or takes off the width. */
+const PANEL_KEY_STEP_PX = 24;
+
+function readPanelWidth(): number | null {
+  try {
+    const width = Number(localStorage.getItem(PANEL_WIDTH_KEY));
+    return Number.isFinite(width) && width > PANEL_MIN_PX
+      ? Math.min(PANEL_MAX_PX, width)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 /** The height of the sheet when only its handle and summary show, in rem (see planner.scss). */
 const SHEET_PEEK_REM = 4.25;
 
@@ -112,7 +131,7 @@ const SHEET_PEEK_REM = 4.25;
     ComputeBadge,
   ],
   templateUrl: './planner.html',
-  styleUrls: ['./planner.scss', './planner-phone.scss'],
+  styleUrls: ['./planner.scss', './planner-route.scss', './planner-phone.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // A phone's map with the whole screen: the sheet goes and what floated above it comes down.
   host: { '[class.map-fullscreen]': 'fullscreen.active()' },
@@ -227,6 +246,9 @@ export class Planner {
     () => this.store.routes()[this.store.selectedIndex()] ?? null,
   );
   protected readonly sheetOpen = computed(() => this.sheetState() !== 'peek');
+  /** The width in pixels the user gave the side panel; null leaves it at its original width. */
+  protected readonly panelWidth = signal<number | null>(readPanelWidth());
+  private panelResize: { x: number; width: number; max: number } | null = null;
   /** The height in pixels while the handle is dragged; null otherwise (the state decides). */
   protected readonly sheetDragHeight = signal<number | null>(null);
   private sheetDrag: { start: number; stage: number; peek: number } | null =
@@ -429,6 +451,12 @@ export class Planner {
       });
     });
 
+    // Views keep clear of the panel, whatever width the user gave it.
+    effect(() => {
+      const driver = this.driver();
+      const width = this.panelWidth() ?? PANEL_MIN_PX;
+      driver?.setSideInset(width + 4);
+    });
     // Shows a route opened from the saved list. The driver may come later than the request.
     effect(() => {
       const driver = this.driver();
@@ -1112,6 +1140,70 @@ export class Planner {
     if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
     event.preventDefault();
     this.sheetState.set(stepState(this.sheetState(), event.key === 'ArrowUp'));
+  }
+
+  protected startPanelResize(event: PointerEvent, panel: HTMLElement): void {
+    if (event.button > 0) return;
+    const parent = panel.offsetParent?.clientWidth ?? PANEL_MAX_PX;
+    this.panelResize = {
+      x: event.clientX,
+      width: panel.getBoundingClientRect().width,
+      max: Math.max(PANEL_MIN_PX, Math.min(PANEL_MAX_PX, parent - 72)),
+    };
+    (event.currentTarget as Element).setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  }
+
+  protected movePanelResize(event: PointerEvent): void {
+    const drag = this.panelResize;
+    if (!drag) return;
+    this.setPanelWidth(drag.width + event.clientX - drag.x, drag.max);
+  }
+
+  protected endPanelResize(): void {
+    this.panelResize = null;
+  }
+
+  /** The arrow keys on the edge (Home gives the original width back). */
+  protected onPanelResizeKey(event: KeyboardEvent, panel: HTMLElement): void {
+    const step =
+      event.key === 'ArrowRight'
+        ? PANEL_KEY_STEP_PX
+        : event.key === 'ArrowLeft'
+          ? -PANEL_KEY_STEP_PX
+          : 0;
+    if (event.key === 'Home') {
+      event.preventDefault();
+      this.resetPanelWidth();
+    } else if (step !== 0) {
+      event.preventDefault();
+      const parent = panel.offsetParent?.clientWidth ?? PANEL_MAX_PX;
+      this.setPanelWidth(
+        panel.getBoundingClientRect().width + step,
+        Math.max(PANEL_MIN_PX, Math.min(PANEL_MAX_PX, parent - 72)),
+      );
+    }
+  }
+
+  /** A double click on the edge: back to the original width. */
+  protected resetPanelWidth(): void {
+    this.panelWidth.set(null);
+    try {
+      localStorage.removeItem(PANEL_WIDTH_KEY);
+    } catch {
+      // Storage refused: the width is the original one until the page is closed.
+    }
+  }
+
+  private setPanelWidth(width: number, max: number): void {
+    const clamped = Math.round(Math.min(max, Math.max(PANEL_MIN_PX, width)));
+    this.panelWidth.set(clamped === PANEL_MIN_PX ? null : clamped);
+    try {
+      if (clamped === PANEL_MIN_PX) localStorage.removeItem(PANEL_WIDTH_KEY);
+      else localStorage.setItem(PANEL_WIDTH_KEY, String(clamped));
+    } catch {
+      // Storage refused: the width holds until the page is closed.
+    }
   }
 
   protected startSheetDrag(panel: HTMLElement): void {

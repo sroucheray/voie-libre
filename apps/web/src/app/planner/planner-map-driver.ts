@@ -74,6 +74,8 @@ export interface PlannerMapDriver {
    * faded (and back to full when it is over), so that they do not pass for the answer.
    */
   setStale(stale: boolean): void;
+  /** How many pixels of the map the side panel covers on the left: views keep clear of it (a wide screen). */
+  setSideInset(pixels: number): void;
   /** Moves the view so that the whole route is visible. */
   fitRoute(geometry: LngLat3[], animate?: boolean): void;
   /** Moves the view so that all these points are visible (a new point was added to a route). */

@@ -245,6 +245,10 @@
     },
     "result": {
       "title": "Itinéraire"
+    },
+    "resize": {
+      "label": "Largeur du panneau",
+      "hint": "Glisser pour élargir le panneau, double clic pour revenir à la taille d'origine"
     }
   },
   "saved": {

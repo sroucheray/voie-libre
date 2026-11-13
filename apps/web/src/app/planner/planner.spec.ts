@@ -339,6 +339,77 @@ describe('Planner', () => {
     });
   });
 
+  describe('panel width', () => {
+    const edge = (view: Awaited<ReturnType<typeof render>>) =>
+      view.root.querySelector('.panel-resize') as HTMLButtonElement;
+    const panel = (view: Awaited<ReturnType<typeof render>>) =>
+      view.root.querySelector('.panel') as HTMLElement;
+    const pointer = (type: string, x: number) => {
+      const event = new Event(type, { bubbles: true, cancelable: true });
+      Object.defineProperties(event, {
+        pointerId: { value: 1 },
+        button: { value: 0 },
+        clientX: { value: x },
+      });
+      return event;
+    };
+    const widthOf = (view: Awaited<ReturnType<typeof render>>) =>
+      panel(view).style.getPropertyValue('--panel-width');
+
+    beforeEach(() => localStorage.removeItem('voie-libre.panel-width'));
+
+    it('has an edge that is a vertical separator with a label', async () => {
+      const view = await render();
+      expect(edge(view).getAttribute('role')).toBe('separator');
+      expect(edge(view).getAttribute('aria-orientation')).toBe('vertical');
+      expect(edge(view).getAttribute('aria-label')).toBe('Panel width');
+      expect(widthOf(view)).toBe('');
+    });
+
+    it('widens when the edge is pulled, within limits, and keeps it on the device', async () => {
+      const view = await render();
+      panel(view).getBoundingClientRect = () => ({ width: 336 }) as DOMRect;
+      edge(view).dispatchEvent(pointer('pointerdown', 400));
+      edge(view).dispatchEvent(pointer('pointermove', 500));
+      view.fixture.detectChanges();
+      expect(widthOf(view)).toBe('436px');
+      expect(view.driver.sideInset).toBe(440);
+      edge(view).dispatchEvent(pointer('pointermove', 5000));
+      view.fixture.detectChanges();
+      expect(Number.parseInt(widthOf(view))).toBeLessThanOrEqual(720);
+      edge(view).dispatchEvent(pointer('pointermove', 0));
+      view.fixture.detectChanges();
+      expect(widthOf(view)).toBe(''); // never narrower than the original
+      edge(view).dispatchEvent(pointer('pointermove', 450));
+      edge(view).dispatchEvent(pointer('pointerup', 450));
+      expect(localStorage.getItem('voie-libre.panel-width')).toBe('386');
+    });
+
+    it('goes back to the original width on a double click', async () => {
+      localStorage.setItem('voie-libre.panel-width', '500');
+      const view = await render();
+      expect(widthOf(view)).toBe('500px');
+      edge(view).dispatchEvent(new Event('dblclick', { bubbles: true }));
+      view.fixture.detectChanges();
+      expect(widthOf(view)).toBe('');
+      expect(localStorage.getItem('voie-libre.panel-width')).toBeNull();
+      expect(view.driver.sideInset).toBe(340);
+    });
+
+    it('moves with the arrow keys and Home', async () => {
+      const view = await render();
+      panel(view).getBoundingClientRect = () => ({ width: 336 }) as DOMRect;
+      edge(view).dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight' }),
+      );
+      view.fixture.detectChanges();
+      expect(widthOf(view)).toBe('360px');
+      edge(view).dispatchEvent(new KeyboardEvent('keydown', { key: 'Home' }));
+      view.fixture.detectChanges();
+      expect(widthOf(view)).toBe('');
+    });
+  });
+
   describe('phone sheet', () => {
     const panel = (view: Awaited<ReturnType<typeof render>>) =>
       view.root.querySelector('.panel') as HTMLElement;

@@ -245,6 +245,10 @@
     },
     "result": {
       "title": "Route"
+    },
+    "resize": {
+      "label": "Panel width",
+      "hint": "Drag to widen the panel, double click for its original width"
     }
   },
   "saved": {

@@ -12,6 +12,7 @@
     // The three heights of the sheet; a drag sets the height by hand and the animation waits for the release.
     height: 4.25rem;
     max-height: none;
+    padding-right: 0;
     z-index: 3;
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     overflow: hidden;
@@ -64,6 +65,11 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  // The panel is a sheet: its width is the screen's.
+  .panel-resize {
+    display: none;
   }
 
   .sheet-handle {

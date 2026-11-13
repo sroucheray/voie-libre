@@ -749,6 +749,12 @@ export async function createMapLibreDriver(
     });
   };
 
+  /** The width the side panel covers; the planner updates it when the user resizes the panel. */
+  let sideInset = 340;
+  /** The left padding for a map `width` wide: the whole panel, but always some map left to see. */
+  const leftPadding = (width: number) =>
+    Math.max(Math.round(width / 3), Math.min(sideInset, width - 240));
+
   /** Shows all of `coordinates`, clear of the panel (a side panel, or the bottom sheet on a phone). */
   const fitTo = (
     coordinates: readonly (readonly number[])[],
@@ -767,7 +773,7 @@ export async function createMapLibreDriver(
             top: 50,
             bottom: 50,
             right: 50,
-            left: Math.min(340, Math.round(width / 3)),
+            left: leftPadding(width),
           },
       duration,
       maxZoom: 16,
@@ -820,6 +826,9 @@ export async function createMapLibreDriver(
       highlight = geometry;
       pushHighlight();
     },
+    setSideInset(pixels: number) {
+      sideInset = pixels;
+    },
     fitRoute(geometry: LngLat3[], animate = false) {
       fitTo(geometry, animate ? 600 : 0);
     },
@@ -831,7 +840,7 @@ export async function createMapLibreDriver(
       map.easeTo({
         center: point,
         zoom: Math.max(map.getZoom(), PLACE_ZOOM),
-        padding: { left: Math.min(340, Math.round(width / 3)) },
+        padding: { left: leftPadding(width) },
         duration: 600,
       });
     },
