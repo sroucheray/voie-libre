@@ -12,6 +12,7 @@ A plan only stays whole while its work is open; when the work is done it is fold
 | [geolocation.md](geolocation.md)                 | User position on the map                                                          | done        |
 | [imagery.md](imagery.md)                         | Aerial photos from the IGN, as an option                                          | done        |
 | [local-edits.md](local-edits.md)                 | Local edits of a route                                                            | done        |
+| [loop-duration.md](loop-duration.md)             | Loops by duration, and alternatives in the map pop-up                             | in progress |
 | [map-interaction.md](map-interaction.md)         | Map interaction                                                                   | done        |
 | [milestone-1.md](milestone-1.md)                 | Milestone 1: the foundation of the app                                            | done        |
 | [next.md](next.md)                               | Backlog of 2026-11-12                                                             | open        |
