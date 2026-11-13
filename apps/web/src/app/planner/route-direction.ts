@@ -10,7 +10,12 @@ const OPPOSITE_COSINE = -0.5;
 /** A stretch shorter than this between two of the other kind is not a stretch of its own. */
 const SHORT_STRETCH_METERS = 30;
 
-export type DirectionKind = 'single' | 'double';
+/**
+ * `single`: ridden one way. `double`: ridden both ways, the first time along it. `echo`: the second
+ * time along a `double` stretch (the way back): it draws no arrow of its own, the one of the way
+ * out stands for both.
+ */
+export type DirectionKind = 'single' | 'double' | 'echo';
 
 /** A stretch of the route, ridden one way only (`single`) or both ways (`double`). */
 export interface DirectionRun {
@@ -82,13 +87,14 @@ export function directionRuns(geometry: LngLat3[]): DirectionRun[] {
     if (list) list.push(sample);
     else grid.set(k, [sample]);
   }
-  const hasOpposite = (sample: Sample): boolean => {
+  const hasOpposite = (sample: Sample, earlierOnly = false): boolean => {
     const cx = Math.floor(sample.x / cell);
     const cy = Math.floor(sample.y / cell);
     for (let gx = cx - 1; gx <= cx + 1; gx++) {
       for (let gy = cy - 1; gy <= cy + 1; gy++) {
         for (const other of grid.get(key(gx, gy)) ?? []) {
           if (other.segment === sample.segment) continue;
+          if (earlierOnly && other.segment > sample.segment) continue;
           if (Math.hypot(other.x - sample.x, other.y - sample.y) > cell)
             continue;
           if (other.dx * sample.dx + other.dy * sample.dy < OPPOSITE_COSINE) {
@@ -102,7 +108,7 @@ export function directionRuns(geometry: LngLat3[]): DirectionRun[] {
 
   const kinds: DirectionKind[] = bySegment.map((own) => {
     if (own.length === 0) return 'single';
-    const matched = own.filter(hasOpposite).length;
+    const matched = own.filter((sample) => hasOpposite(sample)).length;
     return matched * 2 >= own.length ? 'double' : 'single';
   });
   // A segment too short to have samples takes the kind of the one before it (a vertex, not a stretch).
@@ -115,16 +121,16 @@ export function directionRuns(geometry: LngLat3[]): DirectionRun[] {
   const lengths = points
     .slice(1)
     .map((b, i) => Math.hypot(b.x - points[i].x, b.y - points[i].y));
-  const cut = (): DirectionRun[] => {
+  const cut = (kindOf: (i: number) => DirectionKind): DirectionRun[] => {
     const cuts: DirectionRun[] = [];
     for (let i = 0; i < count; i++) {
       const last = cuts[cuts.length - 1];
-      if (last && last.kind === kinds[i]) last.to = i + 1;
-      else cuts.push({ kind: kinds[i], from: i, to: i + 1 });
+      if (last && last.kind === kindOf(i)) last.to = i + 1;
+      else cuts.push({ kind: kindOf(i), from: i, to: i + 1 });
     }
     return cuts;
   };
-  let runs = cut();
+  let runs = cut((i) => kinds[i]);
   for (let i = 1; i < runs.length - 1; i++) {
     if (runs[i - 1].kind !== runs[i + 1].kind) continue;
     const meters = lengths
@@ -132,10 +138,18 @@ export function directionRuns(geometry: LngLat3[]): DirectionRun[] {
       .reduce((sum, length) => sum + length, 0);
     if (meters >= SHORT_STRETCH_METERS) continue;
     for (let k = runs[i].from; k < runs[i].to; k++) kinds[k] = runs[i - 1].kind;
-    runs = cut();
+    runs = cut((k) => kinds[k]);
     i = Math.max(0, i - 2);
   }
-  return runs;
+  // The way back of a stretch ridden both ways: most of it follows an earlier part of the route.
+  const returning = bySegment.map(
+    (own, i) =>
+      kinds[i] === 'double' &&
+      own.length > 0 &&
+      own.filter((sample) => hasOpposite(sample, true)).length * 2 >=
+        own.length,
+  );
+  return cut((i) => (returning[i] ? 'echo' : kinds[i]));
 }
 
 /** The route as one line per run, with its `kind`, for the layers that draw the arrows. */

@@ -21,8 +21,11 @@ describe('directionRuns', () => {
     const out = line(10);
     const back = [...out].reverse();
     const runs = directionRuns([...out, ...back.slice(1)]);
-    expect(runs.every((run) => run.kind === 'double')).toBe(true);
-    expect(runs).toEqual([{ kind: 'double', from: 0, to: 18 }]);
+    // The way out carries the arrow of both ways; the way back (`echo`) draws none of its own.
+    expect(runs).toEqual([
+      { kind: 'double', from: 0, to: 9 },
+      { kind: 'echo', from: 9, to: 18 },
+    ]);
   });
 
   it('still finds the way back when it lies a few meters off the way out', () => {
@@ -30,7 +33,8 @@ describe('directionRuns', () => {
     // 0.00005 degrees of longitude is about 4 m.
     const back = line(10, 0.00005).reverse();
     const runs = directionRuns([...out, ...back]);
-    expect(runs.every((run) => run.kind === 'double')).toBe(true);
+    expect(runs.every((run) => run.kind !== 'single')).toBe(true);
+    expect(runs.map((run) => run.kind)).toEqual(['double', 'echo']);
   });
 
   it('keeps a way back that is another road single', () => {
@@ -59,6 +63,6 @@ describe('directionRuns', () => {
     const kinds = runs.map((run) => run.kind);
     expect(kinds[0]).toBe('double');
     expect(kinds).toContain('single');
-    expect(kinds.at(-1)).toBe('double');
+    expect(kinds.at(-1)).toBe('echo');
   });
 });

@@ -8,8 +8,10 @@ A route drawn on the map does not say which way it goes: out and back, or the wa
 
 Light arrows along the **selected** route, from zoom 11, a little larger as the zoom grows, fading with the route while it recomputes. The alternatives, the preview of a saved route and the highlighted stretch have none. Two kinds, by how each stretch is ridden:
 
-- **Ridden one way** (most routes, the loop of a lollipop): a simple white chevron on the line, pointing the way it goes.
-- **Ridden both ways** (an out-and-back, the stem of a lollipop): a pair of half arrows ⇌, harpoons in the route colour set on the right of each direction (a long thin stem and one short barb), so the way out and the way back lie on opposite sides of the line.
+- **Ridden one way** (most routes, the loop of a lollipop): an arrow like the Unicode → on the line, pointing the way it goes.
+- **Ridden both ways** (an out-and-back, the stem of a lollipop): a ⇄ on the line, the same arrow twice, one each way. It reads the same turned half a turn, so it needs no orientation. The way back of such a stretch draws nothing of its own (`echo`): one ⇄ stands for the two passes.
+
+All arrows sit on the route line, none beside it. Both are white with a thin dark edge, a long thin stem and an open head, so that the two look alike.
 
 A stretch is "both ways" when most of it lies within 12 m of another part of the route going the other way (`directionRuns`, pure): the way back need not share the vertices of the way out. A stretch under 30 m between two of the other kind (the turn at the tip) takes the kind of its neighbours.
 
@@ -24,4 +26,4 @@ A stretch is "both ways" when most of it lies within 12 m of another part of the
 
 ## How it went
 
-First version: full chevrons on the line everywhere. They did not work for an out-and-back (both ways overlapped), so they became half arrows beside the line; five shapes were compared and the user picked the harpoon ⇁. Then the user asked for the two kinds above: chevrons where the route is one way, ⇌ where it is both ways. `directionRuns` samples every 8 m along each segment, finds a sample of another segment within 12 m going the other way (a grid of 12 m cells, so it stays fast), and marks a segment double when half of its samples match; the layers read a second source (`planner-route-direction`) of one line per run, with a `kind`. An adjacent segment counts too (the tip of an out-and-back is a U-turn).
+First version: chevrons on the line everywhere, which failed for an out-and-back; then half arrows beside the line (five shapes compared, the harpoon ⇁ chosen); then chevrons for one way and harpoons for both ways. The user then asked for Unicode-like arrows that look alike, all on the route: → for one way and ⇄ for both ways, both from one drawing routine (`drawArrows`). `directionRuns` samples every 8 m along each segment, finds a sample of another segment within 12 m going the other way (a grid of 12 m cells, so it stays fast), and marks a segment double when half of its samples match; the second pass over a double stretch is `echo`. The layers read a second source (`planner-route-direction`) of one line per run, with a `kind`. Seen on the real map with a made-up lollipop: ⇄ along the stem, → along the loop.

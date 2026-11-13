@@ -28,12 +28,12 @@ const SELECTED_LAYER = 'planner-routes-selected';
 const SURFACE_SOURCE = 'planner-surfaces';
 const SURFACE_LAYER = 'planner-surfaces-line';
 const ARROW_SOURCE = 'planner-route-direction';
-/** Arrows on the stretches ridden one way: a chevron on the line. */
+/** An arrow (→) on the line, on the stretches ridden one way. */
 const ARROW_LAYER = 'planner-route-arrows';
 const ARROW_IMAGE = 'planner-route-arrow';
-/** Half arrows on the stretches ridden both ways: one beside the line for each way (⇌). */
-const HARPOON_LAYER = 'planner-route-harpoons';
-const HARPOON_IMAGE = 'planner-route-harpoon';
+/** A ⇄ on the line, on the stretches ridden both ways: one arrow for each way. */
+const BOTH_LAYER = 'planner-route-arrows-both';
+const BOTH_IMAGE = 'planner-route-arrow-both';
 const HIGHLIGHT_SOURCE = 'planner-highlight';
 const HIGHLIGHT_LAYER = 'planner-highlight-line';
 const PREVIEW_SOURCE = 'planner-preview';
@@ -46,12 +46,13 @@ const LOCATION_ZOOM = 15;
 const PLACE_ZOOM = 14;
 
 /**
- * The half arrow (a harpoon, ⇁) that points along the selected route: a long stem and one short barb, in the route's colour
- * with a white edge. Drawn once, pointing right with its barb down, so that placed beside the line
- * it sits on the right of the way it goes (the barb side): on an out-and-back the way back falls on
- * the other side of the line. `null` where there is no canvas (tests).
+ * Draws arrows on a 32 px canvas, white with a thin dark edge so that they read on the route line:
+ * `rows` are the heights of the arrows, each pointing right or left. `null` where there is no
+ * canvas (tests).
  */
-function harpoonImage(): ImageData | null {
+function drawArrows(
+  rows: readonly { y: number; right: boolean }[],
+): ImageData | null {
   const size = 32;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size;
@@ -60,42 +61,34 @@ function harpoonImage(): ImageData | null {
   context.lineCap = 'round';
   context.lineJoin = 'round';
   context.beginPath();
-  context.moveTo(3, 10);
-  context.lineTo(29, 10);
-  context.lineTo(21, 18);
-  context.strokeStyle = '#ffffff';
-  context.lineWidth = 6;
+  for (const { y, right } of rows) {
+    const tail = right ? 3 : 29;
+    const tip = right ? 29 : 3;
+    const back = right ? 22 : 10;
+    context.moveTo(tail, y);
+    context.lineTo(tip, y);
+    context.moveTo(back, y - 5);
+    context.lineTo(tip, y);
+    context.lineTo(back, y + 5);
+  }
+  context.strokeStyle = 'rgba(8, 51, 68, 0.75)';
+  context.lineWidth = 4.5;
   context.stroke();
-  context.strokeStyle = PALETTE.route;
-  context.lineWidth = 3;
+  context.strokeStyle = '#ffffff';
+  context.lineWidth = 2;
   context.stroke();
   return context.getImageData(0, 0, size, size);
 }
 
-/**
- * The chevron of a stretch ridden one way: white with a thin dark edge, on the line itself. Drawn
- * once, pointing right (the line's direction). `null` where there is no canvas (tests).
- */
-function chevronImage(): ImageData | null {
-  const size = 32;
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
-  const context = canvas.getContext('2d');
-  if (!context) return null;
-  context.lineCap = 'round';
-  context.lineJoin = 'round';
-  context.beginPath();
-  context.moveTo(9, 6);
-  context.lineTo(23, 16);
-  context.lineTo(9, 26);
-  context.strokeStyle = 'rgba(8, 51, 68, 0.55)';
-  context.lineWidth = 8;
-  context.stroke();
-  context.strokeStyle = '#ffffff';
-  context.lineWidth = 5;
-  context.stroke();
-  return context.getImageData(0, 0, size, size);
-}
+/** An arrow like the Unicode → , for a stretch ridden one way. */
+const arrowImage = () => drawArrows([{ y: 16, right: true }]);
+
+/** Two arrows like the Unicode ⇄ , for a stretch ridden both ways: it reads the same turned half a turn. */
+const bothImage = () =>
+  drawArrows([
+    { y: 10, right: true },
+    { y: 22, right: false },
+  ]);
 
 /** The circle of the accuracy as GeoJSON, empty without a fix. */
 function accuracyData(fix: LocationFix | null): GeoJSON.GeoJSON {
@@ -256,16 +249,16 @@ export async function createMapLibreDriver(
         'line-width': 6,
       },
     });
-    // Light arrows along the selected route, from a middle zoom on: a chevron where it is ridden
-    // one way, a pair of half arrows (one each side, opposite ways) where it is ridden both ways.
+    // Light arrows along the selected route, from a middle zoom on: an arrow where it is ridden
+    // one way, a ⇄ where it is ridden both ways.
     map.addSource(ARROW_SOURCE, {
       type: 'geojson',
       data: directionToGeoJson(routes[selected] ?? []),
     });
-    const chevron = map.hasImage(ARROW_IMAGE) ? null : chevronImage();
-    if (chevron) map.addImage(ARROW_IMAGE, chevron, { pixelRatio: 2 });
-    const harpoon = map.hasImage(HARPOON_IMAGE) ? null : harpoonImage();
-    if (harpoon) map.addImage(HARPOON_IMAGE, harpoon, { pixelRatio: 2 });
+    const image = map.hasImage(ARROW_IMAGE) ? null : arrowImage();
+    if (image) map.addImage(ARROW_IMAGE, image, { pixelRatio: 2 });
+    const both = map.hasImage(BOTH_IMAGE) ? null : bothImage();
+    if (both) map.addImage(BOTH_IMAGE, both, { pixelRatio: 2 });
     const arrowLayout = (image: string, spacing: number) =>
       ({
         'symbol-placement': 'line',
@@ -287,18 +280,14 @@ export async function createMapLibreDriver(
         paint: { 'icon-opacity': 0.9 },
       });
     }
-    if (map.hasImage(HARPOON_IMAGE)) {
+    if (map.hasImage(BOTH_IMAGE)) {
       map.addLayer({
-        id: HARPOON_LAYER,
+        id: BOTH_LAYER,
         type: 'symbol',
         source: ARROW_SOURCE,
         minzoom: 11,
         filter: ['==', ['get', 'kind'], 'double'],
-        layout: {
-          ...arrowLayout(HARPOON_IMAGE, 80),
-          // Beside the line, on the right of the way it goes (the icon's own "down").
-          'icon-offset': [0, 12],
-        } as never,
+        layout: arrowLayout(BOTH_IMAGE, 90) as never,
         paint: { 'icon-opacity': 0.9 },
       });
     }
@@ -349,7 +338,7 @@ export async function createMapLibreDriver(
         map.setPaintProperty(id, 'line-opacity', stale ? STALE_OPACITY : 1);
       }
     }
-    for (const id of [ARROW_LAYER, HARPOON_LAYER]) {
+    for (const id of [ARROW_LAYER, BOTH_LAYER]) {
       if (map.getLayer(id)) {
         map.setPaintProperty(id, 'icon-opacity', stale ? STALE_OPACITY : 0.9);
       }
