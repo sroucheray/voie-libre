@@ -607,8 +607,10 @@
       <section class="result" aria-labelledby="result-title">
         <div class="result__header">
           <h3 id="result-title">{{ 'planner.result.title' | transloco }}</h3>
-          @if (store.routes().length > 0 && store.canRecompute() &&
-          store.status() === 'ready') {
+          @if (store.status() === 'loading') {
+          <!-- Computing: a ring takes the place of the button (the badge on the map says it for screen readers). -->
+          <span class="result__spinner" aria-hidden="true"></span>
+          } @else if (store.routes().length > 0 && store.canRecompute()) {
           <!-- An edit beside the route on a long trip only recomputes a stretch: this asks for it all. -->
           <button
             type="button"
@@ -622,9 +624,27 @@
           </button>
           }
         </div>
-        @if (store.status() === 'loading') {
-        <p role="status">{{ 'planner.status.loading' | transloco }}</p>
-        } @if (store.errorCode(); as code) {
+        <div
+          class="offered"
+          role="group"
+          [attr.aria-label]="'planner.alternatives.offered' | transloco"
+        >
+          <span class="offered__label"
+            >{{ 'planner.alternatives.offered' | transloco }}</span
+          >
+          <span class="segmented">
+            @for (count of alternativeChoices; track count) {
+            <button
+              type="button"
+              [attr.aria-pressed]="count === store.alternatives()"
+              (click)="store.setAlternatives(count)"
+            >
+              {{ format.number(count) }}
+            </button>
+            }
+          </span>
+        </div>
+        @if (store.errorCode(); as code) {
         <p class="error" role="alert">
           {{ 'planner.errors.' + code | transloco }}
         </p>
@@ -660,26 +680,6 @@
         } @if (store.routes().length > 0) {
         <vl-profile-mini />
         }
-        <div
-          class="offered"
-          role="group"
-          [attr.aria-label]="'planner.alternatives.offered' | transloco"
-        >
-          <span class="offered__label"
-            >{{ 'planner.alternatives.offered' | transloco }}</span
-          >
-          <span class="segmented">
-            @for (count of alternativeChoices; track count) {
-            <button
-              type="button"
-              [attr.aria-pressed]="count === store.alternatives()"
-              (click)="store.setAlternatives(count)"
-            >
-              {{ format.number(count) }}
-            </button>
-            }
-          </span>
-        </div>
       </section>
       }
     </div>

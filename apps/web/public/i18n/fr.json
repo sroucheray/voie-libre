@@ -156,9 +156,6 @@
       "hint": "Redemande le meilleur itinéraire par tous vos points. Annuler ramène le précédent.",
       "short": "Recalculer"
     },
-    "status": {
-      "loading": "Calcul du parcours…"
-    },
     "routes": {
       "label": "Parcours calculés",
       "route": "Parcours {{n}}",

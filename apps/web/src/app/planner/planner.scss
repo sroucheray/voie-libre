@@ -549,13 +549,39 @@ vl-saved-routes {
   }
 }
 
-// How many routes to ask for: a row of 1 2 3 under the cards, level with the question.
+// Computing: a small ring where the "Recompute" button is.
+.result__spinner {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  margin: 0 var(--space-2);
+  box-sizing: border-box;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: result-spin 0.8s linear infinite;
+}
+
+@keyframes result-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Asked for less motion: the ring stays still.
+@media (prefers-reduced-motion: reduce) {
+  .result__spinner {
+    animation: none;
+  }
+}
+
+// How many routes to ask for: a row of 1 2 3 above the cards, level with the question.
 .offered {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  margin-top: var(--space-3);
+  margin-bottom: var(--space-3);
   font-size: var(--font-size-sm);
   color: var(--color-text-2);
 }

@@ -156,9 +156,6 @@
       "hint": "Asks for the best route through all your points again. Undo brings the previous one back.",
       "short": "Recompute"
     },
-    "status": {
-      "loading": "Computing the route…"
-    },
     "routes": {
       "label": "Computed routes",
       "route": "Route {{n}}",

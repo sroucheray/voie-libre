@@ -270,7 +270,7 @@ describe('Planner', () => {
       expect([...positions].sort((a, b) => a - b)).toEqual(positions);
     });
 
-    it('puts the title and the recompute action in the header, and the number of routes under the cards', async () => {
+    it('puts the title and the recompute action in the header, and the number of routes above the cards', async () => {
       const view = await render();
       view.click(3.087, 45.777);
       view.click(3.249, 45.544);
@@ -278,7 +278,7 @@ describe('Planner', () => {
       view.fixture.detectChanges();
       const header = view.root.querySelector('.result__header') as HTMLElement;
       expect(header.textContent).toContain('Route');
-      // The number of routes asked for sits under the cards, as a row of choices.
+      // The number of routes asked for sits between the title and the cards, as a row of choices.
       const offered = view.root.querySelector(
         '.result .offered',
       ) as HTMLElement;
@@ -287,6 +287,23 @@ describe('Planner', () => {
         header.compareDocumentPosition(offered) &
           Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();
+    });
+
+    it('shows a ring where the recompute button is while computing, and no text', async () => {
+      const view = await render();
+      view.click(3.087, 45.777);
+      view.click(3.249, 45.544);
+      view.fixture.detectChanges();
+      const header = view.root.querySelector('.result__header') as HTMLElement;
+      expect(header.querySelector('.result__spinner')).not.toBeNull();
+      expect(header.querySelector('.recompute')).toBeNull();
+      expect(view.root.querySelector('.result')?.textContent).not.toContain(
+        'Computing the route',
+      );
+      await view.settle();
+      view.fixture.detectChanges();
+      expect(header.querySelector('.result__spinner')).toBeNull();
+      expect(header.querySelector('.recompute')).not.toBeNull();
     });
 
     it('keeps save and clear all in a bar outside the scrolling part', async () => {
