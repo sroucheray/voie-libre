@@ -11,6 +11,8 @@
 
 .logo-button {
   position: relative;
+  // Level of the map's other floating buttons: the open sheet (3) covers it.
+  z-index: 2;
   display: grid;
   place-items: center;
   width: 2.75rem;

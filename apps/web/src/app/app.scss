@@ -135,7 +135,8 @@ main {
     position: absolute;
     top: 0.75rem;
     left: 0.75rem;
-    z-index: 5;
+    // No z-index here: the button sits under the open sheet (like undo and redo), and the menu it
+    // opens, `fixed` and above everything, is not held under the sheet by a stacking context.
   }
 
   // The map has the whole screen: not even the logo.
