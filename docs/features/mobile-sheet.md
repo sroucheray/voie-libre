@@ -1,6 +1,6 @@
 # The panel as a real sheet on a phone
 
-Items 5 and 8 of the [backlog of 2026-11-12](next.md). The lighter profile in the drawer (item 6) and the full-screen map (item 7) come after, on top of this.
+Items 5, 6 and 8 of the [backlog of 2026-11-12](next.md). The full-screen map (item 7) comes after, on top of this.
 
 ## Why
 
@@ -46,3 +46,7 @@ Built in 5 commits: the snapping rule (`sheet-snap.ts`); the drag directive (`sh
 - A long press that places a point at half first takes the sheet down (the press starts with a touch of the map).
 - With no route, the summary line says "Open to search a place or pick a profile" (the help bar above already tells how to place the start).
 - Seen in the browser pane with emulated touch sizes: dragging, the three heights, the summary. The pane has no WebGL (no map), and its CSS transitions stall while the pane is hidden, so the animation itself is not seen; it is checked by the final heights only.
+
+### Item 6: the light profile
+
+A second commit pair added `ProfileMini` to the open sheet (curve plus one line of figures; the full profile stays hidden while the sheet is open, as before). Not seen with a real route in the browser pane (no WebGL, so no route can be placed): checked by specs only. The `planner.scss` file is now at 11 kB of its 12 kB error budget: the next change to the planner styles should split it.
