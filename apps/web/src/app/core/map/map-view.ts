@@ -227,14 +227,20 @@ export class MapView {
       // The map was created without relief, ways or photos.
       styled ??= `${language}|false||false`;
       if (styled !== wanted) {
-        map.setStyle(
-          buildBasemapStyle(this.basemapUrl, language, {
-            relief,
-            reliefSource: this.reliefKind,
-            ways,
-            imagery,
-          }),
-        );
+        const style = buildBasemapStyle(this.basemapUrl, language, {
+          relief,
+          reliefSource: this.reliefKind,
+          ways,
+          imagery,
+        });
+        // MapLibre can only apply the difference to a style that is done loading; asked too early it
+        // logs "Unable to perform style diff" and rebuilds everything. So it waits.
+        const apply = () => {
+          if (destroyed) return;
+          if (map.isStyleLoaded()) map.setStyle(style);
+          else map.once('styledata', apply);
+        };
+        apply();
       }
       styled = wanted;
     });

@@ -142,6 +142,21 @@ describe('MapView', () => {
     expect(maps[0].calls).toContain('resetNorth');
   });
 
+  it('waits for the style to be done loading before it applies a change', async () => {
+    await render();
+    maps[0].styleLoaded = false;
+    TestBed.inject(LanguageService).use('fr');
+    await flush();
+    expect(maps[0].calls).not.toContain('setStyle');
+    // Still loading when the first event comes: it keeps waiting.
+    maps[0].emit('styledata');
+    expect(maps[0].calls).not.toContain('setStyle');
+    maps[0].styleLoaded = true;
+    maps[0].emit('styledata');
+    expect(maps[0].calls.filter((c) => c === 'setStyle')).toHaveLength(1);
+    expect(JSON.stringify(maps[0].style)).toContain('name:fr');
+  });
+
   it('names map labels in the UI language and restyles when it changes', async () => {
     await render();
     expect(JSON.stringify(maps[0].options.style.layers)).toContain('name:en');

@@ -17,6 +17,8 @@ export type LngLat = [number, number];
 export type MapLike = Pick<
   MapLibreMap,
   | 'on'
+  | 'once'
+  | 'isStyleLoaded'
   | 'getCenter'
   | 'getZoom'
   | 'getBearing'

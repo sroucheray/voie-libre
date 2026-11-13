@@ -30,8 +30,24 @@ export class FakeMap {
     this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
     return this;
   }
+  /** Like `on`, but the listener is dropped once it has run. */
+  once(type: string, listener: () => void) {
+    const wrapper = () => {
+      this.listeners.set(
+        type,
+        (this.listeners.get(type) ?? []).filter((l) => l !== wrapper),
+      );
+      listener();
+    };
+    return this.on(type, wrapper);
+  }
+  /** Tests set this to false to play a style that is still loading. */
+  styleLoaded = true;
+  isStyleLoaded() {
+    return this.styleLoaded;
+  }
   emit(type: string) {
-    this.listeners.get(type)?.forEach((listener) => listener());
+    [...(this.listeners.get(type) ?? [])].forEach((listener) => listener());
   }
   getCenter() {
     return this.center;
