@@ -1,0 +1,15 @@
+@if (view(); as v) {
+<section class="mini" [attr.aria-label]="'profile.title' | transloco">
+  <svg [attr.viewBox]="viewBox" preserveAspectRatio="none" aria-hidden="true">
+    @for (area of v.paths.areas; track $index) {
+    <path [class]="'area area--' + area.band" [attr.d]="area.d" />
+    }
+    <path class="line" [attr.d]="v.paths.line" />
+  </svg>
+  <p>
+    {{ 'profile.mini' | transloco : { distance: format.distance(v.distance),
+    ascent: format.elevation(v.ascent), descent: format.elevation(v.descent) }
+    }}
+  </p>
+</section>
+}

@@ -648,6 +648,8 @@
         </li>
         }
       </ul>
+      } @if (store.routes().length > 0) {
+      <vl-profile-mini />
       } @if (store.routes().length > 0 && savedRoutes(); as saved) {
       <ng-container [ngTemplateOutlet]="saved.saveForm()" />
       }

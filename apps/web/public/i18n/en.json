@@ -364,7 +364,8 @@
       "srtm": "Elevation: SRTM (NASA, NGA) v4.1 via BRouter."
     },
     "zoomOnStretch": "Zoom on the map",
-    "zoomOnStretchLabel": "Zoom the map on the selected stretch"
+    "zoomOnStretchLabel": "Zoom the map on the selected stretch",
+    "mini": "{{distance}} · {{ascent}} up · {{descent}} down"
   },
   "gpxImport": {
     "button": "Import a GPX file",

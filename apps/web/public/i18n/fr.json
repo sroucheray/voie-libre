@@ -364,7 +364,8 @@
       "srtm": "Altitude : SRTM (NASA, NGA) v4.1 via BRouter."
     },
     "zoomOnStretch": "Zoomer sur la carte",
-    "zoomOnStretchLabel": "Zoomer la carte sur la portion sélectionnée"
+    "zoomOnStretchLabel": "Zoomer la carte sur la portion sélectionnée",
+    "mini": "{{distance}} · {{ascent}} de montée · {{descent}} de descente"
   },
   "gpxImport": {
     "button": "Importer un fichier GPX",

@@ -7,6 +7,7 @@ import {
   stepState,
   type SheetState,
 } from '../core/gestures/sheet-snap';
+import { ProfileMini } from './profile-mini';
 import { VerticalSwipe } from '../core/gestures/vertical-swipe';
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import {
@@ -106,6 +107,7 @@ const SHEET_PEEK_REM = 4.25;
     Icon,
     VerticalSwipe,
     SheetDrag,
+    ProfileMini,
     ComputeBadge,
   ],
   templateUrl: './planner.html',
