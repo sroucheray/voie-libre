@@ -358,6 +358,10 @@
       class="tabs"
       role="tablist"
       [attr.aria-label]="'planner.tabs.label' | transloco"
+      vlSheetDrag
+      (started)="startSheetDrag(panel)"
+      (moved)="moveSheetDrag($event)"
+      (released)="releaseSheetDrag($event)"
     >
       <button
         type="button"

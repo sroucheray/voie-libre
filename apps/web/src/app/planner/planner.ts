@@ -1235,6 +1235,13 @@ export class Planner {
   }
 
   protected startSheetDrag(panel: HTMLElement): void {
+    // The tabs share the handle's drag, but only a phone has a sheet to move.
+    if (
+      typeof matchMedia === 'function' &&
+      !matchMedia('(max-width: 40rem)').matches
+    ) {
+      return;
+    }
     const stage = panel.offsetParent?.clientHeight ?? panel.clientHeight;
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
     this.sheetDrag = {

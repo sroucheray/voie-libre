@@ -428,6 +428,35 @@ describe('Planner', () => {
       }
     });
 
+    it('follows a drag on the tabs as it does on the handle, and a tap on a tab still picks it', async () => {
+      const view = await render();
+      const tabs = view.root.querySelector('.tabs') as HTMLElement;
+      const event = (type: string, clientY: number) =>
+        new PointerEvent(type, {
+          clientY,
+          button: 0,
+          pointerId: 1,
+          bubbles: true,
+        });
+      tabs.dispatchEvent(event('pointerdown', 400));
+      tabs.dispatchEvent(event('pointermove', 360));
+      view.fixture.detectChanges();
+      expect(panel(view).classList).toContain('panel--dragging');
+      tabs.dispatchEvent(event('pointerup', 360));
+      view.fixture.detectChanges();
+      expect(panel(view).classList).not.toContain('panel--dragging');
+      // The click that ends a drag is swallowed for a moment; a tap after it picks the tab.
+      await vi.advanceTimersByTimeAsync(500);
+      // A tap that does not travel is only a click on the tab.
+      const saved =
+        view.root.querySelectorAll<HTMLButtonElement>('[role="tab"]')[1];
+      saved.dispatchEvent(event('pointerdown', 400));
+      saved.dispatchEvent(event('pointerup', 400));
+      saved.click();
+      view.fixture.detectChanges();
+      expect(saved.getAttribute('aria-selected')).toBe('true');
+    });
+
     it('moves with the arrow keys of the handle, never past the ends', async () => {
       const view = await render();
       const handle = view.root.querySelector(
