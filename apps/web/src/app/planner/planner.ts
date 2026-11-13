@@ -218,6 +218,10 @@ export class Planner {
   protected readonly tab = signal<'route' | 'saved'>('route');
   /** The height of the sheet on a phone: peek (handle and summary), half or full. */
   protected readonly sheetState = signal<SheetState>('peek');
+  /** The route the one-line summary of the closed sheet is about: the selected alternative, if any. */
+  protected readonly peekRoute = computed(
+    () => this.store.routes()[this.store.selectedIndex()] ?? null,
+  );
   protected readonly sheetOpen = computed(() => this.sheetState() !== 'peek');
   /** The height in pixels while the handle is dragged; null otherwise (the state decides). */
   protected readonly sheetDragHeight = signal<number | null>(null);

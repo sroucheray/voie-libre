@@ -235,7 +235,9 @@
       "saved": "Saved"
     },
     "sheet": {
-      "toggle": "Show or hide the panel"
+      "toggle": "Show or hide the panel",
+      "empty": "Open to search a place or pick a profile.",
+      "pending": "Computing the route…"
     }
   },
   "saved": {

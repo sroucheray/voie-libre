@@ -311,6 +311,21 @@
     >
       <span aria-hidden="true"></span>
     </button>
+    <!-- Closed, the sheet is its handle and one line: what the route comes to, or what to do first. -->
+    @if (sheetState() === 'peek') {
+    <button type="button" class="sheet-summary" (click)="raiseSheet()">
+      @if (peekRoute(); as route) { @if (route.ascentMeters === null) { {{
+      'planner.routes.summaryNoClimb' | transloco : { distance:
+      format.distance(route.distanceMeters), duration:
+      format.duration(route.durationSeconds) } }} } @else { {{
+      'planner.routes.summary' | transloco : { distance:
+      format.distance(route.distanceMeters), ascent:
+      format.elevation(route.ascentMeters), duration:
+      format.duration(route.durationSeconds) } }} } } @else if (store.status()
+      === 'loading') { {{ 'planner.sheet.pending' | transloco }} } @else { {{
+      'planner.sheet.empty' | transloco }} }
+    </button>
+    }
     <h2 class="visually-hidden">{{ 'planner.title' | transloco }}</h2>
     <div
       class="tabs"

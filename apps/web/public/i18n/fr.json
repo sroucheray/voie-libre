@@ -235,7 +235,9 @@
       "saved": "Enregistrés"
     },
     "sheet": {
-      "toggle": "Afficher ou masquer le panneau"
+      "toggle": "Afficher ou masquer le panneau",
+      "empty": "Ouvrez pour chercher un lieu ou choisir un profil.",
+      "pending": "Calcul de l'itinéraire…"
     }
   },
   "saved": {

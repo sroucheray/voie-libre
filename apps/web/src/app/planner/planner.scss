@@ -84,8 +84,9 @@ vl-saved-routes {
   }
 }
 
-// Only a phone has a handle: the panel is a bottom sheet there.
-.sheet-handle {
+// Only a phone has a handle and a summary line: the panel is a bottom sheet there.
+.sheet-handle,
+.sheet-summary {
   display: none;
 }
 
@@ -705,10 +706,29 @@ vl-saved-routes {
   }
 
   .panel--peek {
+    .tabs,
     .tab-route,
     vl-saved-routes {
       display: none;
     }
+  }
+
+  // The line of the closed sheet: a tap on it opens the sheet.
+  .sheet-summary {
+    display: block;
+    flex: none;
+    min-height: 0;
+    padding: var(--space-1) var(--space-3) var(--space-3);
+    border: 0;
+    border-radius: 0;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .sheet-handle {

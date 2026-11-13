@@ -280,6 +280,22 @@ describe('Planner', () => {
       expect(panel(view).classList).toContain('panel--half');
     });
 
+    it('offers the panel in its summary line, then what the route comes to', async () => {
+      const view = await render();
+      const summary = () =>
+        view.root.querySelector('.sheet-summary')?.textContent?.trim();
+      expect(summary()).toBe('Open to search a place or pick a profile.');
+      view.click(3.087, 45.777);
+      view.click(3.249, 45.544);
+      await view.settle();
+      view.fixture.detectChanges();
+      expect(summary()).toMatch(/km/);
+      view.root.querySelector<HTMLButtonElement>('.sheet-summary')?.click();
+      view.fixture.detectChanges();
+      expect(panel(view).classList).toContain('panel--half');
+      expect(view.root.querySelector('.sheet-summary')).toBeNull();
+    });
+
     it('rises to half when a tab is chosen', async () => {
       const view = await render();
       view.root.querySelectorAll<HTMLButtonElement>('[role="tab"]')[1].click();
