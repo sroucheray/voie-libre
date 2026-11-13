@@ -16,6 +16,13 @@
   display: none !important;
 }
 
+// A swipe down on the page must not reload it (the pull to refresh of the phone's browser): the
+// panel's sheet and the map take the swipes, the page itself never scrolls.
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
 body {
   margin: 0;
   background: var(--color-bg);

@@ -9,6 +9,8 @@
     bottom: 0;
     left: 0;
     width: auto;
+    // The desktop panel leaves room for the map buttons; the sheet takes the whole width.
+    max-width: none;
     // The three heights of the sheet; a drag sets the height by hand and the animation waits for the release.
     height: 4.25rem;
     max-height: none;
@@ -65,6 +67,8 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    // A finger on this line is not a page swipe either.
+    touch-action: none;
   }
 
   .sheet-summary--open {

@@ -53,6 +53,8 @@ vl-saved-routes {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  // Scrolling past the top or the bottom of the list never goes on to the page (no pull to refresh).
+  overscroll-behavior: contain;
   padding: var(--space-3);
 }
 
