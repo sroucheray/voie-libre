@@ -287,19 +287,27 @@
   }
 
   <section
+    #panel
     class="panel"
-    [class.panel--open]="sheetOpen()"
+    [class.panel--peek]="sheetState() === 'peek'"
+    [class.panel--half]="sheetState() === 'half'"
+    [class.panel--full]="sheetState() === 'full'"
+    [class.panel--dragging]="sheetDragHeight() !== null"
+    [style.height.px]="sheetDragHeight()"
     [attr.aria-label]="'planner.title' | transloco"
   >
-    <!-- On a phone the panel is a bottom sheet: this handle opens and closes it. -->
+    <!-- On a phone the panel is a bottom sheet: this handle drags it, a tap or the arrow keys change its height. -->
     <button
       type="button"
       class="sheet-handle"
       [attr.aria-expanded]="sheetOpen()"
       [attr.aria-label]="'planner.sheet.toggle' | transloco"
-      vlVerticalSwipe
-      (swiped)="sheetOpen.set($event === 'up')"
-      (click)="sheetOpen.set(!sheetOpen())"
+      vlSheetDrag
+      (started)="startSheetDrag(panel)"
+      (moved)="moveSheetDrag($event)"
+      (released)="releaseSheetDrag($event)"
+      (click)="cycleSheet()"
+      (keydown)="onSheetKey($event)"
     >
       <span aria-hidden="true"></span>
     </button>

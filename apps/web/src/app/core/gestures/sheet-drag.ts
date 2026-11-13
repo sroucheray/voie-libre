@@ -54,9 +54,13 @@ export class SheetDrag {
     if (!this.dragging) {
       if (Math.abs(event.clientY - this.startY) < DRAG_START_PX) return;
       this.dragging = true;
-      (event.currentTarget as Element | null)?.setPointerCapture?.(
-        event.pointerId,
-      );
+      try {
+        (event.currentTarget as Element | null)?.setPointerCapture?.(
+          event.pointerId,
+        );
+      } catch {
+        // No active pointer to capture (a synthetic event): the drag goes on without it.
+      }
       this.started.emit();
     }
     this.samples.push({ t: event.timeStamp, y: event.clientY });

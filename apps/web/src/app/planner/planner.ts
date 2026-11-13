@@ -1,4 +1,12 @@
 import { ComputeBadge } from './compute-badge';
+import { SheetDrag, type SheetRelease } from '../core/gestures/sheet-drag';
+import {
+  nextState,
+  sheetHeights,
+  snapTo,
+  stepState,
+  type SheetState,
+} from '../core/gestures/sheet-snap';
 import { VerticalSwipe } from '../core/gestures/vertical-swipe';
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import {
@@ -82,6 +90,9 @@ export const COMPUTING_DELAY_MS = 300;
 /** Where a drag in progress puts its point. */
 type DragChange = { kind: 'move' | 'insert'; index: number; point: LngLat };
 
+/** The height of the sheet when only its handle and summary show, in rem (see planner.scss). */
+const SHEET_PEEK_REM = 4.25;
+
 @Component({
   selector: 'vl-planner',
   imports: [
@@ -94,6 +105,7 @@ type DragChange = { kind: 'move' | 'insert'; index: number; point: LngLat };
     ProfileSelect,
     Icon,
     VerticalSwipe,
+    SheetDrag,
     ComputeBadge,
   ],
   templateUrl: './planner.html',
@@ -204,7 +216,13 @@ export class Planner {
   /** The dialog that asks how to close the loop. */
   /** The panel's section, and (on a phone) whether the bottom sheet is open. */
   protected readonly tab = signal<'route' | 'saved'>('route');
-  protected readonly sheetOpen = signal(false);
+  /** The height of the sheet on a phone: peek (handle and summary), half or full. */
+  protected readonly sheetState = signal<SheetState>('peek');
+  protected readonly sheetOpen = computed(() => this.sheetState() !== 'peek');
+  /** The height in pixels while the handle is dragged; null otherwise (the state decides). */
+  protected readonly sheetDragHeight = signal<number | null>(null);
+  private sheetDrag: { start: number; stage: number; peek: number } | null =
+    null;
   protected readonly loopDialogOpen = signal(false);
   protected readonly loopStep = signal<'choose' | 'distance'>('choose');
   protected readonly loopKm = signal(LOOP_DISTANCE_DEFAULT_METERS / 1000);
@@ -1065,7 +1083,57 @@ export class Planner {
 
   protected openTab(tab: 'route' | 'saved'): void {
     this.tab.set(tab);
-    this.sheetOpen.set(true);
+    this.raiseSheet();
+  }
+
+  /** Brings the sheet up to half when it is only a peek. */
+  protected raiseSheet(): void {
+    if (this.sheetState() === 'peek') this.sheetState.set('half');
+  }
+
+  protected cycleSheet(): void {
+    this.sheetState.set(nextState(this.sheetState()));
+  }
+
+  protected onSheetKey(event: KeyboardEvent): void {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+    event.preventDefault();
+    this.sheetState.set(stepState(this.sheetState(), event.key === 'ArrowUp'));
+  }
+
+  protected startSheetDrag(panel: HTMLElement): void {
+    const stage = panel.offsetParent?.clientHeight ?? panel.clientHeight;
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    this.sheetDrag = {
+      start: panel.getBoundingClientRect().height,
+      stage,
+      peek: SHEET_PEEK_REM * (Number.isFinite(rem) ? rem : 16),
+    };
+    this.sheetDragHeight.set(this.sheetDrag.start);
+  }
+
+  protected moveSheetDrag(up: number): void {
+    const drag = this.sheetDrag;
+    if (!drag) return;
+    this.sheetDragHeight.set(
+      Math.min(drag.stage, Math.max(drag.peek, drag.start + up)),
+    );
+  }
+
+  protected releaseSheetDrag(release: SheetRelease): void {
+    const drag = this.sheetDrag;
+    this.sheetDrag = null;
+    if (!drag) return;
+    const height = this.sheetDragHeight() ?? drag.start;
+    this.sheetState.set(
+      snapTo(
+        height,
+        release.velocity,
+        sheetHeights(drag.stage, drag.peek),
+        this.sheetState(),
+      ),
+    );
+    this.sheetDragHeight.set(null);
   }
 
   protected selectProfile(profile: Profile): void {

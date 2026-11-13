@@ -243,6 +243,51 @@ describe('Planner', () => {
     ).toBe('polite');
   });
 
+  describe('phone sheet', () => {
+    const panel = (view: Awaited<ReturnType<typeof render>>) =>
+      view.root.querySelector('.panel') as HTMLElement;
+
+    it('goes peek, half, full and back to peek with taps on the handle', async () => {
+      const view = await render();
+      const handle = view.root.querySelector(
+        '.sheet-handle',
+      ) as HTMLButtonElement;
+      expect(panel(view).classList).toContain('panel--peek');
+      const states = ['half', 'full', 'peek'];
+      for (const state of states) {
+        handle.click();
+        view.fixture.detectChanges();
+        expect(panel(view).classList).toContain(`panel--${state}`);
+      }
+    });
+
+    it('moves with the arrow keys of the handle, never past the ends', async () => {
+      const view = await render();
+      const handle = view.root.querySelector(
+        '.sheet-handle',
+      ) as HTMLButtonElement;
+      const press = (key: string) => {
+        handle.dispatchEvent(new KeyboardEvent('keydown', { key }));
+        view.fixture.detectChanges();
+      };
+      press('ArrowDown');
+      expect(panel(view).classList).toContain('panel--peek');
+      press('ArrowUp');
+      press('ArrowUp');
+      press('ArrowUp');
+      expect(panel(view).classList).toContain('panel--full');
+      press('ArrowDown');
+      expect(panel(view).classList).toContain('panel--half');
+    });
+
+    it('rises to half when a tab is chosen', async () => {
+      const view = await render();
+      view.root.querySelectorAll<HTMLButtonElement>('[role="tab"]')[1].click();
+      view.fixture.detectChanges();
+      expect(panel(view).classList).toContain('panel--half');
+    });
+  });
+
   describe('loop', () => {
     it('offers to close the loop on the start marker, even before there is an end', async () => {
       const view = await render();

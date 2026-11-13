@@ -674,16 +674,37 @@ vl-saved-routes {
     bottom: 0;
     left: 0;
     width: auto;
-    max-height: 4.25rem;
+    // The three heights of the sheet; a drag sets the height by hand and the animation waits for the release.
+    height: 4.25rem;
+    max-height: none;
+    z-index: 3;
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     overflow: hidden;
+    transition:
+      height 0.25s ease,
+      border-radius 0.25s ease;
   }
 
-  .panel--open {
-    max-height: min(75%, calc(100% - 3rem));
+  .panel--half {
+    height: 50%;
   }
 
-  .panel:not(.panel--open) {
+  .panel--full {
+    height: 100%;
+    border-radius: 0;
+  }
+
+  .panel--dragging {
+    transition: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel {
+      transition: none;
+    }
+  }
+
+  .panel--peek {
     .tab-route,
     vl-saved-routes {
       display: none;
