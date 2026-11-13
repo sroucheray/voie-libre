@@ -40,7 +40,7 @@ const LOCATION_ZOOM = 15;
 const PLACE_ZOOM = 14;
 
 /**
- * The half arrow that points along the selected route: a stem and one barb, in the route's colour
+ * The half arrow (a harpoon, ⇁) that points along the selected route: a long stem and one short barb, in the route's colour
  * with a white edge. Drawn once, pointing right with its barb down, so that placed beside the line
  * it sits on the right of the way it goes (the barb side): on an out-and-back the way back falls on
  * the other side of the line. `null` where there is no canvas (tests).
@@ -54,14 +54,14 @@ function arrowImage(): ImageData | null {
   context.lineCap = 'round';
   context.lineJoin = 'round';
   context.beginPath();
-  context.moveTo(5, 9);
-  context.lineTo(27, 9);
-  context.lineTo(17, 21);
+  context.moveTo(3, 10);
+  context.lineTo(29, 10);
+  context.lineTo(21, 18);
   context.strokeStyle = '#ffffff';
-  context.lineWidth = 8;
+  context.lineWidth = 6;
   context.stroke();
   context.strokeStyle = PALETTE.route;
-  context.lineWidth = 4;
+  context.lineWidth = 3;
   context.stroke();
   return context.getImageData(0, 0, size, size);
 }
@@ -239,7 +239,7 @@ export async function createMapLibreDriver(
           'symbol-placement': 'line',
           'symbol-spacing': 80,
           'icon-image': ARROW_IMAGE,
-          'icon-size': ['interpolate', ['linear'], ['zoom'], 11, 1, 16, 1.4],
+          'icon-size': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 16, 1.6],
           'icon-rotation-alignment': 'map',
           // Beside the line, on the right of the way it goes (the icon's own "down").
           'icon-offset': [0, 12],
