@@ -223,10 +223,3 @@
   font-size: var(--font-size-sm);
   font-weight: 600;
 }
-
-// The row for the next place ends where the fields of the stops do (the room of their remove button).
-.next-place {
-  // The room of the "+" row between two other rows, so that the numbers are evenly spaced.
-  margin-top: 1.5rem;
-  margin-right: 2.25rem;
-}
