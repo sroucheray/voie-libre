@@ -10,8 +10,10 @@ import { VerticalSwipe } from '../core/gestures/vertical-swipe';
 import { FormattingService } from '../core/format/formatting.service';
 import {
   GRADE_BANDS,
+  PROFILE_HEIGHT,
+  PROFILE_WIDTH,
   buildProfile,
-  gradeRuns,
+  profilePaths,
   sampleAtDistance,
   stretchStats,
   type ElevationProfile,
@@ -26,8 +28,6 @@ import {
   surfaceShares,
 } from './route-surface';
 
-const WIDTH = 1000;
-const HEIGHT = 100;
 /** Share of the keyboard range moved by one arrow key press. */
 const KEY_STEPS = 100;
 
@@ -59,28 +59,10 @@ export class ElevationPanel {
     buildProfile(this.store.selectedGeometry()),
   );
 
-  /** The line and the filled area, in a `WIDTH` by `HEIGHT` box stretched to the panel. */
+  /** The line and the filled areas, in a box stretched to the panel. */
   protected readonly paths = computed(() => {
     const profile = this.profile();
-    if (!profile) return null;
-    const span = Math.max(profile.maxElevation - profile.minElevation, 1);
-    const points = profile.samples.map((sample) => {
-      const x = (sample.distance / profile.totalDistance) * WIDTH;
-      const y =
-        HEIGHT - ((sample.elevation - profile.minElevation) / span) * HEIGHT;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    });
-    // One filled shape per run of the same grade band, down to the bottom of the chart.
-    const areas = gradeRuns(profile).map((run) => {
-      const first = points[run.from].split(',')[0];
-      const last = points[run.to].split(',')[0];
-      const top = points.slice(run.from, run.to + 1).join('L');
-      return {
-        band: run.band,
-        d: `M${first},${HEIGHT}L${top}L${last},${HEIGHT}Z`,
-      };
-    });
-    return { line: `M${points.join('L')}`, areas };
+    return profile ? profilePaths(profile) : null;
   });
 
   /**
@@ -156,7 +138,7 @@ export class ElevationPanel {
       : 0;
   });
 
-  protected readonly viewBox = `0 0 ${WIDTH} ${HEIGHT}`;
+  protected readonly viewBox = `0 0 ${PROFILE_WIDTH} ${PROFILE_HEIGHT}`;
 
   protected grade(sample: { grade: number }): string {
     const value = this.format.number(sample.grade, {

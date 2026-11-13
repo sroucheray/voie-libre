@@ -202,3 +202,36 @@ export function stretchStats(
       distance > 0 ? ((end.elevation - start.elevation) / distance) * 100 : 0,
   };
 }
+
+/** The box the chart paths are drawn in; the SVG stretches it to its element. */
+export const PROFILE_WIDTH = 1000;
+export const PROFILE_HEIGHT = 100;
+
+export interface ProfilePaths {
+  /** The line along the elevations. */
+  line: string;
+  /** One filled shape per run of the same grade band, down to the bottom of the chart. */
+  areas: { band: number; d: string }[];
+}
+
+/** The line and the coloured areas of a profile, in a `PROFILE_WIDTH` by `PROFILE_HEIGHT` box. */
+export function profilePaths(profile: ElevationProfile): ProfilePaths {
+  const span = Math.max(profile.maxElevation - profile.minElevation, 1);
+  const points = profile.samples.map((sample) => {
+    const x = (sample.distance / profile.totalDistance) * PROFILE_WIDTH;
+    const y =
+      PROFILE_HEIGHT -
+      ((sample.elevation - profile.minElevation) / span) * PROFILE_HEIGHT;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const areas = gradeRuns(profile).map((run) => {
+    const first = points[run.from].split(',')[0];
+    const last = points[run.to].split(',')[0];
+    const top = points.slice(run.from, run.to + 1).join('L');
+    return {
+      band: run.band,
+      d: `M${first},${PROFILE_HEIGHT}L${top}L${last},${PROFILE_HEIGHT}Z`,
+    };
+  });
+  return { line: `M${points.join('L')}`, areas };
+}
