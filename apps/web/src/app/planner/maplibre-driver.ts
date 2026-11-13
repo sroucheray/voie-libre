@@ -15,6 +15,7 @@ import type {
 import { accuracyCircle } from '../location/accuracy-circle';
 import type { LocationFix } from '../location/geolocation';
 import { routesToGeoJson, surfacesToGeoJson } from './route-geojson';
+import { directionToGeoJson } from './route-direction';
 import { PALETTE } from '../core/map/palette';
 import { iconElement } from '../core/icons/icons';
 import { SURFACE_CODES, SURFACE_COLORS } from './route-surface';
@@ -26,8 +27,13 @@ const ALTERNATIVE_LAYER = 'planner-routes-alternative';
 const SELECTED_LAYER = 'planner-routes-selected';
 const SURFACE_SOURCE = 'planner-surfaces';
 const SURFACE_LAYER = 'planner-surfaces-line';
+const ARROW_SOURCE = 'planner-route-direction';
+/** Arrows on the stretches ridden one way: a chevron on the line. */
 const ARROW_LAYER = 'planner-route-arrows';
 const ARROW_IMAGE = 'planner-route-arrow';
+/** Half arrows on the stretches ridden both ways: one beside the line for each way (⇌). */
+const HARPOON_LAYER = 'planner-route-harpoons';
+const HARPOON_IMAGE = 'planner-route-harpoon';
 const HIGHLIGHT_SOURCE = 'planner-highlight';
 const HIGHLIGHT_LAYER = 'planner-highlight-line';
 const PREVIEW_SOURCE = 'planner-preview';
@@ -45,7 +51,7 @@ const PLACE_ZOOM = 14;
  * it sits on the right of the way it goes (the barb side): on an out-and-back the way back falls on
  * the other side of the line. `null` where there is no canvas (tests).
  */
-function arrowImage(): ImageData | null {
+function harpoonImage(): ImageData | null {
   const size = 32;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size;
@@ -62,6 +68,31 @@ function arrowImage(): ImageData | null {
   context.stroke();
   context.strokeStyle = PALETTE.route;
   context.lineWidth = 3;
+  context.stroke();
+  return context.getImageData(0, 0, size, size);
+}
+
+/**
+ * The chevron of a stretch ridden one way: white with a thin dark edge, on the line itself. Drawn
+ * once, pointing right (the line's direction). `null` where there is no canvas (tests).
+ */
+function chevronImage(): ImageData | null {
+  const size = 32;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const context = canvas.getContext('2d');
+  if (!context) return null;
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+  context.beginPath();
+  context.moveTo(9, 6);
+  context.lineTo(23, 16);
+  context.lineTo(9, 26);
+  context.strokeStyle = 'rgba(8, 51, 68, 0.55)';
+  context.lineWidth = 8;
+  context.stroke();
+  context.strokeStyle = '#ffffff';
+  context.lineWidth = 5;
   context.stroke();
   return context.getImageData(0, 0, size, size);
 }
@@ -225,27 +256,49 @@ export async function createMapLibreDriver(
         'line-width': 6,
       },
     });
-    // Light arrows along the selected route, in the direction it is ridden, from a middle zoom on.
-    const arrow = map.hasImage(ARROW_IMAGE) ? null : arrowImage();
-    if (arrow) map.addImage(ARROW_IMAGE, arrow, { pixelRatio: 2 });
+    // Light arrows along the selected route, from a middle zoom on: a chevron where it is ridden
+    // one way, a pair of half arrows (one each side, opposite ways) where it is ridden both ways.
+    map.addSource(ARROW_SOURCE, {
+      type: 'geojson',
+      data: directionToGeoJson(routes[selected] ?? []),
+    });
+    const chevron = map.hasImage(ARROW_IMAGE) ? null : chevronImage();
+    if (chevron) map.addImage(ARROW_IMAGE, chevron, { pixelRatio: 2 });
+    const harpoon = map.hasImage(HARPOON_IMAGE) ? null : harpoonImage();
+    if (harpoon) map.addImage(HARPOON_IMAGE, harpoon, { pixelRatio: 2 });
+    const arrowLayout = (image: string, spacing: number) =>
+      ({
+        'symbol-placement': 'line',
+        'symbol-spacing': spacing,
+        'icon-image': image,
+        'icon-size': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 16, 1.6],
+        'icon-rotation-alignment': 'map',
+        'icon-allow-overlap': true,
+        'icon-ignore-placement': true,
+      }) as const;
     if (map.hasImage(ARROW_IMAGE)) {
       map.addLayer({
         id: ARROW_LAYER,
         type: 'symbol',
-        source: SOURCE,
+        source: ARROW_SOURCE,
         minzoom: 11,
-        filter: ['==', ['get', 'selected'], true],
+        filter: ['==', ['get', 'kind'], 'single'],
+        layout: arrowLayout(ARROW_IMAGE, 90) as never,
+        paint: { 'icon-opacity': 0.9 },
+      });
+    }
+    if (map.hasImage(HARPOON_IMAGE)) {
+      map.addLayer({
+        id: HARPOON_LAYER,
+        type: 'symbol',
+        source: ARROW_SOURCE,
+        minzoom: 11,
+        filter: ['==', ['get', 'kind'], 'double'],
         layout: {
-          'symbol-placement': 'line',
-          'symbol-spacing': 80,
-          'icon-image': ARROW_IMAGE,
-          'icon-size': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 16, 1.6],
-          'icon-rotation-alignment': 'map',
+          ...arrowLayout(HARPOON_IMAGE, 80),
           // Beside the line, on the right of the way it goes (the icon's own "down").
           'icon-offset': [0, 12],
-          'icon-allow-overlap': true,
-          'icon-ignore-placement': true,
-        },
+        } as never,
         paint: { 'icon-opacity': 0.9 },
       });
     }
@@ -296,12 +349,10 @@ export async function createMapLibreDriver(
         map.setPaintProperty(id, 'line-opacity', stale ? STALE_OPACITY : 1);
       }
     }
-    if (map.getLayer(ARROW_LAYER)) {
-      map.setPaintProperty(
-        ARROW_LAYER,
-        'icon-opacity',
-        stale ? STALE_OPACITY : 0.9,
-      );
+    for (const id of [ARROW_LAYER, HARPOON_LAYER]) {
+      if (map.getLayer(id)) {
+        map.setPaintProperty(id, 'icon-opacity', stale ? STALE_OPACITY : 0.9);
+      }
     }
   };
 
@@ -331,6 +382,9 @@ export async function createMapLibreDriver(
     const source = map.getSource(SOURCE) as
       { setData(data: unknown): void } | undefined;
     source?.setData(routesToGeoJson(routes, selected));
+    const arrows = map.getSource(ARROW_SOURCE) as
+      { setData(data: unknown): void } | undefined;
+    arrows?.setData(directionToGeoJson(routes[selected] ?? []));
   };
 
   const onStyleData = () => ensureLayers();
