@@ -9,7 +9,7 @@ const geometry: [number, number, number][] = Array.from(
   (_, i) => [3, 45 + i * 0.001, 100 + i * 10],
 );
 
-async function setup(withRoute = true, surfaces?: string) {
+async function setup(withRoute = true, surfaces?: string, open = true) {
   TestBed.configureTestingModule({ providers: [provideTestTransloco()] });
   TestBed.inject(LanguageService).use('en');
   const store = TestBed.inject(PlannerStore);
@@ -27,6 +27,11 @@ async function setup(withRoute = true, surfaces?: string) {
   const fixture = TestBed.createComponent(ElevationPanel);
   await fixture.whenStable();
   const root = fixture.nativeElement as HTMLElement;
+  // It starts folded: most tests look at the open profile.
+  if (open && withRoute) {
+    root.querySelector<HTMLButtonElement>('header button')?.click();
+    await fixture.whenStable();
+  }
   return { store, fixture, root };
 }
 

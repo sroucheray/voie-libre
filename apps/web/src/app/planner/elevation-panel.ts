@@ -48,13 +48,8 @@ const KEY_STEPS = 100;
 export class ElevationPanel {
   protected readonly store = inject(PlannerStore);
   protected readonly format = inject(FormattingService);
-  /** Open by default, except on a phone where the map needs the room: there it starts closed. */
-  protected readonly open = signal(
-    !(
-      typeof matchMedia === 'function' &&
-      matchMedia('(max-width: 40rem)').matches
-    ),
-  );
+  /** Folded by default: the bar shows the curve, a tap opens the whole profile. */
+  protected readonly open = signal(false);
 
   protected readonly profile = computed(() =>
     buildProfile(this.store.selectedGeometry()),

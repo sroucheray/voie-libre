@@ -881,6 +881,11 @@ describe('Planner', () => {
     expect(
       view.root.querySelector('vl-elevation-panel .profile'),
     ).not.toBeNull();
+    // It starts folded: open it to see the cursor.
+    view.root
+      .querySelector<HTMLButtonElement>('vl-elevation-panel header button')
+      ?.click();
+    view.fixture.detectChanges();
     expect(view.driver.cursor).toBeNull();
 
     // Hovering the route on the map puts the cursor on the profile.
@@ -1135,6 +1140,11 @@ describe('Planner', () => {
       view.click(3.087, 45.777);
       view.click(3.249, 45.544);
       await view.settle();
+      // The profile starts folded: open it to reach the zoom button.
+      view.root
+        .querySelector<HTMLButtonElement>('vl-elevation-panel header button')
+        ?.click();
+      view.fixture.detectChanges();
       const store = TestBed.inject(PlannerStore);
       store.selectStretch([0, 1]);
       view.fixture.detectChanges();
