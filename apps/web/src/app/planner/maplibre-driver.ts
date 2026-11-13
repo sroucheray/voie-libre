@@ -40,9 +40,10 @@ const LOCATION_ZOOM = 15;
 const PLACE_ZOOM = 14;
 
 /**
- * The chevron that points along the selected route: white, with a thin dark edge so that it reads
- * on the route's colour and on the surface layer. Drawn once, pointing right (the line's direction).
- * `null` where there is no canvas (tests).
+ * The half arrow that points along the selected route: a stem and one barb, in the route's colour
+ * with a white edge. Drawn once, pointing right with its barb down, so that placed beside the line
+ * it sits on the right of the way it goes (the barb side): on an out-and-back the way back falls on
+ * the other side of the line. `null` where there is no canvas (tests).
  */
 function arrowImage(): ImageData | null {
   const size = 32;
@@ -53,14 +54,14 @@ function arrowImage(): ImageData | null {
   context.lineCap = 'round';
   context.lineJoin = 'round';
   context.beginPath();
-  context.moveTo(9, 6);
-  context.lineTo(23, 16);
-  context.lineTo(9, 26);
-  context.strokeStyle = 'rgba(8, 51, 68, 0.55)';
+  context.moveTo(5, 9);
+  context.lineTo(27, 9);
+  context.lineTo(17, 21);
+  context.strokeStyle = '#ffffff';
   context.lineWidth = 8;
   context.stroke();
-  context.strokeStyle = '#ffffff';
-  context.lineWidth = 5;
+  context.strokeStyle = PALETTE.route;
+  context.lineWidth = 4;
   context.stroke();
   return context.getImageData(0, 0, size, size);
 }
@@ -240,6 +241,8 @@ export async function createMapLibreDriver(
           'icon-image': ARROW_IMAGE,
           'icon-size': ['interpolate', ['linear'], ['zoom'], 11, 1, 16, 1.4],
           'icon-rotation-alignment': 'map',
+          // Beside the line, on the right of the way it goes (the icon's own "down").
+          'icon-offset': [0, 12],
           'icon-allow-overlap': true,
           'icon-ignore-placement': true,
         },
