@@ -267,7 +267,11 @@
           }
         </select>
       </label>
-      <button type="button" class="loop-choice" (click)="drawLoopByDistance()">
+      <button
+        type="button"
+        class="loop-choice loop-choice--action"
+        (click)="drawLoopByDistance()"
+      >
         <strong>{{ 'planner.loop.draw' | transloco }}</strong>
       </button>
       }

@@ -425,6 +425,13 @@ vl-saved-routes {
     cursor: not-allowed;
   }
 
+  // A button with a title only, like "Draw the loop": the text sits in the middle.
+  &--action {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
   em {
     margin-left: var(--space-1);
     padding: 0 var(--space-2);
