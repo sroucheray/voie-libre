@@ -30,7 +30,17 @@
     (keydown)="onKeydown($event)"
     (blur)="onBlur()"
   />
-  @if (searching()) {
+  @if (canLocate()) {
+  <button
+    type="button"
+    class="field__locate"
+    [title]="'planner.search.myPosition' | transloco"
+    [attr.aria-label]="'planner.search.myPosition' | transloco"
+    (click)="pickPosition()"
+  >
+    <vl-icon name="locate" />
+  </button>
+  } @if (searching()) {
   <span class="spinner" aria-hidden="true"></span>
   <span class="visually-hidden" role="status"
     >{{ 'planner.search.searching' | transloco }}</span
@@ -45,20 +55,7 @@
     [style.visibility]="box() ? null : 'hidden'"
   >
     <ul class="suggestions" role="listbox" [id]="listId">
-      @if (offersPosition()) {
-      <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
-      <li
-        role="option"
-        class="suggestions__position"
-        [id]="optionId(0)"
-        [class.suggestions__active]="active() === 0"
-        [attr.aria-selected]="active() === 0"
-        (mousedown)="$event.preventDefault()"
-        (click)="pickPosition()"
-      >
-        {{ 'planner.search.myPosition' | transloco }}
-      </li>
-      } @for (place of results(); track $index; let i = $index) {
+      @for (place of results(); track $index; let i = $index) {
       <!-- The focus stays in the input (aria-activedescendant), keys are handled there. -->
       <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
       <li

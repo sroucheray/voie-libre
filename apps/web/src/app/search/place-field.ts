@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import type { LngLat } from '../core/map/map-factory';
+import { Icon } from '../core/icons/icon';
 import { LocationStore } from '../location/location-store';
 import { NetworkStatus } from '../core/offline/network-status';
 import {
@@ -31,12 +32,12 @@ let nextId = 0;
  * A text field that finds a place or an address: suggestions come from the API as the user types
  * and picking one emits it. When not edited it shows `label`. It is disabled offline, where the
  * search cannot work, and while `blocked` (no start yet for the end field). A stop shows its
- * `number` in place of the letter of the start and the end. An empty field that has the focus
- * offers the user's position as its first choice (`position`), when the device can give one.
+ * `number` in place of the letter of the start and the end. A button at the end of the field puts
+ * the user's position there (`position`), when the device can give one.
  */
 @Component({
   selector: 'vl-place-field',
-  imports: [TranslocoPipe],
+  imports: [TranslocoPipe, Icon],
   templateUrl: './place-field.html',
   styleUrl: './place-field.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -87,16 +88,12 @@ export class PlaceField {
   /** The text an answer was received for, so "no result" is only said for a finished search. */
   private readonly answered = signal<string | null>(null);
 
-  private readonly focused = signal(false);
-  /** "My position" is the only choice of an empty field: there is nothing else to suggest. */
-  protected readonly offersPosition = computed(
-    () =>
-      this.focused() && this.shown().trim() === '' && this.location.available(),
+  /** The button at the end of the field puts the user's position there, when the device can give one. */
+  protected readonly canLocate = computed(
+    () => this.location.available() && !this.disabled(),
   );
   protected readonly open = computed(
-    () =>
-      this.offersPosition() ||
-      (this.query() !== null && this.results().length > 0),
+    () => this.query() !== null && this.results().length > 0,
   );
   protected readonly disabled = computed(
     () => this.blocked() || !this.network.online(),
@@ -166,19 +163,14 @@ export class PlaceField {
 
   protected onFocus(event: FocusEvent): void {
     (event.target as HTMLInputElement).select();
-    this.focused.set(true);
   }
 
   protected onBlur(): void {
-    this.focused.set(false);
     this.reset();
   }
 
   protected pickPosition(): void {
     this.reset();
-    // Without this the empty field would offer the position again at once.
-    this.field().nativeElement.blur();
-    this.focused.set(false);
     this.position.emit();
   }
 
@@ -201,8 +193,7 @@ export class PlaceField {
   }
 
   protected onKeydown(event: KeyboardEvent): void {
-    const position = this.offersPosition();
-    const count = position ? 1 : this.results().length;
+    const count = this.results().length;
     switch (event.key) {
       case 'ArrowDown':
         if (count === 0) return;
@@ -216,11 +207,6 @@ export class PlaceField {
         break;
       case 'Enter': {
         // Enter on suggestions picks the highlighted one, or the first.
-        if (position) {
-          event.preventDefault();
-          this.pickPosition();
-          return;
-        }
         const place = this.results()[Math.max(this.active(), 0)];
         if (!place) return;
         event.preventDefault();

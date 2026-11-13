@@ -2118,7 +2118,7 @@ describe('Planner', () => {
       adds(view.root)[0].click();
       view.fixture.detectChanges();
       (
-        view.root.querySelector('.points__new button') as HTMLButtonElement
+        view.root.querySelector('.points__new .point-remove') as HTMLButtonElement
       ).click();
       view.fixture.detectChanges();
       expect(view.root.querySelector('.points__new')).toBeNull();
@@ -2127,29 +2127,17 @@ describe('Planner', () => {
     });
 
     describe('my position in the fields', () => {
-      const focus = (
-        view: { fixture: { detectChanges(): void } },
-        input: HTMLInputElement,
-      ) => {
-        input.dispatchEvent(new FocusEvent('focus'));
-        view.fixture.detectChanges();
-      };
-      const position = (root: HTMLElement) =>
-        root.querySelector<HTMLElement>('.suggestions__position');
+      const locate = (root: HTMLElement, at = 0) =>
+        root.querySelectorAll<HTMLButtonElement>('.field__locate')[at];
 
-      it('offers it in an empty field and waits for the device', async () => {
+      it('is a button at the end of the field, which waits for the device', async () => {
         const view = await render();
         const store = TestBed.inject(PlannerStore);
-        const [start] = inputs(view.root);
-        expect(position(view.root)).toBeNull();
-        focus(view, start);
-        expect(position(view.root)?.textContent).toContain('My position');
-        position(view.root)?.click();
+        locate(view.root).click();
         view.fixture.detectChanges();
         // The device was asked, and nothing moves before it answers.
         expect(geolocation.starts).toBe(1);
         expect(store.points()).toEqual([]);
-        expect(position(view.root)).toBeNull();
         geolocation.emit({ position: [3.1, 45.7] });
         view.fixture.detectChanges();
         expect(store.points()).toEqual([[3.1, 45.7]]);
@@ -2167,15 +2155,8 @@ describe('Planner', () => {
         TestBed.inject(LocationStore).start();
         geolocation.emit({ position: [3.2, 45.2] });
         view.fixture.detectChanges();
-        focus(view, inputs(view.root)[1]);
-        const key = new KeyboardEvent('keydown', {
-          key: 'Enter',
-          bubbles: true,
-          cancelable: true,
-        });
-        inputs(view.root)[1].dispatchEvent(key);
+        locate(view.root, 1).click();
         view.fixture.detectChanges();
-        expect(key.defaultPrevented).toBe(true);
         expect(store.points()).toEqual([
           [3.0, 45.0],
           [3.2, 45.2],
@@ -2184,11 +2165,11 @@ describe('Planner', () => {
         geolocation.emit({ position: [3.1, 45.1] });
         adds(view.root)[0].click();
         view.fixture.detectChanges();
+        // The empty field of the new stop is the third button, between the start and the end.
         const added = view.root.querySelector(
-          '.points__new input',
-        ) as HTMLInputElement;
-        focus(view, added);
-        position(view.root)?.click();
+          '.points__new .field__locate',
+        ) as HTMLButtonElement;
+        added.click();
         view.fixture.detectChanges();
         expect(store.points()).toEqual([
           [3.0, 45.0],
@@ -2196,26 +2177,18 @@ describe('Planner', () => {
           [3.2, 45.2],
         ]);
         expect(view.root.querySelector('.points__new')).toBeNull();
-        // A field that shows a point offers nothing.
-        focus(
-          view,
-          view.root.querySelector('.points__stop input') as HTMLInputElement,
-        );
-        expect(position(view.root)).toBeNull();
       });
 
-      it('offers nothing without a device', async () => {
+      it('is not there without a device', async () => {
         geolocation.supported = 'insecure';
         const view = await render();
-        focus(view, inputs(view.root)[0]);
-        expect(position(view.root)).toBeNull();
+        expect(locate(view.root)).toBeUndefined();
       });
 
       it('gives up when the position is refused', async () => {
         const view = await render();
         const store = TestBed.inject(PlannerStore);
-        focus(view, inputs(view.root)[0]);
-        position(view.root)?.click();
+        locate(view.root).click();
         geolocation.fail('denied');
         view.fixture.detectChanges();
         TestBed.inject(LocationStore).start();

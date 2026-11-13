@@ -16,6 +16,17 @@ export const ICONS = {
   x: { paths: ['M18 6 6 18', 'm6 6 12 12'] },
   plus: { paths: ['M5 12h14', 'M12 5v14'] },
   minus: { paths: ['M5 12h14'] },
+  // A target: the user's position.
+  locate: {
+    paths: [
+      'M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z',
+      'M12 2v3',
+      'M12 19v3',
+      'M2 12h3',
+      'M19 12h3',
+    ],
+    dots: [[12, 12]],
+  },
   check: { paths: ['M20 6 9 17l-5-5'] },
   swap: {
     paths: ['m21 16-4 4-4-4', 'M17 20V4', 'm3 8 4-4 4 4', 'M7 4v16'],
