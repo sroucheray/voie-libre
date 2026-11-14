@@ -347,7 +347,17 @@
     "share": "Share",
     "shareNamed": "Share {{name}} by link",
     "shared": "Shared",
-    "link": "Link to the shared route",
+    "link": {
+      "title": "Route from a link",
+      "confirm": "This replaces the route on screen, which is not saved.",
+      "replace": "Open the route",
+      "keep": "Keep mine",
+      "errors": {
+        "unreadable": "This link does not carry a route.",
+        "unsupported_version": "This link was made by a newer version of the app. Reload the app and try again.",
+        "invalid": "This link is damaged or incomplete, for example cut by a messenger."
+      }
+    },
     "copy": "Copy link",
     "copied": "Link copied",
     "stop": "Stop sharing",

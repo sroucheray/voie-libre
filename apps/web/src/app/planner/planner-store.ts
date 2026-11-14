@@ -896,6 +896,38 @@ export class PlannerStore {
     }));
   }
 
+  /**
+   * Opens a route read from a link: the points, profile and loop mode, nothing computed yet. It is
+   * unsaved work, and the places are named by a lookup like any itinerary. The route is computed
+   * by {@link RoutePlanner} as soon as the inputs are in place, and the map shows the points.
+   */
+  openLink(link: {
+    points: readonly LngLat[];
+    profile: Profile;
+    loop: LoopMode | null;
+  }): void {
+    this.preview.set(null);
+    this.undoStack.set([]);
+    this.redoStack.set([]);
+    this.removedState.set(null);
+    this.noLookup.clear();
+    this.openState.set(false);
+    this.alternativesState.set(1);
+    this.profileState.set(link.profile);
+    this.loopState.set(link.loop);
+    this.pointsState.set(link.points.map((p) => [p[0], p[1]] as LngLat));
+    this.restored = null;
+    this.savedSignature.set(null);
+    this.savedRef.set(null);
+    this.resetResult();
+    this.viewState.update((view) => ({
+      id: (view?.id ?? 0) + 1,
+      geometry: link.points.map(
+        (p) => [p[0], p[1], 0] as [number, number, number],
+      ),
+    }));
+  }
+
   /** Sets the points, remembering the change when it is one a stretch of the route can absorb. */
   private setPoints(next: LngLat[], edit?: EditOf): void {
     this.record();

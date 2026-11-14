@@ -347,7 +347,17 @@
     "share": "Partager",
     "shareNamed": "Partager {{name}} par lien",
     "shared": "Partagé",
-    "link": "Lien vers le parcours partagé",
+    "link": {
+      "title": "Parcours d'un lien",
+      "confirm": "Cela remplace le parcours affiché, qui n'est pas enregistré.",
+      "replace": "Ouvrir le parcours",
+      "keep": "Garder le mien",
+      "errors": {
+        "unreadable": "Ce lien ne contient pas de parcours.",
+        "unsupported_version": "Ce lien a été fait par une version plus récente de l'application. Rechargez l'application et réessayez.",
+        "invalid": "Ce lien est abîmé ou incomplet, par exemple coupé par une messagerie."
+      }
+    },
     "copy": "Copier le lien",
     "copied": "Lien copié",
     "stop": "Arrêter le partage",

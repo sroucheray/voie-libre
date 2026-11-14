@@ -1,0 +1,22 @@
+@if (error(); as code) {
+<aside class="link" [attr.aria-label]="'sharing.link.title' | transloco">
+  <h2>{{ 'sharing.link.title' | transloco }}</h2>
+  <p class="error" role="alert">
+    {{ 'sharing.link.errors.' + code | transloco }}
+  </p>
+  <a routerLink="/" replaceUrl class="close"
+    >{{ 'sharing.page.close' | transloco }}</a
+  >
+</aside>
+} @else if (pending()) {
+<aside class="link" [attr.aria-label]="'sharing.link.title' | transloco">
+  <h2>{{ 'sharing.link.title' | transloco }}</h2>
+  <p role="alert">{{ 'sharing.link.confirm' | transloco }}</p>
+  <button type="button" class="replace" (click)="replace()">
+    {{ 'sharing.link.replace' | transloco }}
+  </button>
+  <button type="button" class="keep" (click)="keepMine()">
+    {{ 'sharing.link.keep' | transloco }}
+  </button>
+</aside>
+}
