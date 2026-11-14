@@ -2,9 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Voie Libre</title>
+    <title>Voie Libre: plan road, gravel and trail routes, free</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Plan road cycling, gravel and trail running routes in your browser: loops by distance or duration, elevation profile, surface, GPX and FIT export, offline. Free, open source, no account."
+    />
+    <link rel="canonical" href="https://voielibre.app/" />
     <link rel="icon" type="image/svg+xml" href="icons/logo.svg" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" sizes="48x48" />
     <link rel="manifest" href="manifest.webmanifest" />
@@ -14,8 +19,90 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Voie Libre" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Voie Libre" />
+    <meta
+      property="og:title"
+      content="Voie Libre: plan road, gravel and trail routes, free"
+    />
+    <meta
+      property="og:description"
+      content="Plan road cycling, gravel and trail running routes in your browser. Loops by distance or duration, elevation profile, GPX and FIT export, offline. Free, open source, no account."
+    />
+    <meta property="og:url" content="https://voielibre.app/" />
+    <meta
+      property="og:image"
+      content="https://voielibre.app/social-preview.png"
+    />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="640" />
+    <meta
+      property="og:image:alt"
+      content="Voie Libre: a route planner for road cycling, gravel and trail running"
+    />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="fr_FR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Voie Libre: plan road, gravel and trail routes, free"
+    />
+    <meta
+      name="twitter:description"
+      content="Plan road cycling, gravel and trail running routes in your browser. Free, open source, no account."
+    />
+    <meta
+      name="twitter:image"
+      content="https://voielibre.app/social-preview.png"
+    />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Voie Libre",
+        "url": "https://voielibre.app/",
+        "description": "A route planner for road cycling, gravel riding and trail running: loops by distance or duration, elevation profile, surface of the way, GPX and FIT export, offline areas. Free, open source, no account.",
+        "applicationCategory": "SportsApplication",
+        "operatingSystem": "Any (web browser)",
+        "browserRequirements": "Requires JavaScript and WebGL",
+        "inLanguage": ["en", "fr"],
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+        "screenshot": "https://voielibre.app/screenshots/wide.png",
+        "license": "https://www.gnu.org/licenses/agpl-3.0.html",
+        "sameAs": ["https://github.com/sroucheray/voie-libre"]
+      }
+    </script>
   </head>
   <body>
-    <vl-root></vl-root>
+    <!-- Shown until the app starts, and to what does not run JavaScript: the app replaces it. -->
+    <vl-root>
+      <main style="max-width: 40rem; margin: 0 auto; padding: 1.5rem 1rem">
+        <h1>Voie Libre</h1>
+        <p>
+          A free, open source route planner for road cycling, gravel riding and
+          trail running. Pick a start and an end on the map, choose your sport,
+          and get a route along the roads and paths that suit it, with its
+          elevation profile and the surface of the way.
+        </p>
+        <ul>
+          <li>Loops by distance or by duration, with a climb to aim for.</li>
+          <li>Several alternatives, stops you can move and reorder.</li>
+          <li>GPX and FIT export for your phone, bike computer or watch.</li>
+          <li>Offline areas, and an app you can install. No account.</li>
+        </ul>
+        <p lang="fr">
+          Voie Libre est un planificateur d'itinéraires gratuit et libre pour le
+          vélo de route, le gravel et la course en sentier : boucles par
+          distance ou par durée, profil d'altitude, revêtement, export GPX et
+          FIT, cartes hors ligne. Sans compte.
+        </p>
+      </main>
+    </vl-root>
+    <noscript>
+      Voie Libre needs JavaScript and a browser with WebGL to show the map.
+    </noscript>
   </body>
 </html>
