@@ -10,9 +10,9 @@
 
 ### What is it?
 
-Voie Libre is a route planner for road cycling, gravel riding and trail running. You pick a start and an end on the map, choose what you ride or run on, and it draws the best route along roads and paths that suit you, with the climb and the surface of the way. It is open source, free, and has no advertising.
+Voie Libre is a route planner for road cycling, gravel riding and trail running. You click the map to place a start, an end and the places in between, or ask for a loop of a given distance or duration. You choose what you ride or run on, and it computes a route along roads and paths that suit that sport, with its climb and the surface of the way. It is open source, free, and has no advertising.
 
-It works well on a phone as well as on a computer, and your routes stay on your device unless you decide otherwise. For now the map and the routing cover metropolitan France.
+It works on a phone as well as on a computer. Your saved routes stay on your device, and nothing is kept on a server unless you create a short link yourself; to compute a route or look up a place, the points or the words concerned are sent to the server. For now the map and the routing cover metropolitan France.
 
 ### What you can do
 
