@@ -11,21 +11,8 @@
     }
     <p class="question">{{ 'openedRoute.question' | transloco }}</p>
 
-    @if (failed()) {
-    <p class="error" role="alert">{{ 'openedRoute.failed' | transloco }}</p>
-    } @else if (!route()) {
-    <p class="computing" role="status">
-      {{ 'openedRoute.computing' | transloco }}
-    </p>
-    }
-
     <div class="choices">
-      <button
-        type="button"
-        class="save"
-        [disabled]="!route() || busy()"
-        (click)="save()"
-      >
+      <button type="button" class="save" [disabled]="busy()" (click)="save()">
         {{ 'openedRoute.save' | transloco }}
       </button>
       <button type="button" class="show" (click)="show()">
@@ -35,7 +22,6 @@
       <button
         type="button"
         [class]="'export export-' + format"
-        [disabled]="!route()"
         (click)="exportAs(format)"
       >
         {{ 'openedRoute.export.' + format | transloco }}

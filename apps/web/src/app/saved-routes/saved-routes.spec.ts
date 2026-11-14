@@ -958,9 +958,8 @@ describe('Saved routes', () => {
       const [saved] = [...routeStore.records.values()];
       shareButton(view).click();
       await view.settle();
-      expect(TestBed.inject(ShareDialogService).target()).toMatchObject({
+      expect(TestBed.inject(ShareDialogService).target()).toEqual({
         savedId: saved.id,
-        link: { profile: 'road', name: 'Road, 41 km' },
       });
       expect(sharingCalls).toEqual([]);
     });

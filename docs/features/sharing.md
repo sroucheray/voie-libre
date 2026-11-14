@@ -2,32 +2,32 @@
 
 ## Why
 
-The author plans a route on a desktop and wants to open it on a phone; friends and clubs should be able to receive a route too. Voie Libre is local first: routes live on the device, there are no accounts, and sending anything to the server is the user's explicit choice. This brief looked at what browsers and operating systems offer to carry a route between people and devices, and ended with two kinds of link, a file for lists, and one dialog that makes the difference clear. It replaces item 17 of [next.md](next.md).
+The author plans a route on a desktop and wants to open it on a phone; friends and clubs should be able to receive a route too. Voie Libre is local first: routes live on the device, there are no accounts, and sending anything to the server is the user's explicit choice. This brief looked at what browsers and operating systems offer to carry a route between people and devices, and ended, after a change of mind, with one kind of link (a copy kept for a while), a file for lists, and one dialog. It replaces item 17 of [next.md](next.md).
 
 ## The author's answers (interview of 2026-11-14, and what followed)
 
 - **Who**: all three audiences, in this order: (1) the author's own devices, first; (2) the author's devices and friends, who open a link in a messenger without installing anything; (3) a club or a group. They need different ways to travel, not different storage (see [phases](#the-three-audiences-in-phases)).
 - **What**: one route, a GPX file, a list of routes.
 - **Privacy line, first answer**: a link that carries the route, nothing stored on the server. Anyone holding the link sees the route; that link cannot be edited or revoked.
-- **A second kind of link, added during the work (2026-11-14)**: the author asked for a short link whose copy the server keeps for a time chosen by the person (one day, one week, one month), then removes. It comes with the first kind, never instead of it, and nothing is sent to the server unless the person presses "Create the short link".
+- **A second kind of link, added during the work (2026-11-14)**: the author asked for a short link whose copy the server keeps for a time chosen by the person (one day, one week, one month), then removes. It first came beside the first kind; the author then removed the first kind (see below). Nothing is sent to the server unless the person presses "Create the link".
 - **When a link is opened**: the route is shown and a dialog asks what to do with it: save it to the saved routes, just show it, or export it as a GPX or FIT file at once. The original link never changes.
 - **A list of routes**: one backup file, not a link.
 - **Out of scope**: receiving a GPX from another app (share target, file handler), device to device transfer (WebRTC, NFC), universal links for the future apps.
 
-## The two kinds of link
+## One kind of link (decision of 2026-11-14)
 
-|                                   | The link contains the route                                                                                                                          | Short link, kept for a while                                               |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Address                           | `/r#v=1&p=road&c=…`                                                                                                                                  | `/p/{id}`                                                                  |
-| Where the route is                | In the address itself (the fragment): no server ever sees it, and link previews of messengers never do                                               | A copy on our server until the date chosen: one day, one week or one month |
-| How long it works                 | As long as the app exists                                                                                                                            | Until the date, or until the copy is deleted                               |
-| Length                            | A few hundred characters; the QR code works for a simple route                                                                                       | Short; the QR code always scans                                            |
-| What the person who opens it gets | The points; the app calculates the route again (one request), so it needs a connection and the track can differ a little if the routing data changed | Exactly the same track, with its altitudes                                 |
-| Needs                             | Nothing                                                                                                                                              | A saved route whose climb is known (it is sent whole)                      |
+The first version had two kinds: a link that contained the route in its address (`/r#v=1&…`, nothing stored) and a short link whose copy the server keeps for a while. The author removed the first one the same day it was released, to keep one rule for the person to understand. What this costs and gains:
 
-What a link of the first kind carries: the profile, the loop mode, the name and up to 20 points as an encoded polyline of 5 decimals (about 1 m), in base64url. No track, no altitudes. For a loop by distance it also carries which of the alternatives was chosen (`a=2.3`: the second of three), because those alternatives head in different directions and the first one would otherwise open. A loop saved earlier has no recorded alternative: the dialog says so and points to the short link.
+| Lost with the first kind                         | Consequence                                                                                                                        |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| No copy on the server                            | Sharing always leaves a copy for a day, a week or a month. It stays the person's choice: nothing is sent before "Create the link". |
+| A link that lasts as long as the app             | Every link expires, a month at most. A poster with a QR code stops working at its date.                                            |
+| Sharing a route that is not saved                | The "Share" button saves the route first, under its proposed name, then opens the dialog.                                          |
+| A link that works when only the app is reachable | Sharing needs the API. Computing a route needs it too.                                                                             |
 
-Both kinds are made and carried from one place: the **Share dialog** (a button "Share…" on the route being planned and on every saved route). The choice of link comes first, each with a plain description of what is stored, where and for how long; under it the QR code is shown at once, with the address and the buttons "Copy the link" and, where the browser has a share sheet, "Share…". A saved route with a short link says until when it is valid, and the dialog can delete the copy before that.
+Gained: one explanation, the exact track with its altitudes (no calculation again, so no loop by distance that "may come out another way"), a QR code that always scans, and about 700 lines of code, tests and texts less (`route-link`, the `/r` page, the choice between two links, the warning about loops, the "too long for a QR code" case, `PlannerStore.openLink`). Links of the first kind that were sent (a day of life, the author only) stop working: `/r` is gone.
+
+A route is shared from a **saved route whose climb is known** (an imported GPX file without elevation cannot be shared). The **Share dialog** (a button "Share…" on the route being planned and on every saved route) says what is stored, where and until when, offers a day, a week (the default) or a month, and "Create the link"; then the QR code, the address and the buttons "Copy the link" and, where the browser has a share sheet, "Share…". A route already shared says until when its link is valid, and the dialog can delete the copy before that.
 
 ### When the server removes a short link
 
@@ -35,7 +35,7 @@ A copy is hidden from reads the moment its time is up (`GET /p/{id}` answers 404
 
 ## Opening a link
 
-`/r` (a link that contains the route) and `/p/{id}` (a short link) open the route in the planner and ask what to do with it, in one dialog: **Save to my routes**, **Just show it**, **Export as GPX**, **Export as FIT**. A link that carries only points waits for the calculation before it can save or export (the dialog says "Calculating the route…", and says so when it failed). Unsaved work on screen is not replaced without asking. The address goes back to `/` at once, so the link does not stay in the history of the tab.
+`/p/{id}` opens the route in the planner and asks what to do with it, in one dialog: **Save to my routes**, **Just show it**, **Export as GPX**, **Export as FIT**. Unsaved work on screen is not replaced without asking. The address goes back to `/` at once, so the link does not stay in the history of the tab.
 
 ## Files
 
@@ -46,11 +46,11 @@ A copy is hidden from reads the moment its time is up (`GET /p/{id}` answers 404
 
 | Phase | Audience                         | What carries it                                                                                                               | Stored where                               |
 | ----- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| 1     | The author's own devices         | The link that contains the route (copy, share sheet, QR code), the backup file                                                | Nowhere                                    |
+| 1     | The author's own devices         | The short link (copy, share sheet, QR code), the backup file                                                                  | Nowhere                                    |
 | 2     | The author's devices and friends | The same link in a messenger; the GPX through the share sheet; the short link when the route is long or must be exact         | Nowhere, or the server for the chosen time |
 | 3     | A club or a group                | The QR code for a poster or a screen; the short link for one exact track for many people; the backup file for a set of routes | Nowhere, or the server for the chosen time |
 
-A short link dies at its date: a poster with a QR code that must last should use the first kind.
+A short link dies at its date (a month at most): a poster with a QR code cannot last, which is the price of the single kind of link.
 
 ## What this changes
 
@@ -87,17 +87,17 @@ Reading in one line: **reliable everywhere** (fragment, clipboard text, `<a down
 
 ## What done looks like
 
-- A route can be shared by a link that contains it or by a short link kept for a day, a week or a month, from one dialog that says what each one stores.
+- A route can be shared by a short link kept for a day, a week or a month, from one dialog that says what is stored, where and until when; a route that is not saved is saved first.
 - The QR code, the address and the buttons are in the dialog; the share sheet is offered only where the browser has one.
-- A link opens in the planner and a dialog offers to save, show or export it; a loop by distance opens as the alternative that was shared.
+- A link opens in the planner and a dialog offers to save, show or export it, with the exact track.
 - A list of routes goes out and comes back as one backup file.
-- Nothing is sent to the server by sharing unless "Create the short link" is pressed; no new dependency (the QR code encoder is our own, `sharing/qr-code.ts`).
+- Nothing is sent to the server by sharing unless "Create the link" is pressed; no new dependency (the QR code encoder is our own, `sharing/qr-code.ts`).
 
 ## How we check
 
-- Pure functions: `route-link` (round trips, rejected inputs, length), `qr-code` (read back by a decoder written from the standard's tables, for versions 1, 2, 7, 10 and 14, with the capacities of the standard), `backup` (round trip, whole-file refusal, no token).
+- Pure functions: `qr-code` (read back by a decoder written from the standard's tables, for versions 1, 2, 7, 10 and 14, with the capacities of the standard), `backup` (round trip, whole-file refusal, no token).
 - The API: lifetimes, expiry as 404, the sweep; the PostgreSQL integration spec for the SQL (`DATABASE_INTEGRATION=1`).
-- The web specs: the Share dialog (both kinds, creating, deleting, errors translated), the link buttons, the pages `/r` and `/p/{id}`, the saved routes list.
+- The web specs: the Share dialog (creating, deleting, errors translated), the link buttons, the page `/p/{id}`, the Share button saving the route first, the saved routes list.
 - By hand, in a browser against the local stack: the Share dialog, a short link made, served by the API and deleted (404 after), the opening dialog saving a route.
 
 Not checked: on a real phone (scanning the QR code, the share sheet, whether Chrome on Android accepts `application/gpx+xml` and `application/json` in `canShare`), nor a message through a messenger.
@@ -112,6 +112,8 @@ Not checked: on a real phone (scanning the QR code, the share sheet, whether Chr
 ## How it went
 
 Built in steps, one commit each: the link format (`route-link`), the `/r` page, "Copy the link", the share sheet, the backup file, the QR code encoder, then (after the author asked for it during the work) the short link with a lifetime in the API and the web app, the one Share dialog, the dialog when a link is opened, and the alternative of a loop by distance in the link.
+
+Later the same day the author asked to remove the first kind of link (see [One kind of link](#one-kind-of-link-decision-of-2026-11-14)); and a short link of a 60 km route was refused (the API accepted 5000 points, a route has far more: now 50,000, body limit 2 MB), and sharing a route again right after its expiry could answer 409 until the sweep: an expired copy is now replaced.
 
 Things found on the way:
 

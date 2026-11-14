@@ -74,6 +74,16 @@ run('PostgreSQL shared routes', () => {
     expect((await store.get(route.id))?.name).toBe('Integration');
   });
 
+  it('replaces a copy whose time is up, before the sweep has removed it', async () => {
+    await store.create({ ...route, expiresAt: Date.now() - 1000 }, 'hash-1');
+    expect(await store.create({ ...route, name: 'Again' }, 'hash-2')).toBe(
+      true,
+    );
+    expect((await store.get(route.id))?.name).toBe('Again');
+    expect(await store.remove(route.id, 'hash-1')).toBe('forbidden');
+    expect(await store.remove(route.id, 'hash-2')).toBe('deleted');
+  });
+
   it('returns null for an unknown id', async () => {
     expect(await store.get('itestzzzz')).toBeNull();
   });

@@ -11,7 +11,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { encodeQr, qrSvgPath } from './qr-code';
 import { SHARE_SHEET } from './share-sheet';
 
-/** The biggest QR code offered: a denser one is hard to scan from a screen. */
+/** The biggest QR code made: a short link fits in a small one, far under this. */
 export const QR_MAX_VERSION = 15;
 /** Modules of white around the code, as the standard asks. */
 const QR_BORDER = 4;
@@ -41,7 +41,7 @@ export class LinkActions implements OnDestroy {
   /** The system share sheet is offered only where the browser has one (not Firefox desktop). */
   protected readonly canShare = this.sheet.canShareUrl();
   protected readonly state = signal<'idle' | 'copied' | 'failed'>('idle');
-  /** The QR code of the link, or `null` when it is too long to scan from a screen. */
+  /** The QR code of the link (`null` while there is no link). */
   protected readonly qr = computed(() => {
     const url = this.url();
     const code = url ? encodeQr(url, QR_MAX_VERSION) : null;

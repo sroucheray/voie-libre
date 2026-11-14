@@ -4,27 +4,15 @@ import { provideTestTransloco } from '../../testing/transloco-testing';
 import { SHARE_SHEET, type ShareOutcome, type ShareSheet } from './share-sheet';
 import { LanguageService } from '../core/i18n/language.service';
 import { LinkActions } from './link-actions';
-import { decodeRouteLink, routeLinkUrl, type RouteLink } from './route-link';
 
-const link: RouteLink = {
-  points: [
-    [3.087, 45.777],
-    [3.249, 45.544],
-  ],
-  profile: 'road',
-  loop: null,
-  name: 'Clermont to Issoire',
-};
-
-const urlOf = (value: RouteLink | null) =>
-  value ? routeLinkUrl('http://localhost:4200', value) : null;
+const address = 'http://localhost:4200/p/Xk3mQ9vTz2';
 
 @Component({
   imports: [LinkActions],
   template: `<vl-link-actions [url]="url()" name="Clermont to Issoire" />`,
 })
 class Host {
-  readonly url = signal<string | null>(urlOf(link));
+  readonly url = signal<string | null>(address);
 }
 
 describe('LinkActions', () => {
@@ -77,16 +65,13 @@ describe('LinkActions', () => {
     };
   }
 
-  it('copies a link that reads back as the route, and says who can see it', async () => {
+  it('copies the link and says it was copied', async () => {
     const { fixture, el, button } = create();
     button?.click();
     await fixture.whenStable();
     fixture.detectChanges();
     expect(written).toHaveLength(1);
-    const url = new URL(written[0]);
-    expect(url.pathname).toBe('/r');
-    const result = decodeRouteLink(url.hash);
-    expect(result).toEqual({ ok: true, link });
+    expect(written[0]).toBe(address);
     expect(el.textContent).toContain('Link copied.');
   });
 
@@ -108,9 +93,7 @@ describe('LinkActions', () => {
     expect(el.querySelector('.copy-status')?.textContent).toContain(
       'could not be copied',
     );
-    expect(el.querySelector<HTMLInputElement>('.address')?.value).toContain(
-      '/r#v=1',
-    );
+    expect(el.querySelector<HTMLInputElement>('.address')?.value).toBe(address);
   });
 
   describe('share sheet', () => {
@@ -124,10 +107,7 @@ describe('LinkActions', () => {
       fixture.detectChanges();
       expect(shared).toHaveLength(1);
       expect(shared[0].title).toBe('Clermont to Issoire');
-      expect(decodeRouteLink(new URL(shared[0].url).hash)).toEqual({
-        ok: true,
-        link,
-      });
+      expect(shared[0].url).toBe(address);
       expect(el.textContent).not.toContain('could not be copied');
     });
 
@@ -163,9 +143,9 @@ describe('LinkActions', () => {
       expect(svg?.querySelector('path')?.getAttribute('d')).toContain(
         'M4 4h1v1h-1z',
       );
-      const address = el.querySelector<HTMLInputElement>('.address');
-      expect(address?.value).toContain('/r#v=1&p=road');
-      const order = [svg, address, el.querySelector('.copy-link')];
+      const field = el.querySelector<HTMLInputElement>('.address');
+      expect(field?.value).toBe(address);
+      const order = [svg, field, el.querySelector('.copy-link')];
       for (let i = 0; i < order.length - 1; i++) {
         expect(
           order[i]!.compareDocumentPosition(order[i + 1]!) &
@@ -180,30 +160,6 @@ describe('LinkActions', () => {
       fixture.detectChanges();
       expect(el.querySelector('svg')).toBeNull();
       expect(el.querySelector('.address')).toBeNull();
-    });
-
-    it('is replaced by a message for a link too long to scan, keeping the address and the buttons', () => {
-      const { fixture, el } = create();
-      const points = Array.from({ length: 20 }, (_, i): [number, number] => [
-        -4.5 + i * 0.37,
-        42.5 + i * 0.29,
-      ]);
-      const set = (name: string) => {
-        fixture.componentInstance.url.set(
-          urlOf({ points, profile: 'road', loop: null, name }),
-        );
-        fixture.detectChanges();
-      };
-      set('x'.repeat(80));
-      expect(el.querySelector('svg')).not.toBeNull();
-      // Each é becomes six characters in an address: 80 of them go past the biggest code offered.
-      set('é'.repeat(80));
-      expect(el.querySelector('svg')).toBeNull();
-      expect(el.querySelector('.qr-too-long')?.textContent).toContain(
-        'Too long for a QR code',
-      );
-      expect(el.querySelector('.address')).not.toBeNull();
-      expect(el.querySelector('.copy-link')).not.toBeNull();
     });
   });
 });

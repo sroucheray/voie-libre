@@ -757,7 +757,7 @@
       <button
         type="button"
         class="share"
-        [disabled]="!routeLink()"
+        [disabled]="!canShare()"
         (click)="openShare()"
       >
         {{ 'sharing.link.openDialog' | transloco }}

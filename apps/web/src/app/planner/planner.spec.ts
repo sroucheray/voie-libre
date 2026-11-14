@@ -15,6 +15,7 @@ import { API_CLIENT } from '../core/api/api-client';
 import { LanguageService } from '../core/i18n/language.service';
 import { COMPUTING_DELAY_MS, LIVE_DRAG_INTERVAL_MS, Planner } from './planner';
 import { PlannerStore } from './planner-store';
+import { ShareDialogService } from '../sharing/share-dialog.service';
 import { WAY_TILES, type Way, type WayTileReader } from '../core/map/way-tiles';
 import { ROUTE_DEBOUNCE_MS } from './route-planner';
 import { MapLayers } from '../core/map/map-layers';
@@ -268,6 +269,30 @@ describe('Planner', () => {
       ]);
       expect(positions.every((position) => position >= 0)).toBe(true);
       expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+    });
+
+    it('saves the route first when it is shared, then opens the share dialog on that route', async () => {
+      const view = await render();
+      const share = () =>
+        view.root.querySelector<HTMLButtonElement>('.panel-footer .share');
+      view.click(3.087, 45.777);
+      view.click(3.249, 45.544);
+      view.fixture.detectChanges();
+      // Nothing to share while the route is still being computed.
+      expect(share()?.disabled).toBe(true);
+      await view.settle();
+      view.fixture.detectChanges();
+      expect(share()?.disabled).toBe(false);
+      const store = TestBed.inject(PlannerStore);
+      expect(store.savedAs()).toBeNull();
+      share()?.click();
+      await view.settle();
+      view.fixture.detectChanges();
+      const saved = store.savedAs();
+      expect(saved).not.toBeNull();
+      expect(TestBed.inject(ShareDialogService).target()).toEqual({
+        savedId: saved?.id,
+      });
     });
 
     it('puts the title and the recompute action in the header, and the number of routes above the cards', async () => {

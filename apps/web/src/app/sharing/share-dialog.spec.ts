@@ -7,25 +7,19 @@ import {
 import { provideTestTransloco } from '../../testing/transloco-testing';
 import { API_CLIENT } from '../core/api/api-client';
 import { LanguageService } from '../core/i18n/language.service';
-import type { RouteLink } from './route-link';
 import { ShareDialog } from './share-dialog';
 import { ShareDialogService } from './share-dialog.service';
 import { SHARE_SHEET } from './share-sheet';
 
-const link: RouteLink = {
-  points: [
-    [3.087, 45.777],
-    [3.249, 45.544],
-  ],
-  profile: 'road',
-  loop: null,
-  name: 'Clermont to Issoire',
-};
+const points: [number, number][] = [
+  [3.087, 45.777],
+  [3.249, 45.544],
+];
 
 const newRoute = (ascentMeters: number | null = 399) => ({
   name: 'Clermont to Issoire',
   profile: 'road' as const,
-  points: link.points,
+  points,
   geometry: [
     [3.087, 45.777, 402],
     [3.249, 45.544, 380],
@@ -103,9 +97,9 @@ describe('ShareDialog', () => {
     TestBed.inject(LanguageService).init();
   });
 
-  async function open(savedId: string | null = null) {
+  async function open(savedId: string) {
     const fixture = TestBed.createComponent(ShareDialog);
-    TestBed.inject(ShareDialogService).open({ link, savedId });
+    TestBed.inject(ShareDialogService).open({ savedId });
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -127,42 +121,33 @@ describe('ShareDialog', () => {
     expect(fixture.nativeElement.querySelector('dialog')).toBeNull();
   });
 
-  it('opens on the link that contains the route, with copy, share and QR code under the choice', async () => {
-    const { el, click } = await open();
+  it('describes the copy, with the choice of time first and nothing sent yet', async () => {
+    const saved = await routeStore.save(newRoute());
+    const { el } = await open(saved.id);
     expect(el.querySelector('dialog')).not.toBeNull();
-    expect(el.textContent).toContain('The link contains the route');
-    expect(el.textContent).toContain('Short link, kept for a while');
-    expect(el.textContent).toContain('It is not stored on any server');
-    // The choice comes before the buttons that carry the link.
-    const kinds = el.querySelector('.kinds')!;
-    const copy = el.querySelector('.copy-link')!;
-    expect(
-      kinds.compareDocumentPosition(copy) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    await click('.copy-link');
-    expect(written[0]).toContain('/r#v=1&p=road');
+    expect(el.textContent).toContain('Clermont to Issoire');
+    expect(el.textContent).toContain(
+      'A copy of the route is kept on our server',
+    );
+    expect(el.querySelector('.kinds')).toBeNull();
+    expect(el.querySelector('.create')?.textContent).toContain(
+      'Create the link',
+    );
     expect(calls).toEqual([]);
   });
 
-  it('needs a saved route for a short link, and says so', async () => {
-    const { el, click } = await open(null);
-    expect(el.textContent).toContain('Save the route first');
-    await click('input[value="short"]');
-    expect(el.querySelector('.create')).toBeNull();
-  });
-
-  it('needs the climb for a short link', async () => {
+  it('needs the climb to share, and says so', async () => {
     const saved = await routeStore.save(newRoute(null));
     const { el } = await open(saved.id);
     expect(el.textContent).toContain('climb');
-    expect(el.querySelector('.kind.blocked')).not.toBeNull();
+    expect(el.querySelector('.blocked-why')).not.toBeNull();
+    expect(el.querySelector('.create')).toBeNull();
   });
 
-  describe('the short link', () => {
+  describe('the link', () => {
     async function openShort() {
       const saved = await routeStore.save(newRoute());
       const view = await open(saved.id);
-      await view.click('input[value="short"]');
       return { ...view, saved };
     }
 
@@ -178,9 +163,7 @@ describe('ShareDialog', () => {
       ]);
       expect(options[1].getAttribute('aria-checked')).toBe('true');
       expect(calls).toEqual([]);
-      expect(el.querySelector<HTMLButtonElement>('.copy-link')!.disabled).toBe(
-        true,
-      );
+      expect(el.querySelector('.copy-link')).toBeNull();
     });
 
     it('creates the copy for the lifetime chosen, keeps the token on the device and enables the buttons', async () => {
@@ -224,8 +207,7 @@ describe('ShareDialog', () => {
         sharedAt: 1,
         expiresAt: Date.now() - 1000,
       });
-      const { el, click } = await open(saved.id);
-      await click('input[value="short"]');
+      const { el } = await open(saved.id);
       expect(el.querySelector('.create')).not.toBeNull();
       expect(el.querySelector('.valid')).toBeNull();
     });
@@ -260,37 +242,9 @@ describe('ShareDialog', () => {
     });
   });
 
-  describe('a loop by distance', () => {
-    const loop = { mode: 'distance', distanceMeters: 30000 } as const;
-    const show = async (alternative?: { rank: number; count: number }) => {
-      const fixture = TestBed.createComponent(ShareDialog);
-      TestBed.inject(ShareDialogService).open({
-        link: {
-          ...link,
-          points: [link.points[0], link.points[0]],
-          loop,
-          alternative,
-        },
-        savedId: null,
-      });
-      fixture.detectChanges();
-      await fixture.whenStable();
-      fixture.detectChanges();
-      return fixture.nativeElement as HTMLElement;
-    };
-
-    it('warns that it may come out another way when the chosen alternative is not known', async () => {
-      expect((await show()).textContent).toContain('may come out another way');
-    });
-
-    it('does not warn when the link says which alternative it is', async () => {
-      const el = await show({ rank: 2, count: 3 });
-      expect(el.textContent).not.toContain('may come out another way');
-    });
-  });
-
   it('closes with the cross', async () => {
-    const { el, click, fixture } = await open();
+    const saved = await routeStore.save(newRoute());
+    const { el, click, fixture } = await open(saved.id);
     await click('.close');
     expect(TestBed.inject(ShareDialogService).target()).toBeNull();
     expect(fixture.nativeElement.querySelector('dialog')).toBeNull();

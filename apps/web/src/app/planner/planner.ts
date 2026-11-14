@@ -11,7 +11,6 @@ import {
 import { ProfileMini } from './profile-mini';
 import { ShareDialog } from '../sharing/share-dialog';
 import { ShareDialogService } from '../sharing/share-dialog.service';
-import type { RouteLink } from '../sharing/route-link';
 import { VerticalSwipe } from '../core/gestures/vertical-swipe';
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import {
@@ -144,38 +143,23 @@ const SHEET_PEEK_REM = 4.25;
 export class Planner {
   protected readonly store = inject(PlannerStore);
   private readonly shareDialog = inject(ShareDialogService);
-  /** The route on screen as a link: its points, whether saved or not (nothing needs computing). */
-  /** Opens the share dialog for the route on screen. */
-  protected openShare(): void {
-    const link = this.routeLink();
-    if (link) {
-      this.shareDialog.open({
-        link,
-        savedId: this.store.savedAs()?.id ?? null,
-      });
-    }
+  /** A link is made from a saved route: the one on screen, or the route as it is when it can be saved. */
+  protected readonly canShare = computed(
+    () => this.store.savedAs() !== null || this.store.savable() !== null,
+  );
+
+  /**
+   * Opens the share dialog for the route on screen. A route that is not saved yet is saved first,
+   * as the Save button does, under its proposed name.
+   */
+  protected async openShare(): Promise<void> {
+    const id =
+      this.store.savedAs()?.id ??
+      (await this.savedRoutes()?.saveForSharing()) ??
+      null;
+    if (id) this.shareDialog.open({ savedId: id });
   }
 
-  protected readonly routeLink = computed<RouteLink | null>(() => {
-    const points = this.store.points();
-    if (points.length < 2) return null;
-    return {
-      points: [...points],
-      profile: this.store.profile(),
-      loop: this.store.loop(),
-      name: this.store.savedAs()?.name,
-      // A loop by distance heads another way for each alternative: the link says which one.
-      ...(this.store.loop()?.mode === 'distance' &&
-      this.store.alternatives() > 1
-        ? {
-            alternative: {
-              rank: this.store.selectedIndex() + 1,
-              count: this.store.alternatives(),
-            },
-          }
-        : {}),
-    };
-  });
   protected readonly format = inject(FormattingService);
   protected readonly location = inject(LocationStore);
   private readonly mapLayers = inject(MapLayers);

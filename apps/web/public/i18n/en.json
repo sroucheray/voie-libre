@@ -66,7 +66,7 @@
     "installButton": "Install",
     "installIos": "On iPhone and iPad: tap the Share button of Safari, then Add to Home Screen.",
     "privacyTitle": "What goes where",
-    "privacy": "Your saved routes stay on your device. To compute a route or search for a place, the app sends the points or the words concerned to the server. The relief (on by default) is read from Amazon's public terrain tiles and the aerial photos (optional) from the IGN: those servers see your address and the area you look at. A link to a route carries the route in its address, so anyone who has the link sees it. A short link keeps a copy on the server until the date you choose, and you can delete it before. The server counts visits and the use of a few features in aggregate (a number per day, per language and per type of device, and for the routes only their number, length and number of points): no cookie, no identifier, no address, place or route is kept.",
+    "privacy": "Your saved routes stay on your device. To compute a route or search for a place, the app sends the points or the words concerned to the server. The relief (on by default) is read from Amazon's public terrain tiles and the aerial photos (optional) from the IGN: those servers see your address and the area you look at. Sharing a route with a link keeps a copy of it on the server until the date you choose (a day, a week or a month), and you can delete it before: anyone who has the link sees the route. The server counts visits and the use of a few features in aggregate (a number per day, per language and per type of device, and for the routes only their number, length and number of points): no cookie, no identifier, no address, place or route is kept.",
     "countOff": "Do not count my visits",
     "sourceTitle": "Source code",
     "repository": "Code on GitHub",
@@ -348,15 +348,6 @@
   },
   "sharing": {
     "link": {
-      "title": "Route from a link",
-      "confirm": "This replaces the route on screen, which is not saved.",
-      "replace": "Open the route",
-      "keep": "Keep mine",
-      "errors": {
-        "unreadable": "This link does not carry a route.",
-        "unsupported_version": "This link was made by a newer version of the app. Reload the app and try again.",
-        "invalid": "This link is damaged or incomplete, for example cut by a messenger."
-      },
       "copy": "Copy the link",
       "copyNamed": "Copy the link to {{name}}",
       "copied": "Link copied.",
@@ -367,8 +358,7 @@
       "qrLabel": "QR code of the link",
       "qrHelp": "Scan it with the camera of a phone to open the route there.",
       "openDialog": "Share…",
-      "openDialogNamed": "Share {{name}}",
-      "qrTooLong": "Too long for a QR code. The short link makes a code that scans easily."
+      "openDialogNamed": "Share {{name}}"
     },
     "confirmDeleteShared": "Delete \"{{name}}\" from this device and stop sharing it? This cannot be undone.",
     "page": {
@@ -390,32 +380,19 @@
     "dialog": {
       "title": "Share this route",
       "close": "Close",
-      "kindLabel": "Kind of link",
-      "contained": {
-        "title": "The link contains the route",
-        "description": "The route is written in the link itself. No server keeps it, and the link works as long as the app exists. It is long: a QR code works for a simple route. Whoever opens it sees the route calculated again by the app, with a connection.",
-        "hint": "Best for sending a route to yourself or to friends."
-      },
-      "short": {
-        "title": "Short link, kept for a while",
-        "description": "A copy of the route is kept on our server until the date you choose. The link is short, so it is easy to scan and paste. Whoever opens it sees exactly the same track. After that date the link stops working, and you can delete the copy sooner.",
-        "hint": "Best for a long route, a QR code, or a group that needs the same track."
-      },
+      "description": "A copy of the route is kept on our server for the time you choose, then removed. Whoever opens the link sees exactly this track. The link is short, so it is easy to scan and to paste. You can delete the copy sooner.",
       "lifetimeLabel": "Keep it for",
       "lifetime": {
         "day": "1 day",
         "week": "1 week",
         "month": "1 month"
       },
-      "create": "Create the short link",
+      "create": "Create the link",
       "creating": "Creating…",
       "validUntil": "Valid until {{date}}",
       "deleteCopy": "Delete the copy",
-      "needsSave": "Save the route first: a short link is made from a saved route.",
-      "privacyContained": "Anyone who has this link can see the route. It is not stored on any server.",
       "privacyShort": "Anyone who has this link can see the route until {{date}}. A copy is kept on our server until then.",
-      "privacyShortPending": "Once created, anyone who has the link can see the route until the date. A copy is kept on our server until then.",
-      "loopMayDiffer": "This loop was asked by distance and may come out another way when opened from this link. The short link keeps the exact track."
+      "privacyShortPending": "Once created, anyone who has the link can see the route until the date. A copy is kept on our server until then."
     }
   },
   "profile": {
@@ -531,8 +508,6 @@
   "openedRoute": {
     "title": "A route was shared with you",
     "question": "What do you want to do with it?",
-    "computing": "Calculating the route…",
-    "failed": "The route could not be calculated, so it cannot be saved or exported. You can still look at its points.",
     "save": "Save to my routes",
     "show": "Just show it",
     "export": {

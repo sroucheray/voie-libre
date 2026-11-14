@@ -10,10 +10,10 @@
     >{{ 'sharing.page.close' | transloco }}</a
   >
 </aside>
-} @if (route(); as shared) {
+} @if (route(); as shared) { @if (openedRoute(); as opened) {
 <vl-opened-route-dialog
   [name]="shared.name"
-  [route]="openedRoute()"
+  [route]="opened"
   (closed)="done()"
 />
-}
+} }

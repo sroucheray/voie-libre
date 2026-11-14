@@ -256,6 +256,18 @@ describe('shared routes', () => {
       expect(gpx.statusCode).toBe(404);
     });
 
+    it('lets the same route be shared again once its time is up, even before the sweep', async () => {
+      await start();
+      const first = await put(ID, { ...body, lifetime: 'day' });
+      jest.spyOn(Date, 'now').mockReturnValue(Date.now() + DAY + 1000);
+      const second = await put(ID, { ...body, lifetime: 'week' });
+      expect(second.statusCode).toBe(201);
+      expect(second.json().deleteToken).not.toBe(first.json().deleteToken);
+      expect(
+        (await server.inject({ method: 'GET', url: `/p/${ID}` })).statusCode,
+      ).toBe(200);
+    });
+
     it('still serves it just before', async () => {
       await start();
       await put(ID, { ...body, lifetime: 'day' });

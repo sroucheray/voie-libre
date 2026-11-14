@@ -438,8 +438,6 @@ export class PlannerStore {
    * {@link RoutePlanner} must not recompute: the routes are already in the state.
    */
   private restored: string | null = null;
-  /** The alternative of an opened link to show once its routes are computed. */
-  private pendingSelection: { signature: string; index: number } | null = null;
 
   /** Signature of the inputs the routes on screen were computed from, or null (none, or unknown). */
   private routesFor: string | null = null;
@@ -898,46 +896,6 @@ export class PlannerStore {
     }));
   }
 
-  /**
-   * Opens a route read from a link: the points, profile and loop mode, nothing computed yet. It is
-   * unsaved work, and the places are named by a lookup like any itinerary. The route is computed
-   * by {@link RoutePlanner} as soon as the inputs are in place, and the map shows the points.
-   */
-  openLink(link: {
-    points: readonly LngLat[];
-    profile: Profile;
-    loop: LoopMode | null;
-    alternative?: { rank: number; count: number };
-  }): void {
-    this.preview.set(null);
-    this.undoStack.set([]);
-    this.redoStack.set([]);
-    this.removedState.set(null);
-    this.noLookup.clear();
-    this.openState.set(false);
-    this.alternativesState.set(link.alternative?.count ?? 1);
-    this.profileState.set(link.profile);
-    this.loopState.set(link.loop);
-    this.pointsState.set(link.points.map((p) => [p[0], p[1]] as LngLat));
-    this.restored = null;
-    // Of the alternatives asked, the one that was shared is shown when they arrive.
-    this.pendingSelection = link.alternative
-      ? {
-          signature: this.currentSignature(),
-          index: link.alternative.rank - 1,
-        }
-      : null;
-    this.savedSignature.set(null);
-    this.savedRef.set(null);
-    this.resetResult();
-    this.viewState.update((view) => ({
-      id: (view?.id ?? 0) + 1,
-      geometry: link.points.map(
-        (p) => [p[0], p[1], 0] as [number, number, number],
-      ),
-    }));
-  }
-
   /** Sets the points, remembering the change when it is one a stretch of the route can absorb. */
   private setPoints(next: LngLat[], edit?: EditOf): void {
     this.record();
@@ -1151,15 +1109,7 @@ export class PlannerStore {
   setRoutes(routes: PlannedRoute[]): void {
     this.routesFor = this.currentSignature();
     this.routesState.set(routes);
-    const pending = this.pendingSelection;
-    this.pendingSelection = null;
-    this.selectedState.set(
-      pending &&
-        pending.signature === this.routesFor &&
-        pending.index < routes.length
-        ? pending.index
-        : 0,
-    );
+    this.selectedState.set(0);
     this.cursor.set(null);
     this.errorState.set(null);
     this.statusState.set('ready');

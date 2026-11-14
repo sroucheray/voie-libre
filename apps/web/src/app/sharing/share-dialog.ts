@@ -1,4 +1,3 @@
-import { DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -15,7 +14,6 @@ import { FormattingService } from '../core/format/formatting.service';
 import { ROUTE_STORE } from '../storage/route-store';
 import type { SavedRoute } from '../storage/saved-route';
 import { LinkActions } from './link-actions';
-import { routeLinkUrl } from './route-link';
 import { ShareDialogService } from './share-dialog.service';
 import {
   LIFETIMES,
@@ -26,14 +24,11 @@ import {
   type ShareErrorCode,
 } from './share.service';
 
-/** The two kinds of link the dialog offers. */
-export type LinkKind = 'contained' | 'short';
-
 /**
- * The dialog behind every "Share" button. The choice of link comes first (the route written in the
- * link, or a short link whose copy the server keeps for a day, a week or a month), the buttons that
- * carry the link come after, and each choice says what is stored, where and for how long. Nothing
- * is sent to the server until "Create the short link" is pressed.
+ * The dialog behind every "Share" button: a link to a copy of a saved route, kept on the server for
+ * a day, a week or a month, then removed. It says what is stored, where and until when; nothing is
+ * sent to the server until "Create the link" is pressed. The buttons that carry the link (QR code,
+ * copy, system share sheet) come once the link exists.
  */
 @Component({
   selector: 'vl-share-dialog',
@@ -47,57 +42,34 @@ export class ShareDialog {
   protected readonly format = inject(FormattingService);
   private readonly sharing = inject(ShareService);
   private readonly routeStore = inject(ROUTE_STORE);
-  private readonly document = inject(DOCUMENT);
 
   protected readonly lifetimes = LIFETIMES;
-  protected readonly kind = signal<LinkKind>('contained');
   protected readonly lifetime = signal<Lifetime>('week');
   protected readonly busy = signal(false);
   protected readonly error = signal<ShareErrorCode | 'storage' | null>(null);
   /** The saved route a short link is made from, read when the dialog opens. */
-  private readonly saved = signal<SavedRoute | null>(null);
+  protected readonly saved = signal<SavedRoute | null>(null);
 
   private readonly dialog = viewChild<ElementRef<HTMLDialogElement>>('dialog');
 
   protected readonly target = this.dialogs.target;
-  protected readonly name = computed(() => this.target()?.link.name ?? null);
-
-  /**
-   * A loop by distance whose chosen alternative is not known (a saved one): opened from the link
-   * it may come out another way, which the short link, with its exact track, does not.
-   */
-  protected readonly loopMayDiffer = computed(() => {
-    const link = this.target()?.link;
-    return link?.loop?.mode === 'distance' && !link.alternative;
-  });
-
-  protected readonly containedUrl = computed(() => {
-    const link = this.target()?.link;
-    const origin = this.document.defaultView?.location.origin;
-    return link && origin ? routeLinkUrl(origin, link) : null;
-  });
+  protected readonly name = computed(() => this.saved()?.name ?? null);
 
   /** The short link and when it stops working, while the copy is still on the server. */
   protected readonly share = computed(() => {
     const saved = this.saved();
     return saved ? activeShare(saved) : null;
   });
-  protected readonly shortUrl = computed(() => {
+  protected readonly url = computed(() => {
     const saved = this.saved();
     return saved && this.share() ? this.sharing.linkFor(saved.id) : null;
   });
 
-  /** Why a short link cannot be made, as a translation key, or null when it can. */
-  protected readonly shortBlocked = computed(() => {
-    if (!this.target()?.savedId) return 'sharing.dialog.needsSave';
+  /** Why a link cannot be made (a route imported without elevation), or null when it can. */
+  protected readonly blocked = computed(() => {
     const saved = this.saved();
-    if (saved && saved.ascentMeters === null) return 'sharing.needsClimb';
-    return null;
+    return saved && saved.ascentMeters === null ? 'sharing.needsClimb' : null;
   });
-
-  protected readonly url = computed(() =>
-    this.kind() === 'short' ? this.shortUrl() : this.containedUrl(),
-  );
 
   constructor() {
     effect(() => {
@@ -105,7 +77,6 @@ export class ShareDialog {
       const dialog = this.dialog()?.nativeElement;
       if (!target || !dialog) return;
       untracked(() => {
-        this.kind.set('contained');
         this.error.set(null);
         this.saved.set(null);
         if (!dialog.open) {
@@ -113,7 +84,7 @@ export class ShareDialog {
           if (typeof dialog.showModal === 'function') dialog.showModal();
           else dialog.setAttribute('open', '');
         }
-        if (target.savedId) void this.load(target.savedId);
+        void this.load(target.savedId);
       });
     });
   }
@@ -124,12 +95,6 @@ export class ShareDialog {
     } catch {
       this.saved.set(null);
     }
-  }
-
-  protected choose(kind: LinkKind): void {
-    if (kind === 'short' && this.shortBlocked()) return;
-    this.kind.set(kind);
-    this.error.set(null);
   }
 
   /** Makes the copy on the server, then keeps its delete token and date on the device. */
@@ -175,16 +140,5 @@ export class ShareDialog {
   /** A click on the backdrop (the dialog element itself, outside its content) closes it. */
   protected onBackdrop(event: MouseEvent): void {
     if (event.target === this.dialog()?.nativeElement) this.close();
-  }
-
-  protected radioKey(event: KeyboardEvent): void {
-    // Arrow keys move through the choices, as in any radio group.
-    if (
-      !['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft'].includes(event.key)
-    ) {
-      return;
-    }
-    event.preventDefault();
-    this.choose(this.kind() === 'contained' ? 'short' : 'contained');
   }
 }

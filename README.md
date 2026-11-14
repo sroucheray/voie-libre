@@ -33,7 +33,7 @@ It works on a phone as well as on a computer. Your saved routes stay on your dev
 **Keep it, share it, take it with you**
 
 - **Save routes** on your device, and **export** them as GPX or FIT files for your phone, bike computer or watch. **Import** a GPX file.
-- **Share a route** with your own devices, friends or a club: a link that contains the route, a QR code to scan with a phone, or a short link kept for a day, a week or a month. A route opened from a link can be saved, just shown, or exported as a GPX or FIT file. **Back up** all your routes in one file and import it elsewhere.
+- **Share a route** with your own devices, friends or a club: a short link with a QR code to scan with a phone, kept for a day, a week or a month. A route opened from a link can be saved, just shown, or exported as a GPX or FIT file. **Back up** all your routes in one file and import it elsewhere.
 - **Go offline:** keep the area of a route (or of what is on screen) on your device and open it with no network.
 - **Install the app** on your phone or computer (the "i" window, or your browser's menu), to open it from its own icon.
 - On a phone, the panel is a **bottom sheet** you swipe up and down; the map keeps the whole screen when you do not need the panel.
@@ -44,7 +44,7 @@ It works on a phone as well as on a computer. Your saved routes stay on your dev
 - Saved routes, your choices (layers, speeds, language) and the last view of the map live in your browser, on your device. There is no account.
 - To compute a route or search for a place, the app sends the points or the words concerned to the server. There is no advertising and no tracking. The server counts visits and the use of a few features in aggregate (a number per day, per language and per type of device, and for the routes only their number, length and number of points), with no cookie, no identifier, and no address, place or route kept. You can switch it off in the About window.
 - The shaded relief (on by default) is read from public terrain tiles hosted by Amazon, and the aerial photos (optional) from the French IGN: those servers see your address and the area you look at. You can switch the relief off, and the aerial photos stay off until you tick them; the map itself comes from this app's own server.
-- A link that contains a route carries it in its address: anyone who has the link sees the route, and nothing is stored on a server. A short link keeps a copy of the route on the server until the date you choose (a day, a week or a month), and you can delete it sooner. Opening a link makes the app calculate the route and look up place names through the server, as for any itinerary.
+- Sharing a route with a link keeps a copy of it on the server until the date you choose (a day, a week or a month), and you can delete it sooner. Anyone who has the link sees the route. Nothing is sent until you press the button that creates the link.
 - Your position is only used on your device, when you press the position button.
 
 ### Help the project

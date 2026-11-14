@@ -23,13 +23,12 @@ import { ROUTE_STORE, RouteStoreError } from '../storage/route-store';
 import type { NewSavedRoute } from '../storage/saved-route';
 import { ShareDialogService } from './share-dialog.service';
 
-/** A route opened from a link, as far as it is known: what saving or exporting it needs. */
+/** A route opened from a link: what saving or exporting it needs (the whole itinerary). */
 export type OpenedRoute = Omit<NewSavedRoute, 'name'>;
 
 /**
  * What to do with a route that was just opened from a link: save it to the saved routes, simply
- * look at it on the map, or export it as a GPX or FIT file at once. Saving and exporting wait for
- * the route to be calculated when the link carried only its points.
+ * look at it on the map, or export it as a GPX or FIT file at once.
  */
 @Component({
   selector: 'vl-opened-route-dialog',
@@ -41,10 +40,7 @@ export type OpenedRoute = Omit<NewSavedRoute, 'name'>;
 export class OpenedRouteDialog {
   /** The name given by the link, if it has one. */
   readonly name = input<string | null>(null);
-  /** The route once it is known; `null` while it is being calculated. */
-  readonly route = input.required<OpenedRoute | null>();
-  /** The calculation failed: nothing can be saved or exported, the route can still be looked at. */
-  readonly failed = input(false);
+  readonly route = input.required<OpenedRoute>();
   /** The person is done: the planner is shown. */
   readonly closed = output<void>();
 
@@ -84,7 +80,7 @@ export class OpenedRouteDialog {
 
   protected async save(): Promise<void> {
     const route = this.route();
-    if (!route || this.busy()) return;
+    if (this.busy()) return;
     this.busy.set(true);
     this.error.set(null);
     try {
@@ -110,7 +106,6 @@ export class OpenedRouteDialog {
 
   protected exportAs(format: ExportFormat): void {
     const route = this.route();
-    if (!route) return;
     this.error.set(null);
     this.notice.set(null);
     try {

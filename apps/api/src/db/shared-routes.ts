@@ -66,7 +66,14 @@ export function createPostgresSharedRoutes(
                  ST_SetSRID(ST_GeomFromGeoJSON($5), 4326),
                  $6, $7, $8, to_timestamp($9::double precision / 1000),
                  to_timestamp($10::double precision / 1000), $11)
-         ON CONFLICT (id) DO NOTHING`,
+         ON CONFLICT (id) DO UPDATE SET
+           name = EXCLUDED.name, profile = EXCLUDED.profile, points = EXCLUDED.points,
+           geometry = EXCLUDED.geometry, distance_meters = EXCLUDED.distance_meters,
+           ascent_meters = EXCLUDED.ascent_meters,
+           duration_seconds = EXCLUDED.duration_seconds,
+           created_at = EXCLUDED.created_at, expires_at = EXCLUDED.expires_at,
+           delete_token_hash = EXCLUDED.delete_token_hash, shared_at = now()
+         WHERE shared_routes.expires_at <= now()`,
         [
           route.id,
           route.name,
@@ -144,7 +151,9 @@ export function createMemorySharedRoutes(): SharedRouteStore & {
       return routes.size;
     },
     async create(route, deleteTokenHash) {
-      if (routes.has(route.id)) return false;
+      // A copy whose time is up is as good as gone: sharing the same route again replaces it.
+      const existing = routes.get(route.id);
+      if (existing && existing.route.expiresAt > Date.now()) return false;
       routes.set(route.id, {
         route: { ...route, sharedAt: Date.now() },
         hash: deleteTokenHash,

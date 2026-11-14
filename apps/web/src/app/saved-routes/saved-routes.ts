@@ -246,6 +246,12 @@ export class SavedRoutes {
     this.showSaved.emit(id);
   }
 
+  /** Saves the route on screen as the Save button does, and says which saved route it is. */
+  async saveForSharing(): Promise<string | null> {
+    await this.save();
+    return this.planner.savedAs()?.id ?? null;
+  }
+
   protected async save(): Promise<void> {
     const route = this.savable();
     if (!route) return;
@@ -579,15 +585,7 @@ export class SavedRoutes {
 
   /** Opens the share dialog for a saved route. */
   protected openShare(route: SavedRoute): void {
-    this.shareDialog.open({
-      link: {
-        points: route.points,
-        profile: route.profile,
-        loop: route.loop ?? null,
-        name: route.name,
-      },
-      savedId: route.id,
-    });
+    this.shareDialog.open({ savedId: route.id });
   }
 
   /** When the short link of a route stops working, while its copy is on the server. */

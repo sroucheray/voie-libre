@@ -1,11 +1,7 @@
 import { Injectable, signal } from '@angular/core';
-import type { RouteLink } from './route-link';
-
-/** What the share dialog is about: the route as a link carries it, and its saved record if any. */
+/** What the share dialog is about: the saved route a link is made from (a link needs a saved route). */
 export interface ShareTarget {
-  link: RouteLink;
-  /** The saved route a short link can be made from (it needs the whole itinerary), or null. */
-  savedId: string | null;
+  savedId: string;
 }
 
 /** Opens and closes the one share dialog of the planner, from any button that shares a route. */
