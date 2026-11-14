@@ -24,6 +24,7 @@ import {
   translateSignal,
 } from '@jsverse/transloco';
 import { FormattingService } from '../core/format/formatting.service';
+import { Modal } from '../core/modal/modal';
 import { autoRouteName, type AutoName } from '../planner/route-name';
 import { Analytics } from '../core/analytics/analytics';
 import { FILE_DOWNLOADER } from '../export/file-download';
@@ -76,6 +77,35 @@ const GPX_IMPORT_CODES: readonly string[] = [
 /** The browser refused the download. */
 class ExportError extends Error {}
 
+/** The most files taken in one import: more is surely a mistake, and each one is read in memory. */
+export const MAX_IMPORT_FILES = 50;
+
+/** What happened to one file of an import, as the pop-up lists it. */
+export interface ImportEntry {
+  file: string;
+  status: 'added' | 'nothing_new' | 'failed';
+  /** Routes added: one for a GPX file, any number for a routes file. */
+  count: number;
+  /** Translation key of why the file was not imported. */
+  reasonKey?: string;
+  /** Translation keys of what is worth knowing about an imported file. */
+  notes: string[];
+  /** The route imported without elevation, whose climb can be computed from the pop-up. */
+  climbId?: string;
+}
+
+/** Which reader a file is for: by its extension, else by what its text starts with. */
+function fileKind(name: string, text: string): 'gpx' | 'backup' | 'fit' | null {
+  const lower = name.toLowerCase();
+  if (lower.endsWith('.fit')) return 'fit';
+  if (lower.endsWith('.gpx')) return 'gpx';
+  if (lower.endsWith('.json')) return 'backup';
+  const first = text.trimStart()[0];
+  if (first === '<') return 'gpx';
+  if (first === '{') return 'backup';
+  return null;
+}
+
 /**
  * Saving the planned route on the device and managing the saved ones: open, rename, delete
  * (after a confirmation). A storage failure shows a translated message and leaves the planner
@@ -86,7 +116,7 @@ export const NAME_MAX_LENGTH = 120;
 
 @Component({
   selector: 'vl-saved-routes',
-  imports: [TranslocoPipe, NgTemplateOutlet],
+  imports: [TranslocoPipe, NgTemplateOutlet, Modal],
   templateUrl: './saved-routes.html',
   styleUrl: './saved-routes.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -135,19 +165,19 @@ export class SavedRoutes {
   /** The route whose opening waits for the user's yes, because a route is being planned. */
   protected readonly confirmingOpenId = signal<string | null>(null);
   protected readonly savable = this.planner.savable;
-  /** Translation key of what the last import tells the user, or null. */
-  protected readonly notice = signal<string | null>(null);
-  /** What the last import of a backup file did, with how many routes it added, or null. */
-  protected readonly backupNotice = signal<{
-    key: string;
-    count: number;
-  } | null>(null);
+  /** The import pop-up, and what the last import did, file by file (null before any). */
+  protected readonly importOpen = signal(false);
+  protected readonly importResults = signal<ImportEntry[] | null>(null);
+  protected readonly importBusy = signal(false);
+  /** The export pop-up, and how the last export ended. */
+  protected readonly exportOpen = signal(false);
+  protected readonly exportResult = signal<
+    'downloaded' | 'shared' | 'failed' | null
+  >(null);
   /** The system share sheet can take the backup file (not Firefox desktop). */
   protected readonly canShareBackup = this.sheet.canShareFile(
     new File([], 'routes.json', { type: 'application/json' }),
   );
-  /** The imported route (without elevation) the user is asked about: compute its climb? */
-  protected readonly climbPromptId = signal<string | null>(null);
 
   /**
    * What the user typed in the name field; `null` while the proposed name applies. Once the user
@@ -276,56 +306,186 @@ export class SavedRoutes {
     });
   }
 
-  /** Reads a GPX file on the device, saves it as a route and shows it. Nothing is sent anywhere. */
-  protected async importGpx(event: Event): Promise<void> {
+  protected openImport(): void {
+    this.importResults.set(null);
+    this.error.set(null);
+    this.importOpen.set(true);
+  }
+
+  protected openExport(): void {
+    this.exportResult.set(null);
+    this.exportOpen.set(true);
+  }
+
+  /**
+   * Reads the chosen files on the device, one after the other: a GPX file becomes a route, a routes
+   * file adds the routes that are not there yet. A file that cannot be read does not stop the
+   * others. Nothing is sent anywhere. A single GPX file is also shown on the map.
+   */
+  protected async importFiles(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
+    const files = Array.from(input.files ?? []);
     input.value = '';
-    if (!file) return;
-    this.notice.set(null);
-    this.climbPromptId.set(null);
-    await this.attempt(async () => {
+    if (files.length === 0 || this.importBusy()) return;
+    this.importBusy.set(true);
+    this.error.set(null);
+    try {
+      const entries: ImportEntry[] = [];
+      let shown: SavedRoute | undefined;
+      for (const file of files.slice(0, MAX_IMPORT_FILES)) {
+        const done = await this.importOne(file);
+        entries.push(done.entry);
+        shown = done.shown;
+      }
+      if (files.length > MAX_IMPORT_FILES) {
+        entries.push({
+          file: this.transloco.translate('importDialog.others', {
+            count: files.length - MAX_IMPORT_FILES,
+          }),
+          status: 'failed',
+          count: 0,
+          reasonKey: 'importDialog.errors.too_many',
+          notes: [],
+        });
+      }
+      if (files.length === 1 && shown) {
+        this.planner.loadSaved(shown);
+        this.planner.markSaved({ id: shown.id, name: shown.name });
+      }
+      this.importResults.set(entries);
+    } finally {
+      this.importBusy.set(false);
+    }
+  }
+
+  private async importOne(
+    file: File,
+  ): Promise<{ entry: ImportEntry; shown?: SavedRoute }> {
+    const failed = (reasonKey: string) => ({
+      entry: {
+        file: file.name,
+        status: 'failed' as const,
+        count: 0,
+        reasonKey,
+        notes: [],
+      },
+    });
+    try {
       let text: string;
       try {
         text = await file.text();
       } catch {
-        throw new GpxImportError('invalid_file');
+        return failed('gpxImport.errors.invalid_file');
       }
-      const imported = parseGpx(text, this.planner.profile());
-      const name =
-        imported.name || file.name.replace(/\.gpx$/i, '').trim() || 'GPX';
-      const saved = await this.routeStore.save({
-        name,
-        profile: this.planner.profile(),
-        points: imported.points,
-        geometry: imported.geometry,
-        distanceMeters: imported.distanceMeters,
-        ascentMeters: imported.ascentMeters,
-        durationSeconds: imported.durationSeconds,
-      });
-      this.routes.update((routes) => [saved, ...routes]);
-      this.planner.loadSaved(saved);
-      this.planner.markSaved({ id: saved.id, name: saved.name });
-      this.climbPromptId.set(imported.ascentMeters === null ? saved.id : null);
-      this.notice.set(
-        imported.ascentMeters === null
-          ? 'gpxImport.noElevation'
-          : imported.thinned
-            ? 'gpxImport.thinned'
-            : null,
+      const kind = fileKind(file.name, text);
+      if (kind === 'gpx') return await this.importGpxText(file.name, text);
+      if (kind === 'backup') {
+        return { entry: await this.importBackupText(file, text) };
+      }
+      return failed(
+        kind === 'fit'
+          ? 'importDialog.errors.fit'
+          : 'importDialog.errors.unsupported',
       );
+    } catch (error) {
+      if (error instanceof GpxImportError) {
+        return failed(`gpxImport.errors.${error.code}`);
+      }
+      if (error instanceof BackupError) {
+        return failed(`backup.errors.${error.code}`);
+      }
+      return failed(
+        `saved.errors.${error instanceof RouteStoreError ? error.code : 'unknown'}`,
+      );
+    }
+  }
+
+  private async importGpxText(
+    fileName: string,
+    text: string,
+  ): Promise<{ entry: ImportEntry; shown: SavedRoute }> {
+    const imported = parseGpx(text, this.planner.profile());
+    const name =
+      imported.name || fileName.replace(/\.gpx$/i, '').trim() || 'GPX';
+    const saved = await this.routeStore.save({
+      name,
+      profile: this.planner.profile(),
+      points: imported.points,
+      geometry: imported.geometry,
+      distanceMeters: imported.distanceMeters,
+      ascentMeters: imported.ascentMeters,
+      durationSeconds: imported.durationSeconds,
     });
+    this.routes.update((routes) => [saved, ...routes]);
+    const notes = [
+      ...(imported.ascentMeters === null ? ['importDialog.noElevation'] : []),
+      ...(imported.thinned ? ['importDialog.thinned'] : []),
+    ];
+    return {
+      shown: saved,
+      entry: {
+        file: fileName,
+        status: 'added',
+        count: 1,
+        notes,
+        ...(imported.ascentMeters === null ? { climbId: saved.id } : {}),
+      },
+    };
   }
 
   /**
+   * Adds the routes of a routes file that are not there yet (same name, profile, points and
+   * length). A file out of shape is refused whole.
+   */
+  private async importBackupText(
+    file: File,
+    text: string,
+  ): Promise<ImportEntry> {
+    if (file.size > BACKUP_MAX_BYTES) throw new BackupError('too_large');
+    const result = parseBackup(text);
+    if (!result.ok) throw new BackupError(result.code);
+    const known = new Set((await this.routeStore.list()).map(backupKey));
+    let added = 0;
+    for (const { laps, ...route } of result.routes) {
+      const key = backupKey(route);
+      if (known.has(key)) continue;
+      known.add(key);
+      let saved = await this.routeStore.save(route);
+      if (laps) saved = await this.routeStore.setLaps(saved.id, laps);
+      this.routes.update((routes) => [saved, ...routes]);
+      added += 1;
+    }
+    return {
+      file: file.name,
+      status: added > 0 ? 'added' : 'nothing_new',
+      count: added,
+      notes: [],
+    };
+  }
+
+  /** The translation key of the line that tells what became of a file. */
+  protected entryKey(entry: ImportEntry): string {
+    if (entry.status === 'failed')
+      return entry.reasonKey ?? 'saved.errors.unknown';
+    return entry.status === 'added'
+      ? 'importDialog.fileAdded'
+      : 'importDialog.fileNothingNew';
+  }
+
+  protected readonly importedCount = computed(() =>
+    (this.importResults() ?? []).reduce((sum, entry) => sum + entry.count, 0),
+  );
+
+  /**
    * Every saved route in one file, built on the device: downloaded, or handed to the system share
-   * sheet. The delete token of a route shared by the server is not written.
+   * sheet. The delete token of a route shared by the server is not written. The pop-up says how it
+   * ended.
    */
   protected async exportAll(
     how: 'download' | 'share' = 'download',
   ): Promise<void> {
-    this.backupNotice.set(null);
-    await this.attempt(async () => {
+    this.exportResult.set(null);
+    try {
       const routes = await this.routeStore.list();
       const now = new Date();
       const text = buildBackup(routes, now);
@@ -336,51 +496,22 @@ export class SavedRoutes {
         } catch {
           throw new ExportError();
         }
+        this.exportResult.set('downloaded');
         return;
       }
       const outcome = await this.sheet.shareFile(
         new File([text], name, { type: 'application/json' }),
       );
       if (outcome === 'failed') throw new ExportError();
-    });
+      if (outcome === 'shared') this.exportResult.set('shared');
+    } catch {
+      this.exportResult.set('failed');
+    }
   }
 
-  /**
-   * Reads a backup file on the device and adds the routes that are not there yet (same name,
-   * profile, points and length). A file out of shape is refused whole. Nothing is sent anywhere.
-   */
-  protected async importBackup(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = '';
-    if (!file) return;
-    this.backupNotice.set(null);
-    await this.attempt(async () => {
-      if (file.size > BACKUP_MAX_BYTES) throw new BackupError('too_large');
-      let text: string;
-      try {
-        text = await file.text();
-      } catch {
-        throw new BackupError('not_a_backup');
-      }
-      const result = parseBackup(text);
-      if (!result.ok) throw new BackupError(result.code);
-      const known = new Set((await this.routeStore.list()).map(backupKey));
-      let added = 0;
-      for (const { laps, ...route } of result.routes) {
-        const key = backupKey(route);
-        if (known.has(key)) continue;
-        known.add(key);
-        let saved = await this.routeStore.save(route);
-        if (laps) saved = await this.routeStore.setLaps(saved.id, laps);
-        this.routes.update((routes) => [saved, ...routes]);
-        added += 1;
-      }
-      this.backupNotice.set({
-        key: added > 0 ? 'backup.added' : 'backup.nothingNew',
-        count: added,
-      });
-    });
+  /** Computes the climb of a route imported without elevation, from the import pop-up. */
+  protected async computeImportedClimb(id: string): Promise<void> {
+    await this.computeClimb(id, this.planner.savedAs()?.id === id);
   }
 
   /**
@@ -403,13 +534,23 @@ export class SavedRoutes {
         this.planner.loadSaved(updated);
         this.planner.markSaved({ id: updated.id, name: updated.name });
       }
-      this.climbPromptId.set(null);
-      this.notice.set(null);
+      // The pop-up that imported it no longer offers to compute the climb it now has.
+      this.importResults.update((entries) =>
+        entries
+          ? entries.map((entry) =>
+              entry.climbId === id
+                ? {
+                    ...entry,
+                    climbId: undefined,
+                    notes: entry.notes.filter(
+                      (note) => note !== 'importDialog.noElevation',
+                    ),
+                  }
+                : entry,
+            )
+          : entries,
+      );
     });
-  }
-
-  protected keepClimbUnknown(): void {
-    this.climbPromptId.set(null);
   }
 
   /** Shows a route on the map while the pointer or the focus is on its row. */

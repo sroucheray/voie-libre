@@ -51,76 +51,22 @@
   <ng-container [ngTemplateOutlet]="saveForm" />
   }
 
-  <div class="import">
-    <input
-      #fileInput
-      type="file"
-      accept=".gpx,application/gpx+xml,text/xml,application/xml"
-      hidden
-      (change)="importGpx($event)"
-    />
-    <button type="button" (click)="fileInput.click()">
-      {{ 'gpxImport.button' | transloco }}
+  <div class="file-actions">
+    <button type="button" class="import-open" (click)="openImport()">
+      {{ 'importDialog.open' | transloco }}
     </button>
-  </div>
-  <div class="backup">
-    <input
-      #backupInput
-      type="file"
-      accept=".json,application/json"
-      hidden
-      (change)="importBackup($event)"
-    />
     <button
       type="button"
-      class="backup-export"
+      class="export-open"
       [disabled]="routes().length === 0"
-      (click)="exportAll()"
+      (click)="openExport()"
     >
-      {{ 'backup.export' | transloco }}
-    </button>
-    @if (canShareBackup) {
-    <button
-      type="button"
-      class="backup-share"
-      [disabled]="routes().length === 0"
-      (click)="exportAll('share')"
-    >
-      {{ 'backup.share' | transloco }}
-    </button>
-    }
-    <button type="button" class="backup-import" (click)="backupInput.click()">
-      {{ 'backup.import' | transloco }}
+      {{ 'exportDialog.open' | transloco }}
     </button>
   </div>
-  @if (notice(); as key) {
-  <p class="notice" role="status">{{ key | transloco }}</p>
-  } @if (backupNotice(); as done) {
-  <p class="notice" role="status">
-    {{ done.key | transloco : { count: done.count } }}
-  </p>
-  } @if (climbPromptId(); as promptId) {
-  <div
-    class="notice"
-    role="group"
-    [attr.aria-label]="'relief.prompt' | transloco"
-  >
-    <span>{{ 'relief.prompt' | transloco }}</span>
-    <button
-      type="button"
-      class="compute-climb"
-      [disabled]="busyId() === promptId"
-      (click)="computeClimb(promptId, true)"
-    >
-      {{ 'relief.compute' | transloco }}
-    </button>
-    <button type="button" (click)="keepClimbUnknown()">
-      {{ 'relief.keepUnknown' | transloco }}
-    </button>
-  </div>
-  } @if (error(); as code) {
+  @if (error(); as code) { @if (!importOpen()) {
   <p class="error" role="alert">{{ errorKey(code) | transloco }}</p>
-  } @if (routes().length === 0) {
+  } } @if (routes().length === 0) {
   <p class="empty">{{ 'saved.empty' | transloco }}</p>
   } @else {
   <ul class="list">
@@ -343,4 +289,98 @@
     }
   </ul>
   }
+
+  <vl-modal
+    [open]="importOpen()"
+    [heading]="'importDialog.title' | transloco"
+    (closed)="importOpen.set(false)"
+  >
+    <p class="dialog-text">{{ 'importDialog.intro' | transloco }}</p>
+    <input
+      #fileInput
+      type="file"
+      multiple
+      accept=".gpx,.json,application/gpx+xml,application/json,text/xml,application/xml"
+      hidden
+      (change)="importFiles($event)"
+    />
+    <div class="dialog-buttons">
+      <button
+        type="button"
+        class="import-choose"
+        [disabled]="importBusy()"
+        (click)="fileInput.click()"
+      >
+        {{ (importResults() ? 'importDialog.chooseMore' : 'importDialog.choose')
+        | transloco }}
+      </button>
+    </div>
+    @if (importResults(); as results) {
+    <p class="import-summary" role="status">
+      @if (importedCount() > 0) { {{ 'importDialog.summary' | transloco : {
+      count: importedCount() } }} } @else { {{ 'importDialog.noneAdded' |
+      transloco }} }
+    </p>
+    <ul class="import-results">
+      @for (entry of results; track $index) {
+      <li [class]="'import-' + entry.status">
+        <strong>{{ entry.file }}</strong>
+        <span>{{ entryKey(entry) | transloco : { count: entry.count } }}</span>
+        @for (note of entry.notes; track note) {
+        <span class="import-note">{{ note | transloco }}</span>
+        } @if (entry.climbId; as climbId) {
+        <span class="import-note">{{ 'relief.prompt' | transloco }}</span>
+        <button
+          type="button"
+          class="compute-climb"
+          [disabled]="busyId() === climbId"
+          (click)="computeImportedClimb(climbId)"
+        >
+          {{ 'relief.compute' | transloco }}
+        </button>
+        }
+      </li>
+      }
+    </ul>
+    } @if (importOpen() && error(); as code) {
+    <p class="error" role="alert">{{ errorKey(code) | transloco }}</p>
+    }
+  </vl-modal>
+
+  <vl-modal
+    [open]="exportOpen()"
+    [heading]="'exportDialog.title' | transloco"
+    (closed)="exportOpen.set(false)"
+  >
+    <p class="dialog-text">
+      {{ 'exportDialog.intro' | transloco : { count: routes().length } }}
+    </p>
+    <div class="dialog-buttons">
+      <button
+        type="button"
+        class="backup-export"
+        [disabled]="routes().length === 0"
+        (click)="exportAll('download')"
+      >
+        {{ 'exportDialog.download' | transloco }}
+      </button>
+      @if (canShareBackup) {
+      <button
+        type="button"
+        class="backup-share"
+        [disabled]="routes().length === 0"
+        (click)="exportAll('share')"
+      >
+        {{ 'exportDialog.share' | transloco }}
+      </button>
+      }
+    </div>
+    @if (exportResult(); as result) { @if (result === 'failed') {
+    <p class="error" role="alert">{{ 'exportDialog.failed' | transloco }}</p>
+    } @else {
+    <p class="notice" role="status">
+      {{ 'exportDialog.' + result | transloco }}
+    </p>
+    } }
+  </vl-modal>
 </section>

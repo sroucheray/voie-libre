@@ -1,0 +1,57 @@
+:host {
+  display: contents;
+}
+
+.modal {
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-3, var(--shadow-2));
+  // The dialog rounds and clips; the content inside scrolls, so that its scroll bar stays within the
+  // corners instead of squaring them.
+  overflow: hidden;
+  max-height: calc(100dvh - 2rem);
+
+  &[open] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &::backdrop {
+    background: rgb(0 0 0 / 0.4);
+  }
+}
+
+.content {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+  min-height: 0;
+  padding: 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+
+  h2 {
+    margin: 0;
+    font-size: var(--font-size-md);
+  }
+}
+
+.close {
+  flex: none;
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+}

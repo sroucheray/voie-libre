@@ -1167,28 +1167,87 @@ describe('Saved routes', () => {
     });
   });
 
-  describe('the backup file', () => {
-    async function importBackupText(
-      view: Awaited<ReturnType<typeof render>>,
-      content: string,
-    ) {
-      const input = view.root.querySelector<HTMLInputElement>(
-        '.backup input[type="file"]',
-      )!;
-      Object.defineProperty(input, 'files', {
-        configurable: true,
-        value: [
-          {
-            name: 'routes.json',
-            size: content.length,
-            text: async () => content,
-          },
-        ],
-      });
-      input.dispatchEvent(new Event('change'));
-      await view.settle();
-    }
+  /** Chooses files in the import pop-up: stand-ins for `File`, which jsdom cannot read. */
+  async function chooseFiles(
+    view: Awaited<ReturnType<typeof render>>,
+    files: { name: string; content: string }[],
+  ) {
+    const input =
+      view.root.querySelector<HTMLInputElement>('input[type="file"]')!;
+    Object.defineProperty(input, 'files', {
+      configurable: true,
+      value: files.map(({ name, content }) => ({
+        name,
+        size: content.length,
+        text: async () => content,
+      })),
+    });
+    input.dispatchEvent(new Event('change'));
+    await view.settle();
+  }
 
+  const resultLines = (view: Awaited<ReturnType<typeof render>>) =>
+    [...view.root.querySelectorAll('.import-results li')].map(
+      (li) => li.textContent ?? '',
+    );
+
+  describe('the import and export pop-ups', () => {
+    it('open from two buttons, and the pop-up is closed until then', async () => {
+      const view = await render();
+      const dialogs = () =>
+        [...view.root.querySelectorAll('dialog')].map((d) => d.open);
+      expect(dialogs()).toEqual([false, false]);
+      view.root.querySelector<HTMLButtonElement>('.import-open')!.click();
+      await view.settle();
+      expect(dialogs()).toEqual([true, false]);
+    });
+
+    it('offer the two buttons in place of the four they replace', async () => {
+      const view = await render();
+      const buttons = [
+        ...view.root.querySelectorAll('.file-actions button'),
+      ].map((b) => b.textContent?.trim());
+      expect(buttons).toEqual(['Import…', 'Export all…']);
+    });
+  });
+
+  describe('exporting all the routes', () => {
+    it('writes every route in one file built on the device, without the delete token, and says so', async () => {
+      const view = await renderWithSavedRoute();
+      const [saved] = await routeStore.list();
+      await routeStore.setShare(saved.id, {
+        deleteToken: 'secret-token',
+        sharedAt: 5,
+        expiresAt: 9,
+      });
+      calls = 0;
+      view.root.querySelector<HTMLButtonElement>('.export-open')!.click();
+      await view.settle();
+      view.root.querySelector<HTMLButtonElement>('.backup-export')!.click();
+      await view.settle();
+      expect(calls).toBe(0);
+      expect(downloads).toHaveLength(1);
+      expect(downloads[0].fileName).toMatch(
+        /^voie-libre-routes-\d{4}-\d{2}-\d{2}\.json$/,
+      );
+      expect(downloads[0].mimeType).toBe('application/json');
+      expect(downloads[0].content).not.toContain('secret-token');
+      const result = parseBackup(downloads[0].content);
+      expect(result.ok && result.routes).toHaveLength(1);
+      expect(
+        view.root.querySelector('.dialog-buttons ~ .notice')?.textContent,
+      ).toContain('File downloaded');
+    });
+
+    it('has nothing to export with no route', async () => {
+      const view = await render();
+      expect(
+        view.root.querySelector<HTMLButtonElement>('.export-open')!.disabled,
+      ).toBe(true);
+    });
+  });
+
+  describe('importing a routes file', () => {
     const other = () => ({
       schemaVersion: 1,
       id: 'zzzzzzzzzz',
@@ -1209,55 +1268,30 @@ describe('Saved routes', () => {
       updatedAt: 1,
     });
 
-    it('exports every route in one file built on the device, without the delete token', async () => {
+    it('adds the routes that are not there yet, and says how many', async () => {
       const view = await renderWithSavedRoute();
-      const [saved] = await routeStore.list();
-      await routeStore.setShare(saved.id, {
-        deleteToken: 'secret-token',
-        sharedAt: 5,
-        expiresAt: 9,
-      });
-      calls = 0;
-      view.root.querySelector<HTMLButtonElement>('.backup-export')!.click();
-      await view.settle();
-      expect(calls).toBe(0);
-      expect(downloads).toHaveLength(1);
-      expect(downloads[0].fileName).toMatch(
-        /^voie-libre-routes-\d{4}-\d{2}-\d{2}\.json$/,
-      );
-      expect(downloads[0].mimeType).toBe('application/json');
-      expect(downloads[0].content).not.toContain('secret-token');
-      const result = parseBackup(downloads[0].content);
-      expect(result.ok && result.routes).toHaveLength(1);
-    });
-
-    it('has nothing to export with no route', async () => {
-      const view = await render();
-      expect(
-        view.root.querySelector<HTMLButtonElement>('.backup-export')!.disabled,
-      ).toBe(true);
-    });
-
-    it('imports the routes that are not there yet, and says how many', async () => {
-      const view = await renderWithSavedRoute();
-      await importBackupText(view, buildBackup([other()], new Date()));
+      await chooseFiles(view, [
+        { name: 'routes.json', content: buildBackup([other()], new Date()) },
+      ]);
       expect(await routeStore.list()).toHaveLength(2);
       expect(view.items()).toHaveLength(2);
-      expect(view.root.querySelector('.notice')?.textContent).toContain(
+      expect(view.root.querySelector('.import-summary')?.textContent).toContain(
         '1 route(s) added',
       );
+      expect(resultLines(view)[0]).toContain('routes.json');
       expect(view.alert()).toBeNull();
     });
 
     it('skips a route already on the device', async () => {
       const view = await render();
       const text = buildBackup([other()], new Date());
-      await importBackupText(view, text);
-      await importBackupText(view, text);
+      await chooseFiles(view, [{ name: 'routes.json', content: text }]);
+      await chooseFiles(view, [{ name: 'again.json', content: text }]);
       expect(await routeStore.list()).toHaveLength(1);
-      expect(view.root.querySelector('.notice')?.textContent).toContain(
-        'Nothing new',
+      expect(view.root.querySelector('.import-summary')?.textContent).toContain(
+        'No route was added',
       );
+      expect(resultLines(view)[0]).toContain('Nothing new');
     });
 
     it('keeps the laps of a loop', async () => {
@@ -1271,7 +1305,9 @@ describe('Saved routes', () => {
         loop: { mode: 'distance' as const, distanceMeters: 30000 },
         laps: 3,
       };
-      await importBackupText(view, buildBackup([loop], new Date()));
+      await chooseFiles(view, [
+        { name: 'loop.json', content: buildBackup([loop], new Date()) },
+      ]);
       expect((await routeStore.list())[0].laps).toBe(3);
     });
 
@@ -1291,9 +1327,53 @@ describe('Saved routes', () => {
       ],
     ])('refuses a file that is not valid: %s', async (content, message) => {
       const view = await render();
-      await importBackupText(view, content);
-      expect(view.alert()).toContain(message);
+      await chooseFiles(view, [{ name: 'routes.json', content }]);
+      expect(resultLines(view)[0]).toContain(message);
       expect(await routeStore.list()).toHaveLength(0);
+    });
+  });
+
+  describe('importing several files at once', () => {
+    const gpx = (name: string) =>
+      `<?xml version="1.0"?><gpx version="1.1" creator="t" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>${name}</name><trkseg><trkpt lat="45" lon="3"><ele>100</ele></trkpt><trkpt lat="45.01" lon="3"><ele>160</ele></trkpt></trkseg></trk></gpx>`;
+
+    it('adds what can be read, names what cannot, and sums up in one message', async () => {
+      const view = await render();
+      await chooseFiles(view, [
+        { name: 'a.gpx', content: gpx('First') },
+        { name: 'broken.gpx', content: 'this is not xml' },
+        { name: 'b.gpx', content: gpx('Second') },
+        { name: 'notes.txt', content: 'hello' },
+      ]);
+      expect(await routeStore.list()).toHaveLength(2);
+      expect(view.items()).toHaveLength(2);
+      expect(view.root.querySelector('.import-summary')?.textContent).toContain(
+        '2 route(s) added',
+      );
+      const lines = resultLines(view);
+      expect(lines).toHaveLength(4);
+      expect(lines[1]).toContain('broken.gpx');
+      expect(lines[1]).toContain('not a valid GPX file');
+      expect(lines[3]).toContain('This kind of file cannot be imported');
+      // Several files: none is put on the map.
+      expect(view.driver.routes).toHaveLength(0);
+    });
+
+    it('says plainly that FIT files cannot be imported yet', async () => {
+      const view = await render();
+      await chooseFiles(view, [{ name: 'ride.fit', content: '.FIT' }]);
+      expect(resultLines(view)[0]).toContain(
+        'FIT files cannot be imported yet',
+      );
+      expect(await routeStore.list()).toHaveLength(0);
+    });
+
+    it('recognises a routes file and a GPX file by their content when the name says nothing', async () => {
+      const view = await render();
+      await chooseFiles(view, [
+        { name: 'download', content: gpx('No extension') },
+      ]);
+      expect(await routeStore.list()).toHaveLength(1);
     });
   });
 
@@ -1305,22 +1385,11 @@ describe('Saved routes', () => {
     const noEle =
       '<trkpt lat="45" lon="3"></trkpt><trkpt lat="45.01" lon="3"></trkpt>';
 
-    async function importFile(
+    const importFile = (
       view: Awaited<ReturnType<typeof render>>,
       content: string,
       name = 'ride.gpx',
-    ) {
-      const input = view.root.querySelector<HTMLInputElement>(
-        '.import input[type="file"]',
-      )!;
-      // jsdom has no File.text(): a minimal stand-in is enough for the component.
-      Object.defineProperty(input, 'files', {
-        configurable: true,
-        value: [{ name, text: async () => content }],
-      });
-      input.dispatchEvent(new Event('change'));
-      await view.settle();
-    }
+    ) => chooseFiles(view, [{ name, content }]);
 
     it('saves the file as a route, shows it, and never calls the API', async () => {
       const view = await render();
@@ -1335,7 +1404,9 @@ describe('Saved routes', () => {
       expect(view.driver.routes).toHaveLength(1);
       expect(view.driver.fitted).toHaveLength(1);
       expect(view.alert()).toBeNull();
-      expect(view.root.querySelector('.notice')).toBeNull();
+      expect(
+        view.root.querySelector('.import-results .import-note'),
+      ).toBeNull();
     });
 
     it('names the route after the file when the track has no name', async () => {
@@ -1347,9 +1418,9 @@ describe('Saved routes', () => {
     it('imports without elevation: tells the user and hides the profile', async () => {
       const view = await render();
       await importFile(view, gpx(noEle));
-      expect(view.root.querySelector('.notice')?.textContent).toContain(
-        'no elevation',
-      );
+      expect(
+        view.root.querySelector('.import-results .import-note')?.textContent,
+      ).toContain('No elevation');
       expect((await routeStore.list())[0].ascentMeters).toBeNull();
       expect(view.root.querySelector('vl-elevation-panel .profile')).toBeNull();
     });
@@ -1364,17 +1435,16 @@ describe('Saved routes', () => {
       expect(downloads[0].content).not.toContain('<ele>');
     });
 
-    it('asks before computing the climb, and does not call the server unless the user agrees', async () => {
+    it('says the positions go to the server, and does not call it unless the user asks', async () => {
       const view = await render();
       await importFile(view, gpx(noEle));
       expect(elevationRequests).toBe(0);
-      expect(view.root.querySelector('[role="group"].notice')).not.toBeNull();
-      view.root
-        .querySelectorAll<HTMLButtonElement>('[role="group"].notice button')[1]
-        .click();
-      await view.settle();
-      expect(view.root.querySelector('[role="group"].notice')).toBeNull();
-      expect(elevationRequests).toBe(0);
+      expect(view.root.querySelector('.import-results')?.textContent).toContain(
+        'sends the track',
+      );
+      expect(
+        view.root.querySelector('.import-results .compute-climb'),
+      ).not.toBeNull();
       expect((await routeStore.list())[0].ascentMeters).toBeNull();
     });
 
@@ -1382,7 +1452,7 @@ describe('Saved routes', () => {
       const view = await render();
       await importFile(view, gpx(noEle));
       view.root
-        .querySelector<HTMLButtonElement>('.notice .compute-climb')!
+        .querySelector<HTMLButtonElement>('.import-results .compute-climb')!
         .click();
       await view.settle();
       expect(elevationRequests).toBe(1);
@@ -1398,20 +1468,18 @@ describe('Saved routes', () => {
         view.root.querySelector('.profile .source')?.textContent,
       ).toContain('Copernicus');
       expect(saved.geometry.map((p) => p[2])).toEqual([100, 120]);
-      expect(view.root.querySelector('.notice')).toBeNull();
+      expect(
+        view.root.querySelector('.import-results .compute-climb'),
+      ).toBeNull();
       expect(
         view.root.querySelector('vl-elevation-panel .profile'),
       ).not.toBeNull();
       expect(view.alert()).toBeNull();
     });
 
-    it('offers to compute the climb later from the list', async () => {
+    it('offers to compute the climb later from the list, and the pop-up follows', async () => {
       const view = await render();
       await importFile(view, gpx(noEle));
-      view.root
-        .querySelectorAll<HTMLButtonElement>('[role="group"].notice button')[1]
-        .click();
-      await view.settle();
       view.root
         .querySelector<HTMLButtonElement>('.list .compute-climb')!
         .click();
@@ -1419,6 +1487,9 @@ describe('Saved routes', () => {
       expect(elevationRequests).toBe(1);
       expect((await routeStore.list())[0].ascentMeters).toBe(20);
       expect(view.root.querySelector('.list .compute-climb')).toBeNull();
+      expect(
+        view.root.querySelector('.import-results .compute-climb'),
+      ).toBeNull();
     });
 
     it('keeps the route unchanged and says why when the terrain data cannot be used', async () => {
@@ -1426,14 +1497,14 @@ describe('Saved routes', () => {
       await importFile(view, gpx(noEle));
       elevationRespond = () => json({ elevations: [null, null] });
       view.root
-        .querySelector<HTMLButtonElement>('.notice .compute-climb')!
+        .querySelector<HTMLButtonElement>('.import-results .compute-climb')!
         .click();
       await view.settle();
       expect(view.alert()).toBe('The terrain data does not cover this route.');
       expect((await routeStore.list())[0].ascentMeters).toBeNull();
       elevationRespond = () => json({ code: 'unavailable', message: 'x' }, 503);
       view.root
-        .querySelector<HTMLButtonElement>('.notice .compute-climb')!
+        .querySelector<HTMLButtonElement>('.import-results .compute-climb')!
         .click();
       await view.settle();
       expect(view.alert()).toBe(
@@ -1444,12 +1515,14 @@ describe('Saved routes', () => {
     it('translates the errors and saves nothing', async () => {
       const view = await render();
       await importFile(view, 'this is not xml');
-      expect(view.alert()).toBe('This is not a valid GPX file.');
+      expect(resultLines(view)[0]).toContain('This is not a valid GPX file.');
       await importFile(
         view,
         '<gpx xmlns="http://www.topografix.com/GPX/1/1"></gpx>',
       );
-      expect(view.alert()).toBe('This GPX file has no track or route.');
+      expect(resultLines(view)[0]).toContain(
+        'This GPX file has no track or route.',
+      );
       expect(view.items()).toHaveLength(0);
     });
   });

@@ -421,9 +421,6 @@
     "mini": "{{distance}} · {{ascent}} de montée · {{descent}} de descente"
   },
   "gpxImport": {
-    "button": "Importer un fichier GPX",
-    "noElevation": "Importé. Ce fichier n'a pas d'altitude : le dénivelé est inconnu et le profil d'altitude est masqué.",
-    "thinned": "Importé. La trace était très longue : certains points ont été supprimés.",
     "errors": {
       "too_large": "Ce fichier est trop volumineux pour être importé.",
       "invalid_file": "Ce n'est pas un fichier GPX valide.",
@@ -435,7 +432,6 @@
     "prompt": "Calculer le dénivelé à partir des données de relief ? Cela envoie les positions de la trace au serveur.",
     "compute": "Calculer le dénivelé",
     "computeNamed": "Calculer le dénivelé de {{name}}",
-    "keepUnknown": "Le laisser inconnu",
     "errors": {
       "network": "Le serveur est injoignable. Le calcul du dénivelé a besoin du réseau.",
       "rate_limited": "Trop de requêtes. Réessayez dans un instant.",
@@ -497,11 +493,6 @@
     "offline": "Garder hors ligne"
   },
   "backup": {
-    "export": "Exporter tous les parcours",
-    "share": "Partager tous les parcours…",
-    "import": "Importer des parcours",
-    "added": "{{count}} parcours ajouté(s) sur cet appareil.",
-    "nothingNew": "Rien de nouveau : ces parcours sont déjà sur cet appareil.",
     "errors": {
       "not_a_backup": "Ce n'est pas un fichier de parcours Voie Libre.",
       "newer_version": "Ce fichier a été fait par une version plus récente de l'application. Rechargez l'application et réessayez.",
@@ -519,5 +510,37 @@
       "fit": "Exporter en FIT"
     },
     "exported": "Fichier créé."
+  },
+  "modal": {
+    "close": "Fermer"
+  },
+  "importDialog": {
+    "open": "Importer…",
+    "title": "Importer des parcours",
+    "intro": "Choisissez des fichiers GPX ou un fichier de parcours fait par Voie Libre. Vous pouvez en choisir plusieurs à la fois. Rien n'est envoyé au serveur.",
+    "choose": "Choisir des fichiers…",
+    "chooseMore": "Choisir d’autres fichiers…",
+    "summary": "{{count}} parcours ajouté(s).",
+    "noneAdded": "Aucun parcours n'a été ajouté.",
+    "fileAdded": "{{count}} parcours ajouté(s)",
+    "fileNothingNew": "Rien de nouveau : ces parcours sont déjà sur cet appareil",
+    "noElevation": "Ce fichier n'a pas d'altitude : le dénivelé est inconnu.",
+    "thinned": "La trace était très longue : certains points ont été supprimés.",
+    "others": "{{count}} autre(s) fichier(s)",
+    "errors": {
+      "unsupported": "Ce type de fichier ne peut pas être importé.",
+      "fit": "Les fichiers FIT ne peuvent pas encore être importés.",
+      "too_many": "Trop de fichiers à la fois : les autres n'ont pas été lus."
+    }
+  },
+  "exportDialog": {
+    "open": "Exporter tout…",
+    "title": "Exporter tous les parcours",
+    "intro": "Les {{count}} parcours vont dans un seul fichier, fait sur cet appareil. Les clés de suppression des liens partagés n'y sont pas écrites.",
+    "download": "Télécharger le fichier",
+    "share": "Partager…",
+    "downloaded": "Fichier téléchargé.",
+    "shared": "Fichier partagé.",
+    "failed": "Le fichier n'a pas pu être exporté."
   }
 }

@@ -421,9 +421,6 @@
     "mini": "{{distance}} · {{ascent}} up · {{descent}} down"
   },
   "gpxImport": {
-    "button": "Import a GPX file",
-    "noElevation": "Imported. This file has no elevation, so the climb is unknown and the elevation profile is hidden.",
-    "thinned": "Imported. The track was very long, so some points were dropped.",
     "errors": {
       "too_large": "This file is too large to import.",
       "invalid_file": "This is not a valid GPX file.",
@@ -435,7 +432,6 @@
     "prompt": "Compute the climb from the terrain data? This sends the track's positions to the server.",
     "compute": "Compute the climb",
     "computeNamed": "Compute the climb of {{name}}",
-    "keepUnknown": "Keep it unknown",
     "errors": {
       "network": "The server cannot be reached. Computing the climb needs a network connection.",
       "rate_limited": "Too many requests. Try again in a moment.",
@@ -497,11 +493,6 @@
     "offline": "Keep offline"
   },
   "backup": {
-    "export": "Export all routes",
-    "share": "Share all routes…",
-    "import": "Import routes",
-    "added": "{{count}} route(s) added to this device.",
-    "nothingNew": "Nothing new: these routes are already on this device.",
     "errors": {
       "not_a_backup": "This is not a Voie Libre routes file.",
       "newer_version": "This file was made by a newer version of the app. Reload the app and try again.",
@@ -519,5 +510,37 @@
       "fit": "Export as FIT"
     },
     "exported": "File created."
+  },
+  "modal": {
+    "close": "Close"
+  },
+  "importDialog": {
+    "open": "Import…",
+    "title": "Import routes",
+    "intro": "Choose GPX files or a routes file made by Voie Libre. You can choose several files at once. Nothing is sent to the server.",
+    "choose": "Choose files…",
+    "chooseMore": "Choose other files…",
+    "summary": "{{count}} route(s) added.",
+    "noneAdded": "No route was added.",
+    "fileAdded": "{{count}} route(s) added",
+    "fileNothingNew": "Nothing new: these routes are already on this device",
+    "noElevation": "No elevation in this file: the climb is unknown.",
+    "thinned": "The track was very long, so some points were dropped.",
+    "others": "{{count}} other file(s)",
+    "errors": {
+      "unsupported": "This kind of file cannot be imported.",
+      "fit": "FIT files cannot be imported yet.",
+      "too_many": "Too many files at once: the others were not read."
+    }
+  },
+  "exportDialog": {
+    "open": "Export all…",
+    "title": "Export all routes",
+    "intro": "All {{count}} route(s) go into one file, made on this device. The delete keys of shared links are not written in it.",
+    "download": "Download the file",
+    "share": "Share…",
+    "downloaded": "File downloaded.",
+    "shared": "File shared.",
+    "failed": "The file could not be exported."
   }
 }
