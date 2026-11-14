@@ -366,7 +366,12 @@
       "failed": "Le lien n'a pas pu être copié. Sélectionnez-le ici :",
       "field": "Lien vers le parcours",
       "share": "Partager…",
-      "shareNamed": "Partager le lien vers {{name}}"
+      "shareNamed": "Partager le lien vers {{name}}",
+      "qr": "QR code",
+      "qrNamed": "Afficher le QR code du lien vers {{name}}",
+      "qrHide": "Masquer le QR code",
+      "qrLabel": "QR code du lien",
+      "qrHelp": "Scannez-le avec l'appareil photo d'un téléphone pour y ouvrir le parcours."
     },
     "copy": "Copier le lien",
     "copied": "Lien copié",

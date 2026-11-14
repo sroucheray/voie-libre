@@ -151,4 +151,43 @@ describe('CopyLinkButton', () => {
       expect(el.querySelector('input')).not.toBeNull();
     });
   });
+
+  describe('QR code', () => {
+    it('is hidden until asked, then draws the code of the link', () => {
+      const { fixture, el } = create();
+      expect(el.querySelector('svg')).toBeNull();
+      el.querySelector<HTMLButtonElement>('.show-qr')?.click();
+      fixture.detectChanges();
+      const svg = el.querySelector('svg');
+      expect(svg?.getAttribute('aria-label')).toBe('QR code of the link');
+      expect(svg?.querySelector('path')?.getAttribute('d')).toContain(
+        'M4 4h1v1h-1z',
+      );
+      el.querySelector<HTMLButtonElement>('.show-qr')?.click();
+      fixture.detectChanges();
+      expect(el.querySelector('svg')).toBeNull();
+    });
+
+    it('is offered for 20 spread points, and not for a link too long to scan', () => {
+      const { fixture, el } = create();
+      const points = Array.from({ length: 20 }, (_, i): [number, number] => [
+        -4.5 + i * 0.37,
+        42.5 + i * 0.29,
+      ]);
+      const set = (name: string) => {
+        fixture.componentInstance.link.set({
+          points,
+          profile: 'road',
+          loop: null,
+          name,
+        });
+        fixture.detectChanges();
+      };
+      set('x'.repeat(80));
+      expect(el.querySelector('.show-qr')).not.toBeNull();
+      // Each é becomes six characters in an address: 80 of them go past the biggest code offered.
+      set('é'.repeat(80));
+      expect(el.querySelector('.show-qr')).toBeNull();
+    });
+  });
 });

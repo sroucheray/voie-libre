@@ -9,8 +9,14 @@ import {
   signal,
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { encodeQr, qrSvgPath } from './qr-code';
 import { routeLinkUrl, type RouteLink } from './route-link';
 import { SHARE_SHEET } from './share-sheet';
+
+/** The biggest QR code offered: a denser one is hard to scan from a screen. */
+export const QR_MAX_VERSION = 15;
+/** Modules of white around the code, as the standard asks. */
+const QR_BORDER = 4;
 
 /** How long "Link copied" stays on screen. */
 export const COPIED_VISIBLE_MS = 6000;
@@ -43,6 +49,18 @@ export class CopyLinkButton implements OnDestroy {
     const origin = this.document.defaultView?.location.origin;
     return link && origin ? routeLinkUrl(origin, link) : null;
   });
+  /** The QR code of the link, or `null` when it is too long to scan from a screen. */
+  protected readonly qr = computed(() => {
+    const url = this.url();
+    const code = url ? encodeQr(url, QR_MAX_VERSION) : null;
+    return code
+      ? {
+          viewBox: `0 0 ${code.size + QR_BORDER * 2} ${code.size + QR_BORDER * 2}`,
+          path: qrSvgPath(code, QR_BORDER),
+        }
+      : null;
+  });
+  protected readonly qrShown = signal(false);
   private timer: ReturnType<typeof setTimeout> | null = null;
 
   protected async copy(): Promise<void> {
@@ -72,6 +90,10 @@ export class CopyLinkButton implements OnDestroy {
       url,
     });
     this.state.set(outcome === 'failed' ? 'failed' : 'idle');
+  }
+
+  protected toggleQr(): void {
+    this.qrShown.update((shown) => !shown);
   }
 
   protected select(event: Event): void {

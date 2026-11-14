@@ -366,7 +366,12 @@
       "failed": "The link could not be copied. Select it here:",
       "field": "Link to the route",
       "share": "Share…",
-      "shareNamed": "Share the link to {{name}}"
+      "shareNamed": "Share the link to {{name}}",
+      "qr": "QR code",
+      "qrNamed": "Show the QR code of the link to {{name}}",
+      "qrHide": "Hide the QR code",
+      "qrLabel": "QR code of the link",
+      "qrHelp": "Scan it with the camera of a phone to open the route there."
     },
     "copy": "Copy link",
     "copied": "Link copied",

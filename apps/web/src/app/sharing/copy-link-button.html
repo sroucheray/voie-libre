@@ -23,6 +23,31 @@
 >
   {{ 'sharing.link.share' | transloco }}
 </button>
+} @if (qr()) {
+<button
+  type="button"
+  class="show-qr"
+  [attr.aria-expanded]="qrShown()"
+  [attr.aria-label]="
+    name() ? ('sharing.link.qrNamed' | transloco : { name: name() }) : null
+  "
+  (click)="toggleQr()"
+>
+  {{ (qrShown() ? 'sharing.link.qrHide' : 'sharing.link.qr') | transloco }}
+</button>
+} @if (qrShown() && qr(); as code) {
+<figure class="qr">
+  <svg
+    role="img"
+    [attr.aria-label]="'sharing.link.qrLabel' | transloco"
+    [attr.viewBox]="code.viewBox"
+    shape-rendering="crispEdges"
+  >
+    <rect width="100%" height="100%" fill="#fff" />
+    <path [attr.d]="code.path" fill="#000" />
+  </svg>
+  <figcaption>{{ 'sharing.link.qrHelp' | transloco }}</figcaption>
+</figure>
 } @switch (state()) { @case ('copied') {
 <span class="copy-status" role="status"
   >{{ 'sharing.link.copied' | transloco }} {{ 'sharing.link.privacy' | transloco
