@@ -964,17 +964,32 @@ describe('Saved routes', () => {
       expect(sharingCalls).toEqual([]);
     });
 
-    it('says until when the short link of a route works', async () => {
+    it('says until when the link of a route works, in a badge about the link, and offers to manage it', async () => {
       const view = await renderWithSharedRoute();
-      expect(
-        view.items()[0].querySelector('.share-meta')?.textContent,
-      ).toContain('Valid until');
+      const badge = view.items()[0].querySelector('.share-badge');
+      expect(badge?.textContent).toContain('Link active until');
       expect(view.root.textContent).not.toContain('secret-token');
+      expect(
+        view.button('Manage the sharing of Road, 41 km').textContent,
+      ).toContain('Manage sharing');
+      // The badge opens the same dialog as the button.
+      (badge as HTMLElement).click();
+      await view.settle();
+      expect(TestBed.inject(ShareDialogService).target()).not.toBeNull();
     });
 
-    it('says nothing once the copy has expired', async () => {
+    it('offers to share, with no badge, for a route that is not shared', async () => {
+      const view = await renderWithSavedRoute();
+      expect(view.items()[0].querySelector('.share-badge')).toBeNull();
+      expect(shareButton(view).textContent).toContain('Share');
+      expect(shareButton(view).textContent).not.toContain('Manage');
+    });
+
+    it('shows no badge once the copy has expired, and offers to share again', async () => {
       const view = await renderWithSharedRoute(-1000);
-      expect(view.items()[0].querySelector('.share-meta')).toBeNull();
+      expect(view.items()[0].querySelector('.share-badge')).toBeNull();
+      expect(shareButton(view).textContent).toContain('Share');
+      expect(shareButton(view).textContent).not.toContain('Manage');
     });
 
     it('unshares before deleting a route with a short link, and says so in the confirmation', async () => {

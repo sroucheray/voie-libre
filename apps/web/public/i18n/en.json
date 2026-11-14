@@ -358,7 +358,11 @@
       "qrLabel": "QR code of the link",
       "qrHelp": "Scan it with the camera of a phone to open the route there.",
       "openDialog": "Share…",
-      "openDialogNamed": "Share {{name}}"
+      "openDialogNamed": "Share {{name}}",
+      "badge": "Link active until {{date}}",
+      "badgeNamed": "Manage the link to {{name}}, active until {{date}}",
+      "manage": "Manage sharing",
+      "manageNamed": "Manage the sharing of {{name}}"
     },
     "confirmDeleteShared": "Delete \"{{name}}\" from this device and stop sharing it? This cannot be undone.",
     "page": {
@@ -389,7 +393,7 @@
       },
       "create": "Create the link",
       "creating": "Creating…",
-      "validUntil": "Valid until {{date}}",
+      "validUntil": "Link valid until {{date}}",
       "deleteCopy": "Delete the copy",
       "privacyShort": "Anyone who has this link can see the route until {{date}}. A copy is kept on our server until then.",
       "privacyShortPending": "Once created, anyone who has the link can see the route until the date. A copy is kept on our server until then."

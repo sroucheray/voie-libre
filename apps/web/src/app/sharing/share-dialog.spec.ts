@@ -179,7 +179,9 @@ describe('ShareDialog', () => {
       expect((await routeStore.get(saved.id))?.share?.deleteToken).toBe(
         'secret-token',
       );
-      expect(el.querySelector('.valid')?.textContent).toContain('Valid until');
+      expect(el.querySelector('.valid')?.textContent).toContain(
+        'Link valid until',
+      );
       expect(el.textContent).not.toContain('secret-token');
       expect(el.querySelector('.create')).toBeNull();
       await click('.copy-link');

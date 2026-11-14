@@ -358,7 +358,11 @@
       "qrLabel": "QR code du lien",
       "qrHelp": "Scannez-le avec l'appareil photo d'un téléphone pour y ouvrir le parcours.",
       "openDialog": "Partager…",
-      "openDialogNamed": "Partager {{name}}"
+      "openDialogNamed": "Partager {{name}}",
+      "badge": "Lien actif jusqu'au {{date}}",
+      "badgeNamed": "Gérer le lien de {{name}}, actif jusqu'au {{date}}",
+      "manage": "Gérer le partage",
+      "manageNamed": "Gérer le partage de {{name}}"
     },
     "confirmDeleteShared": "Supprimer « {{name}} » de cet appareil et arrêter son partage ? Cette action est définitive.",
     "page": {
@@ -389,7 +393,7 @@
       },
       "create": "Créer le lien",
       "creating": "Création…",
-      "validUntil": "Valable jusqu'au {{date}}",
+      "validUntil": "Lien valable jusqu'au {{date}}",
       "deleteCopy": "Supprimer la copie",
       "privacyShort": "Toute personne qui a ce lien peut voir le parcours jusqu'au {{date}}. Une copie est gardée sur notre serveur jusque-là.",
       "privacyShortPending": "Une fois créé, toute personne qui a le lien peut voir le parcours jusqu'à la date. Une copie est gardée sur notre serveur jusque-là."
