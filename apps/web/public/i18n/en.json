@@ -488,5 +488,18 @@
     "open": "Menu",
     "title": "Menu",
     "offline": "Keep offline"
+  },
+  "backup": {
+    "export": "Export all routes",
+    "share": "Share all routes…",
+    "import": "Import routes",
+    "added": "{{count}} route(s) added to this device.",
+    "nothingNew": "Nothing new: these routes are already on this device.",
+    "errors": {
+      "not_a_backup": "This is not a Voie Libre routes file.",
+      "newer_version": "This file was made by a newer version of the app. Reload the app and try again.",
+      "invalid": "This file is damaged: nothing was imported.",
+      "too_large": "This file is too large to import."
+    }
   }
 }

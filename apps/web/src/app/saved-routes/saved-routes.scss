@@ -256,7 +256,11 @@
   font-size: var(--font-size-xs);
 }
 
-.import {
+.import,
+.backup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   margin: 0.5rem 0;
 }
 

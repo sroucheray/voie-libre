@@ -19,6 +19,7 @@ import { ROUTE_DEBOUNCE_MS } from '../planner/route-planner';
 import { FILE_DOWNLOADER } from '../export/file-download';
 import { SHARE_SHEET, type ShareOutcome } from '../sharing/share-sheet';
 import { RouteStoreError } from '../storage/route-store';
+import { buildBackup, parseBackup } from '../storage/backup';
 
 const geometry: [number, number, number][] = [
   [3.087, 45.777, 402],
@@ -1229,6 +1230,135 @@ describe('Saved routes', () => {
       await view.settle();
       expect(view.alert()).toBeNull();
       expect(view.items()).toHaveLength(1);
+    });
+  });
+
+  describe('the backup file', () => {
+    async function importBackupText(
+      view: Awaited<ReturnType<typeof render>>,
+      content: string,
+    ) {
+      const input = view.root.querySelector<HTMLInputElement>(
+        '.backup input[type="file"]',
+      )!;
+      Object.defineProperty(input, 'files', {
+        configurable: true,
+        value: [
+          {
+            name: 'routes.json',
+            size: content.length,
+            text: async () => content,
+          },
+        ],
+      });
+      input.dispatchEvent(new Event('change'));
+      await view.settle();
+    }
+
+    const other = () => ({
+      schemaVersion: 1,
+      id: 'zzzzzzzzzz',
+      name: 'Another ride',
+      profile: 'road' as const,
+      points: [
+        [2, 46],
+        [2.2, 46.1],
+      ] as [number, number][],
+      geometry: [
+        [2, 46, 300],
+        [2.2, 46.1, 310],
+      ] as [number, number, number][],
+      distanceMeters: 20000,
+      ascentMeters: 80,
+      durationSeconds: 3000,
+      createdAt: 1,
+      updatedAt: 1,
+    });
+
+    it('exports every route in one file built on the device, without the delete token', async () => {
+      const view = await renderWithSavedRoute();
+      const [saved] = await routeStore.list();
+      await routeStore.setShare(saved.id, {
+        deleteToken: 'secret-token',
+        sharedAt: 5,
+      });
+      calls = 0;
+      view.root.querySelector<HTMLButtonElement>('.backup-export')!.click();
+      await view.settle();
+      expect(calls).toBe(0);
+      expect(downloads).toHaveLength(1);
+      expect(downloads[0].fileName).toMatch(
+        /^voie-libre-routes-\d{4}-\d{2}-\d{2}\.json$/,
+      );
+      expect(downloads[0].mimeType).toBe('application/json');
+      expect(downloads[0].content).not.toContain('secret-token');
+      const result = parseBackup(downloads[0].content);
+      expect(result.ok && result.routes).toHaveLength(1);
+    });
+
+    it('has nothing to export with no route', async () => {
+      const view = await render();
+      expect(
+        view.root.querySelector<HTMLButtonElement>('.backup-export')!.disabled,
+      ).toBe(true);
+    });
+
+    it('imports the routes that are not there yet, and says how many', async () => {
+      const view = await renderWithSavedRoute();
+      await importBackupText(view, buildBackup([other()], new Date()));
+      expect(await routeStore.list()).toHaveLength(2);
+      expect(view.items()).toHaveLength(2);
+      expect(view.root.querySelector('.notice')?.textContent).toContain(
+        '1 route(s) added',
+      );
+      expect(view.alert()).toBeNull();
+    });
+
+    it('skips a route already on the device', async () => {
+      const view = await render();
+      const text = buildBackup([other()], new Date());
+      await importBackupText(view, text);
+      await importBackupText(view, text);
+      expect(await routeStore.list()).toHaveLength(1);
+      expect(view.root.querySelector('.notice')?.textContent).toContain(
+        'Nothing new',
+      );
+    });
+
+    it('keeps the laps of a loop', async () => {
+      const view = await render();
+      const loop = {
+        ...other(),
+        points: [
+          [2, 46],
+          [2, 46],
+        ] as [number, number][],
+        loop: { mode: 'distance' as const, distanceMeters: 30000 },
+        laps: 3,
+      };
+      await importBackupText(view, buildBackup([loop], new Date()));
+      expect((await routeStore.list())[0].laps).toBe(3);
+    });
+
+    it.each([
+      ['hello', 'not a Voie Libre routes file'],
+      [
+        JSON.stringify({ kind: 'voie-libre-routes', version: 99, routes: [] }),
+        'newer version',
+      ],
+      [
+        JSON.stringify({
+          kind: 'voie-libre-routes',
+          version: 1,
+          routes: [{ name: 'x' }],
+        }),
+        'damaged',
+      ],
+    ])('refuses a file that is not valid: %s', async (content, message) => {
+      const view = await render();
+      await importBackupText(view, content);
+      expect(view.alert()).toContain(message);
+      expect(await routeStore.list()).toHaveLength(0);
     });
   });
 

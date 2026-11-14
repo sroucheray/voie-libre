@@ -63,8 +63,42 @@
       {{ 'gpxImport.button' | transloco }}
     </button>
   </div>
+  <div class="backup">
+    <input
+      #backupInput
+      type="file"
+      accept=".json,application/json"
+      hidden
+      (change)="importBackup($event)"
+    />
+    <button
+      type="button"
+      class="backup-export"
+      [disabled]="routes().length === 0"
+      (click)="exportAll()"
+    >
+      {{ 'backup.export' | transloco }}
+    </button>
+    @if (canShareBackup) {
+    <button
+      type="button"
+      class="backup-share"
+      [disabled]="routes().length === 0"
+      (click)="exportAll('share')"
+    >
+      {{ 'backup.share' | transloco }}
+    </button>
+    }
+    <button type="button" class="backup-import" (click)="backupInput.click()">
+      {{ 'backup.import' | transloco }}
+    </button>
+  </div>
   @if (notice(); as key) {
   <p class="notice" role="status">{{ key | transloco }}</p>
+  } @if (backupNotice(); as done) {
+  <p class="notice" role="status">
+    {{ done.key | transloco : { count: done.count } }}
+  </p>
   } @if (climbPromptId(); as promptId) {
   <div
     class="notice"

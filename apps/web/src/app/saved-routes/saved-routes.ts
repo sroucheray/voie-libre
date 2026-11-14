@@ -59,6 +59,15 @@ import {
   type RouteStoreErrorCode,
 } from '../storage/route-store';
 import type { SavedRoute } from '../storage/saved-route';
+import {
+  BACKUP_MAX_BYTES,
+  BackupError,
+  type BackupErrorCode,
+  backupFileName,
+  backupKey,
+  buildBackup,
+  parseBackup,
+} from '../storage/backup';
 
 const GPX_IMPORT_CODES: readonly string[] = [
   'too_large',
@@ -119,6 +128,7 @@ export class SavedRoutes {
     | GpxImportErrorCode
     | ElevationErrorCode
     | 'export_failed'
+    | `backup_${BackupErrorCode}`
     | null
   >(null);
   /** The route whose share or unshare request is running. */
@@ -135,6 +145,15 @@ export class SavedRoutes {
   protected readonly savable = this.planner.savable;
   /** Translation key of what the last import tells the user, or null. */
   protected readonly notice = signal<string | null>(null);
+  /** What the last import of a backup file did, with how many routes it added, or null. */
+  protected readonly backupNotice = signal<{
+    key: string;
+    count: number;
+  } | null>(null);
+  /** The system share sheet can take the backup file (not Firefox desktop). */
+  protected readonly canShareBackup = this.sheet.canShareFile(
+    new File([], 'routes.json', { type: 'application/json' }),
+  );
   /** The imported route (without elevation) the user is asked about: compute its climb? */
   protected readonly climbPromptId = signal<string | null>(null);
 
@@ -288,6 +307,72 @@ export class SavedRoutes {
             ? 'gpxImport.thinned'
             : null,
       );
+    });
+  }
+
+  /**
+   * Every saved route in one file, built on the device: downloaded, or handed to the system share
+   * sheet. The delete token of a route shared by the server is not written.
+   */
+  protected async exportAll(
+    how: 'download' | 'share' = 'download',
+  ): Promise<void> {
+    this.backupNotice.set(null);
+    await this.attempt(async () => {
+      const routes = await this.routeStore.list();
+      const now = new Date();
+      const text = buildBackup(routes, now);
+      const name = backupFileName(now);
+      if (how === 'download') {
+        try {
+          this.download(text, name, 'application/json');
+        } catch {
+          throw new ExportError();
+        }
+        return;
+      }
+      const outcome = await this.sheet.shareFile(
+        new File([text], name, { type: 'application/json' }),
+      );
+      if (outcome === 'failed') throw new ExportError();
+    });
+  }
+
+  /**
+   * Reads a backup file on the device and adds the routes that are not there yet (same name,
+   * profile, points and length). A file out of shape is refused whole. Nothing is sent anywhere.
+   */
+  protected async importBackup(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    this.backupNotice.set(null);
+    await this.attempt(async () => {
+      if (file.size > BACKUP_MAX_BYTES) throw new BackupError('too_large');
+      let text: string;
+      try {
+        text = await file.text();
+      } catch {
+        throw new BackupError('not_a_backup');
+      }
+      const result = parseBackup(text);
+      if (!result.ok) throw new BackupError(result.code);
+      const known = new Set((await this.routeStore.list()).map(backupKey));
+      let added = 0;
+      for (const { laps, ...route } of result.routes) {
+        const key = backupKey(route);
+        if (known.has(key)) continue;
+        known.add(key);
+        let saved = await this.routeStore.save(route);
+        if (laps) saved = await this.routeStore.setLaps(saved.id, laps);
+        this.routes.update((routes) => [saved, ...routes]);
+        added += 1;
+      }
+      this.backupNotice.set({
+        key: added > 0 ? 'backup.added' : 'backup.nothingNew',
+        count: added,
+      });
     });
   }
 
@@ -476,6 +561,9 @@ export class SavedRoutes {
     if (code.startsWith('elevation_')) {
       return `relief.errors.${code.slice('elevation_'.length)}`;
     }
+    if (code.startsWith('backup_')) {
+      return `backup.errors.${code.slice('backup_'.length)}`;
+    }
     if (GPX_IMPORT_CODES.includes(code)) return `gpxImport.errors.${code}`;
     const sharing: readonly string[] = [
       'network',
@@ -647,7 +735,9 @@ export class SavedRoutes {
             ? error.code
             : error instanceof GpxImportError || error instanceof ElevationError
               ? error.code
-              : 'unknown',
+              : error instanceof BackupError
+                ? `backup_${error.code}`
+                : 'unknown',
       );
     }
   }

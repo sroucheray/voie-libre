@@ -488,5 +488,18 @@
     "open": "Menu",
     "title": "Menu",
     "offline": "Garder hors ligne"
+  },
+  "backup": {
+    "export": "Exporter tous les parcours",
+    "share": "Partager tous les parcours…",
+    "import": "Importer des parcours",
+    "added": "{{count}} parcours ajouté(s) sur cet appareil.",
+    "nothingNew": "Rien de nouveau : ces parcours sont déjà sur cet appareil.",
+    "errors": {
+      "not_a_backup": "Ce n'est pas un fichier de parcours Voie Libre.",
+      "newer_version": "Ce fichier a été fait par une version plus récente de l'application. Rechargez l'application et réessayez.",
+      "invalid": "Ce fichier est abîmé : rien n'a été importé.",
+      "too_large": "Ce fichier est trop gros pour être importé."
+    }
   }
 }
