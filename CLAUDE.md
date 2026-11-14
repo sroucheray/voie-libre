@@ -28,7 +28,7 @@ Open-source (AGPL-3.0) route planner for road/gravel cycling and trail running, 
 - **Elevation profile**: `buildProfile` (pure) and `ElevationPanel` under the map: grade bands, selecting a stretch, a cursor shared with the map, zoom buttons. [Details](docs/implementation.md#elevation-profile).
 - **Surface of the route**: `RouteResult.surfaces` (one character per segment: paved, cycleway, unpaved, path, unknown) from BRouter's way tags; a bar under the profile and an optional coloured layer. [Details](docs/implementation.md#surface-of-the-route).
 - **User position**: `LocationStore` behind the `GEOLOCATION` token; kept in memory, never stored or sent to the API. [Details](docs/implementation.md#user-position).
-- **GPX import**: `parseGpx` reads a track or a route on the device; without elevation the climb stays unknown and sharing is off. [Details](docs/implementation.md#gpx-import).
+- **GPX and FIT import**: `parseGpx` and `parseFit` (our own FIT reader) read a track on the device, from the "Import…" pop-up (several files at once); without elevation the climb stays unknown and sharing is off. [Details](docs/implementation.md#gpx-import).
 - **Relief**: API `POST /elevation` over Copernicus GLO-30 tiles (`relief/`), used only to compute the climb of an imported route. [Details](docs/implementation.md#relief).
 - **Credits**: `PlannedRoute.elevationSource` (`srtm` or `copernicus`) is saved with the route and credited under the profile. [Details](docs/implementation.md#credits).
 - **Local storage**: Saved routes live in IndexedDB behind `ROUTE_STORE` (`RouteStore`): one itinerary, `schemaVersion`, optional `loop` and `laps`; opening one never computes. [Details](docs/implementation.md#local-storage).

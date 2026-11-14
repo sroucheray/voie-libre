@@ -519,7 +519,7 @@
   "importDialog": {
     "open": "Import…",
     "title": "Import routes",
-    "intro": "Choose GPX files or a routes file made by Voie Libre. You can choose several files at once. Nothing is sent to the server.",
+    "intro": "Choose GPX or FIT files, or a routes file made by Voie Libre. You can choose several files at once. Nothing is sent to the server.",
     "choose": "Choose files…",
     "chooseMore": "Choose other files…",
     "summary": "{{count}} route(s) added.",
@@ -531,7 +531,6 @@
     "others": "{{count}} other file(s)",
     "errors": {
       "unsupported": "This kind of file cannot be imported.",
-      "fit": "FIT files cannot be imported yet.",
       "too_many": "Too many files at once: the others were not read."
     }
   },
@@ -544,5 +543,13 @@
     "downloaded": "File downloaded.",
     "shared": "File shared.",
     "failed": "The file could not be exported."
+  },
+  "fitImport": {
+    "errors": {
+      "too_large": "This file is too large to import.",
+      "invalid_file": "This is not a valid FIT file.",
+      "no_track": "This FIT file has no track: it has no positions, as with an indoor activity.",
+      "too_short": "This track is too short to import."
+    }
   }
 }

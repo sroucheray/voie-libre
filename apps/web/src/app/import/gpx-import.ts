@@ -11,7 +11,11 @@ const MAX_ROUTE_POINTS = 20;
 /** Elevation changes smaller than this are noise, not climbing. */
 const CLIMB_THRESHOLD_METERS = 3;
 /** Typical average speed in km/h, to estimate a duration the file does not give. */
-const SPEED_KMH: Record<Profile, number> = { road: 22, gravel: 17, trail: 8 };
+export const SPEED_KMH: Record<Profile, number> = {
+  road: 22,
+  gravel: 17,
+  trail: 8,
+};
 
 export type GpxImportErrorCode =
   'too_large' | 'invalid_file' | 'no_track' | 'too_short';
@@ -36,7 +40,8 @@ export interface ImportedRoute {
   thinned: boolean;
 }
 
-interface RawPoint {
+/** A point read from a file: `ele` is `null` where the file gives no elevation. */
+export interface RawPoint {
   lon: number;
   lat: number;
   ele: number | null;
@@ -87,7 +92,7 @@ export function climbOf(elevations: readonly number[]): number {
 }
 
 /** Keeps `max` points spread along the line, always the first and the last. */
-function thin<T>(items: T[], max: number): T[] {
+export function thin<T>(items: T[], max: number): T[] {
   if (items.length <= max) return items;
   const result: T[] = [];
   for (let i = 0; i < max; i++) {
@@ -119,38 +124,66 @@ export function parseGpx(text: string, profile: Profile): ImportedRoute {
   if (!source) throw new GpxImportError('no_track');
 
   const raw = readPoints(children(source, track ? 'trkpt' : 'rtept'));
-  if (raw.length === 0) throw new GpxImportError('no_track');
-  if (raw.length < 2) throw new GpxImportError('too_short');
+  const name = children(source, 'name')[0]?.textContent?.trim() || null;
+  return routeFromPoints(raw, {
+    name,
+    profile,
+    // A route's own points (<rtept>) are its via points; a track only gives its two ends.
+    via: !track && raw.length <= MAX_ROUTE_POINTS ? raw : undefined,
+    fail: (code) => new GpxImportError(code),
+  });
+}
+
+/**
+ * The route a list of points makes, whatever file they come from: thinned to
+ * {@link MAX_IMPORTED_POINTS}, with its length, its climb (unknown unless every point has an
+ * elevation) and a duration (the file's own, else estimated from a typical speed). `fail` makes
+ * the error to throw, so each reader keeps its own error type.
+ */
+export function routeFromPoints(
+  raw: readonly RawPoint[],
+  options: {
+    name: string | null;
+    profile: Profile;
+    /** The places the planner keeps for the route; by default its two ends. */
+    via?: readonly RawPoint[];
+    /** The duration the file states, in seconds. */
+    durationSeconds?: number | null;
+    fail: (code: GpxImportErrorCode) => Error;
+  },
+): ImportedRoute {
+  if (raw.length === 0) throw options.fail('no_track');
+  if (raw.length < 2) throw options.fail('too_short');
 
   const elevationKnown = raw.every((point) => point.ele !== null);
-  const kept = thin(raw, MAX_IMPORTED_POINTS);
+  const kept = thin([...raw], MAX_IMPORTED_POINTS);
   const geometry: LngLat3[] = kept.map((p) => [p.lon, p.lat, p.ele ?? 0]);
 
   let distanceMeters = 0;
   for (let i = 1; i < geometry.length; i++) {
     distanceMeters += haversine(geometry[i - 1], geometry[i]);
   }
-  if (distanceMeters <= 0) throw new GpxImportError('too_short');
+  if (distanceMeters <= 0) throw options.fail('too_short');
 
-  // A route's own points (<rtept>) are its via points; a track only gives its two ends.
   const ends: [number, number][] = [
     [geometry[0][0], geometry[0][1]],
     [geometry[geometry.length - 1][0], geometry[geometry.length - 1][1]],
   ];
-  const points =
-    !track && raw.length <= MAX_ROUTE_POINTS
-      ? raw.map((p): [number, number] => [p.lon, p.lat])
-      : ends;
-
-  const name = children(source, 'name')[0]?.textContent?.trim() || null;
+  const points = options.via
+    ? options.via.map((p): [number, number] => [p.lon, p.lat])
+    : ends;
+  const stated = options.durationSeconds;
 
   return {
-    name,
+    name: options.name,
     points,
     geometry,
     distanceMeters,
     ascentMeters: elevationKnown ? climbOf(geometry.map((p) => p[2])) : null,
-    durationSeconds: (distanceMeters / 1000 / SPEED_KMH[profile]) * 3600,
+    durationSeconds:
+      stated && stated > 0
+        ? stated
+        : (distanceMeters / 1000 / SPEED_KMH[options.profile]) * 3600,
     thinned: kept.length < raw.length,
   };
 }

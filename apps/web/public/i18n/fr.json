@@ -519,7 +519,7 @@
   "importDialog": {
     "open": "Importer…",
     "title": "Importer des parcours",
-    "intro": "Choisissez des fichiers GPX ou un fichier de parcours fait par Voie Libre. Vous pouvez en choisir plusieurs à la fois. Rien n'est envoyé au serveur.",
+    "intro": "Choisissez des fichiers GPX ou FIT, ou un fichier de parcours fait par Voie Libre. Vous pouvez en choisir plusieurs à la fois. Rien n'est envoyé au serveur.",
     "choose": "Choisir des fichiers…",
     "chooseMore": "Choisir d’autres fichiers…",
     "summary": "{{count}} parcours ajouté(s).",
@@ -531,7 +531,6 @@
     "others": "{{count}} autre(s) fichier(s)",
     "errors": {
       "unsupported": "Ce type de fichier ne peut pas être importé.",
-      "fit": "Les fichiers FIT ne peuvent pas encore être importés.",
       "too_many": "Trop de fichiers à la fois : les autres n'ont pas été lus."
     }
   },
@@ -544,5 +543,13 @@
     "downloaded": "Fichier téléchargé.",
     "shared": "Fichier partagé.",
     "failed": "Le fichier n'a pas pu être exporté."
+  },
+  "fitImport": {
+    "errors": {
+      "too_large": "Ce fichier est trop gros pour être importé.",
+      "invalid_file": "Ce n'est pas un fichier FIT valide.",
+      "no_track": "Ce fichier FIT n'a pas de trace : il n'a pas de positions, comme une activité en salle.",
+      "too_short": "Cette trace est trop courte pour être importée."
+    }
   }
 }

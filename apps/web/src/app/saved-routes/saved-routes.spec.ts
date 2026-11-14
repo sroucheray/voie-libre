@@ -20,6 +20,7 @@ import { FILE_DOWNLOADER } from '../export/file-download';
 import { SHARE_SHEET, type ShareOutcome } from '../sharing/share-sheet';
 import { RouteStoreError } from '../storage/route-store';
 import { buildBackup, parseBackup } from '../storage/backup';
+import { buildFit } from '../export/fit';
 
 const geometry: [number, number, number][] = [
   [3.087, 45.777, 402],
@@ -1170,16 +1171,23 @@ describe('Saved routes', () => {
   /** Chooses files in the import pop-up: stand-ins for `File`, which jsdom cannot read. */
   async function chooseFiles(
     view: Awaited<ReturnType<typeof render>>,
-    files: { name: string; content: string }[],
+    files: { name: string; content?: string; bytes?: Uint8Array }[],
   ) {
     const input =
       view.root.querySelector<HTMLInputElement>('input[type="file"]')!;
     Object.defineProperty(input, 'files', {
       configurable: true,
-      value: files.map(({ name, content }) => ({
+      value: files.map(({ name, content = '', bytes }) => ({
         name,
-        size: content.length,
+        size: bytes ? bytes.length : content.length,
         text: async () => content,
+        arrayBuffer: async () =>
+          bytes
+            ? bytes.buffer.slice(
+                bytes.byteOffset,
+                bytes.byteOffset + bytes.byteLength,
+              )
+            : new ArrayBuffer(0),
       })),
     });
     input.dispatchEvent(new Event('change'));
@@ -1395,12 +1403,60 @@ describe('Saved routes', () => {
       expect(view.driver.routes).toHaveLength(0);
     });
 
-    it('says plainly that FIT files cannot be imported yet', async () => {
+    const fitBytes = (name = 'Boucle de la Ventouse') =>
+      buildFit({
+        name,
+        profile: 'road',
+        points: [
+          [3.0, 45.0],
+          [3.0, 45.02],
+        ],
+        geometry: [
+          [3.0, 45.0, 400],
+          [3.0, 45.01, 430],
+          [3.0, 45.02, 410],
+        ],
+        createdAt: Date.UTC(2026, 10, 14),
+        distanceMeters: 2224,
+        ascentMeters: 30,
+        durationSeconds: 600,
+      });
+
+    it('imports a FIT file as a route, named by the file, and shows it', async () => {
       const view = await render();
-      await chooseFiles(view, [{ name: 'ride.fit', content: '.FIT' }]);
-      expect(resultLines(view)[0]).toContain(
-        'FIT files cannot be imported yet',
+      calls = 0;
+      await chooseFiles(view, [{ name: 'ride.fit', bytes: fitBytes() }]);
+      expect(calls).toBe(0);
+      const [saved] = await routeStore.list();
+      expect(saved.name).toBe('Boucle de la Ventouse');
+      expect(saved.geometry).toHaveLength(3);
+      expect(saved.ascentMeters).toBe(30);
+      expect(view.items()).toHaveLength(1);
+      expect(view.driver.routes).toHaveLength(1);
+      expect(resultLines(view)[0]).toContain('1 route(s) added');
+    });
+
+    it('imports FIT and GPX files together', async () => {
+      const view = await render();
+      await chooseFiles(view, [
+        { name: 'a.fit', bytes: fitBytes('First') },
+        { name: 'b.gpx', content: gpx('Second') },
+      ]);
+      expect(await routeStore.list()).toHaveLength(2);
+      expect(view.root.querySelector('.import-summary')?.textContent).toContain(
+        '2 route(s) added',
       );
+    });
+
+    it('says a FIT file is not valid, in the words of FIT', async () => {
+      const view = await render();
+      await chooseFiles(view, [
+        {
+          name: 'broken.fit',
+          bytes: new TextEncoder().encode('not a fit file at all'),
+        },
+      ]);
+      expect(resultLines(view)[0]).toContain('This is not a valid FIT file.');
       expect(await routeStore.list()).toHaveLength(0);
     });
 

@@ -39,9 +39,11 @@ import {
   type ElevationErrorCode,
   ElevationService,
 } from '../relief/elevation.service';
+import { FitImportError, parseFit } from '../import/fit-import';
 import {
   GpxImportError,
   type GpxImportErrorCode,
+  type ImportedRoute,
   parseGpx,
 } from '../import/gpx-import';
 import { PlannerStore, pointRole } from '../planner/planner-store';
@@ -95,9 +97,8 @@ export interface ImportEntry {
 }
 
 /** Which reader a file is for: by its extension, else by what its text starts with. */
-function fileKind(name: string, text: string): 'gpx' | 'backup' | 'fit' | null {
+function fileKind(name: string, text: string): 'gpx' | 'backup' | null {
   const lower = name.toLowerCase();
-  if (lower.endsWith('.fit')) return 'fit';
   if (lower.endsWith('.gpx')) return 'gpx';
   if (lower.endsWith('.json')) return 'backup';
   const first = text.trimStart()[0];
@@ -385,6 +386,19 @@ export class SavedRoutes {
       },
     });
     try {
+      if (file.name.toLowerCase().endsWith('.fit')) {
+        let bytes: Uint8Array;
+        try {
+          bytes = new Uint8Array(await file.arrayBuffer());
+        } catch {
+          return failed('fitImport.errors.invalid_file');
+        }
+        return await this.saveImported(
+          file.name,
+          parseFit(bytes, this.planner.profile()),
+          'FIT',
+        );
+      }
       let text: string;
       try {
         text = await file.text();
@@ -392,18 +406,23 @@ export class SavedRoutes {
         return failed('gpxImport.errors.invalid_file');
       }
       const kind = fileKind(file.name, text);
-      if (kind === 'gpx') return await this.importGpxText(file.name, text);
+      if (kind === 'gpx') {
+        return await this.saveImported(
+          file.name,
+          parseGpx(text, this.planner.profile()),
+          'GPX',
+        );
+      }
       if (kind === 'backup') {
         return { entry: await this.importBackupText(file, text) };
       }
-      return failed(
-        kind === 'fit'
-          ? 'importDialog.errors.fit'
-          : 'importDialog.errors.unsupported',
-      );
+      return failed('importDialog.errors.unsupported');
     } catch (error) {
       if (error instanceof GpxImportError) {
         return failed(`gpxImport.errors.${error.code}`);
+      }
+      if (error instanceof FitImportError) {
+        return failed(`fitImport.errors.${error.code}`);
       }
       if (error instanceof BackupError) {
         return failed(`backup.errors.${error.code}`);
@@ -414,13 +433,16 @@ export class SavedRoutes {
     }
   }
 
-  private async importGpxText(
+  /** Saves what a GPX or a FIT file gave as a route, and tells how it went. */
+  private async saveImported(
     fileName: string,
-    text: string,
+    imported: ImportedRoute,
+    fallbackName: string,
   ): Promise<{ entry: ImportEntry; shown: SavedRoute }> {
-    const imported = parseGpx(text, this.planner.profile());
     const name =
-      imported.name || fileName.replace(/\.gpx$/i, '').trim() || 'GPX';
+      imported.name ||
+      fileName.replace(/\.(gpx|fit)$/i, '').trim() ||
+      fallbackName;
     const saved = await this.routeStore.save({
       name,
       profile: this.planner.profile(),

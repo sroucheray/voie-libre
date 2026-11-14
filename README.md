@@ -32,7 +32,7 @@ It works on a phone as well as on a computer. Your saved routes stay on your dev
 
 **Keep it, share it, take it with you**
 
-- **Save routes** on your device, and **export** them as GPX or FIT files for your phone, bike computer or watch. **Import** GPX files, several at once.
+- **Save routes** on your device, and **export** them as GPX or FIT files for your phone, bike computer or watch. **Import** GPX or FIT files, several at once.
 - **Share a route** with your own devices, friends or a club: a short link with a QR code to scan with a phone, kept for a day, a week or a month. A route opened from a link can be saved, just shown, or exported as a GPX or FIT file. **Back up** all your routes in one file and import it elsewhere.
 - **Go offline:** keep the area of a route (or of what is on screen) on your device and open it with no network.
 - **Install the app** on your phone or computer (the "i" window, or your browser's menu), to open it from its own icon.
