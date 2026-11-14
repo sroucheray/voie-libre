@@ -65,7 +65,7 @@ npm run build | test | lint # every project
 npm run generate-client     # regenerate packages/api-client
 ```
 
-Tests: while iterating, run only the project and file you changed (for example `npx nx test api -- brouter`, or `npx nx test web --include='**/app.spec.ts'`). Run the whole suite once at the end (`npm test`). CI runs lint, build, tests, and fails if regenerating the client leaves a diff.
+Tests: while iterating, run only the project and file you changed (for example `npx nx test api -- brouter`, or `npx nx test web --include='**/app.spec.ts'`). Run the whole suite once at the end (`npm test`). Before pushing `main` or a tag, `scripts/ci-local.sh` runs the same steps as CI (a pre-push hook in `.githooks` does it; `git config core.hooksPath .githooks` once): never push a change that has not passed it. CI runs lint, build, tests, and fails if regenerating the client leaves a diff.
 
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->

@@ -86,6 +86,16 @@ npx nx test web --include='**/app.spec.ts'
 
 Run the whole suite once at the end (`npm test`): it is heavy, so there is no need to run it after each edit. CI runs lint, build and all the tests, and fails if regenerating the API client leaves a diff. Tests against a real BRouter are opt-in (see below).
 
+### Before you push
+
+`scripts/ci-local.sh` runs on your machine the steps of the CI job, in the same order: lint, build, tests, then regenerating the API client must leave no diff. It starts from nothing (no Nx cache, `CI=true`, the database and BRouter integration tests skipped), refuses to run on a dirty working tree so that what is checked is what is pushed, and runs at low priority, one task at a time (about a minute). A hook runs it before a push of `main` or of a `v*` tag; a push that only changes `docs/` or `*.md` goes through. Turn the hook on once:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+`git push --no-verify` skips it once (CI will run the same checks). What stays different from CI: the machine, which is slower and busier there, and Node (CI uses 24). The unit tests share one environment (`isolate: false`), so `apps/web/src/test-setup.ts` empties `localStorage` before each test: a spec that sets the language no longer reaches the ones after it.
+
 ## Rules of the code
 
 - **Code, comments, commits, docs and README are in English.** The app is in English by default, with a French translation.
