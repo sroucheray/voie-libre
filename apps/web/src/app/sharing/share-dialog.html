@@ -1,4 +1,6 @@
 @if (target()) {
+<!-- The backdrop click is a pointer shortcut: Escape and the close button serve the keyboard. -->
+<!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
 <dialog
   #dialog
   class="share-dialog"
@@ -24,6 +26,8 @@
       </button>
     </header>
 
+    <!-- The radios inside are the focusable elements; the group only forwards arrow keys. -->
+    <!-- eslint-disable-next-line @angular-eslint/template/interactive-supports-focus -->
     <div
       class="kinds"
       role="radiogroup"
