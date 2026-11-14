@@ -1,0 +1,130 @@
+@if (target()) {
+<dialog
+  #dialog
+  class="share-dialog"
+  [attr.aria-label]="'sharing.dialog.title' | transloco"
+  (cancel)="$event.preventDefault(); close()"
+  (click)="onBackdrop($event)"
+>
+  <div class="content">
+    <header>
+      <h2>{{ 'sharing.dialog.title' | transloco }}</h2>
+      <button
+        type="button"
+        class="close"
+        [attr.aria-label]="'sharing.dialog.close' | transloco"
+        (click)="close()"
+      >
+        ×
+      </button>
+    </header>
+    @if (name(); as routeName) {
+    <p class="route-name">{{ routeName }}</p>
+    }
+
+    <div
+      class="kinds"
+      role="radiogroup"
+      [attr.aria-label]="'sharing.dialog.kindLabel' | transloco"
+      (keydown)="radioKey($event)"
+    >
+      <label class="kind" [class.on]="kind() === 'contained'">
+        <input
+          type="radio"
+          name="kind"
+          value="contained"
+          [checked]="kind() === 'contained'"
+          (change)="choose('contained')"
+        />
+        <span class="kind-text">
+          <strong>{{ 'sharing.dialog.contained.title' | transloco }}</strong>
+          <span>{{ 'sharing.dialog.contained.description' | transloco }}</span>
+          <span class="hint"
+            >{{ 'sharing.dialog.contained.hint' | transloco }}</span
+          >
+        </span>
+      </label>
+      <label
+        class="kind"
+        [class.on]="kind() === 'short'"
+        [class.blocked]="shortBlocked()"
+      >
+        <input
+          type="radio"
+          name="kind"
+          value="short"
+          [checked]="kind() === 'short'"
+          [attr.aria-disabled]="shortBlocked() ? 'true' : null"
+          (change)="choose('short')"
+        />
+        <span class="kind-text">
+          <strong>{{ 'sharing.dialog.short.title' | transloco }}</strong>
+          <span>{{ 'sharing.dialog.short.description' | transloco }}</span>
+          <span class="hint"
+            >{{ 'sharing.dialog.short.hint' | transloco }}</span
+          >
+          @if (shortBlocked(); as why) {
+          <span class="blocked-why">{{ why | transloco }}</span>
+          }
+        </span>
+      </label>
+    </div>
+
+    @if (kind() === 'short') { @if (share(); as active) {
+    <p class="valid" role="status">
+      {{ 'sharing.dialog.validUntil' | transloco : { date:
+      format.date(active.expiresAt) } }}
+    </p>
+    } @else {
+    <div
+      class="lifetimes"
+      role="radiogroup"
+      [attr.aria-label]="'sharing.dialog.lifetimeLabel' | transloco"
+    >
+      <span class="lifetimes-label"
+        >{{ 'sharing.dialog.lifetimeLabel' | transloco }}</span
+      >
+      @for (option of lifetimes; track option) {
+      <button
+        type="button"
+        role="radio"
+        [attr.aria-checked]="lifetime() === option"
+        [class.selected]="lifetime() === option"
+        (click)="lifetime.set(option)"
+      >
+        {{ 'sharing.dialog.lifetime.' + option | transloco }}
+      </button>
+      }
+    </div>
+    <button type="button" class="create" [disabled]="busy()" (click)="create()">
+      {{ (busy() ? 'sharing.dialog.creating' : 'sharing.dialog.create') |
+      transloco }}
+    </button>
+    } }
+
+    <hr />
+    <vl-link-actions [url]="url()" [name]="name()" />
+
+    <p class="privacy">
+      @if (kind() === 'short') { @if (share(); as active) { {{
+      'sharing.dialog.privacyShort' | transloco : { date:
+      format.date(active.expiresAt) } }} } @else { {{
+      'sharing.dialog.privacyShortPending' | transloco }} } } @else { {{
+      'sharing.dialog.privacyContained' | transloco }} }
+    </p>
+
+    @if (kind() === 'short' && share()) {
+    <button
+      type="button"
+      class="delete-copy"
+      [disabled]="busy()"
+      (click)="deleteCopy()"
+    >
+      {{ 'sharing.dialog.deleteCopy' | transloco }}
+    </button>
+    } @if (error(); as code) {
+    <p class="error" role="alert">{{ 'sharing.errors.' + code | transloco }}</p>
+    }
+  </div>
+</dialog>
+}

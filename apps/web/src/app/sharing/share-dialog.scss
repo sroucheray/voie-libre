@@ -1,0 +1,138 @@
+:host {
+  display: contents;
+}
+
+.share-dialog {
+  width: min(28rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-3, var(--shadow-2));
+
+  &::backdrop {
+    background: rgb(0 0 0 / 0.4);
+  }
+}
+
+.content {
+  padding: 1rem;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h2 {
+    margin: 0;
+    font-size: var(--font-size-md);
+  }
+}
+
+.close {
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.route-name {
+  margin: 0.25rem 0 0.75rem;
+  color: var(--color-text-2);
+  font-size: var(--font-size-xs);
+}
+
+.kinds {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.kind {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.625rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+
+  &.on {
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+  }
+
+  &.blocked {
+    opacity: 0.75;
+    cursor: not-allowed;
+  }
+
+  input {
+    margin-top: 0.2rem;
+  }
+}
+
+.kind-text {
+  display: grid;
+  gap: 0.25rem;
+  font-size: var(--font-size-sm, var(--font-size-base));
+
+  .hint,
+  .blocked-why {
+    color: var(--color-text-2);
+    font-size: var(--font-size-xs);
+  }
+
+  .blocked-why {
+    color: var(--color-danger);
+  }
+}
+
+.lifetimes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+
+  .lifetimes-label {
+    color: var(--color-text-2);
+    font-size: var(--font-size-xs);
+  }
+
+  .selected {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+}
+
+.create,
+.delete-copy {
+  margin-top: 0.75rem;
+}
+
+.valid {
+  margin: 0.75rem 0 0;
+  font-size: var(--font-size-xs);
+}
+
+hr {
+  margin: 0.75rem 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.privacy {
+  margin: 0.75rem 0 0;
+  color: var(--color-text-2);
+  font-size: var(--font-size-xs);
+}
+
+.error {
+  margin: 0.5rem 0 0;
+  color: var(--color-danger);
+}

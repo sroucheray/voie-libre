@@ -9,7 +9,8 @@ import {
   type SheetState,
 } from '../core/gestures/sheet-snap';
 import { ProfileMini } from './profile-mini';
-import { CopyLinkButton } from '../sharing/copy-link-button';
+import { ShareDialog } from '../sharing/share-dialog';
+import { ShareDialogService } from '../sharing/share-dialog.service';
 import type { RouteLink } from '../sharing/route-link';
 import { VerticalSwipe } from '../core/gestures/vertical-swipe';
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
@@ -133,7 +134,7 @@ const SHEET_PEEK_REM = 4.25;
     SheetScrollDrag,
     ProfileMini,
     ComputeBadge,
-    CopyLinkButton,
+    ShareDialog,
   ],
   templateUrl: './planner.html',
   styleUrls: ['./planner.scss', './planner-route.scss', './planner-phone.scss'],
@@ -142,7 +143,19 @@ const SHEET_PEEK_REM = 4.25;
 })
 export class Planner {
   protected readonly store = inject(PlannerStore);
+  private readonly shareDialog = inject(ShareDialogService);
   /** The route on screen as a link: its points, whether saved or not (nothing needs computing). */
+  /** Opens the share dialog for the route on screen. */
+  protected openShare(): void {
+    const link = this.routeLink();
+    if (link) {
+      this.shareDialog.open({
+        link,
+        savedId: this.store.savedAs()?.id ?? null,
+      });
+    }
+  }
+
   protected readonly routeLink = computed<RouteLink | null>(() => {
     const points = this.store.points();
     if (points.length < 2) return null;

@@ -346,9 +346,6 @@
     }
   },
   "sharing": {
-    "share": "Partager",
-    "shareNamed": "Partager {{name}} par lien",
-    "shared": "Partagé",
     "link": {
       "title": "Parcours d'un lien",
       "confirm": "Cela remplace le parcours affiché, qui n'est pas enregistré.",
@@ -362,7 +359,6 @@
       "copy": "Copier le lien",
       "copyNamed": "Copier le lien vers {{name}}",
       "copied": "Lien copié.",
-      "privacy": "Toute personne qui a ce lien peut voir le parcours. Il n'est enregistré sur aucun serveur.",
       "failed": "Le lien n'a pas pu être copié. Sélectionnez-le ici :",
       "field": "Lien vers le parcours",
       "share": "Partager…",
@@ -371,12 +367,10 @@
       "qrNamed": "Afficher le QR code du lien vers {{name}}",
       "qrHide": "Masquer le QR code",
       "qrLabel": "QR code du lien",
-      "qrHelp": "Scannez-le avec l'appareil photo d'un téléphone pour y ouvrir le parcours."
+      "qrHelp": "Scannez-le avec l'appareil photo d'un téléphone pour y ouvrir le parcours.",
+      "openDialog": "Partager…",
+      "openDialogNamed": "Partager {{name}}"
     },
-    "copy": "Copier le lien",
-    "copied": "Lien copié",
-    "stop": "Arrêter le partage",
-    "stopNamed": "Arrêter le partage de {{name}}",
     "confirmDeleteShared": "Supprimer « {{name}} » de cet appareil et arrêter son partage ? Cette action est définitive.",
     "page": {
       "title": "Parcours partagé",
@@ -392,10 +386,39 @@
       "already_exists": "Un parcours partagé utilise déjà cet identifiant : celui-ci ne peut pas être partagé.",
       "invalid_request": "Ce parcours ne peut pas être partagé.",
       "forbidden": "Le serveur a refusé d'arrêter le partage de ce parcours.",
-      "not_found": "Ce parcours partagé n'existe pas, ou n'est plus partagé.",
+      "not_found": "Ce parcours partagé n'existe pas, ou il a expiré.",
       "unknown": "Le partage a échoué."
     },
-    "needsClimb": "Le partage a besoin du dénivelé, inconnu pour ce fichier importé."
+    "needsClimb": "Le partage a besoin du dénivelé, inconnu pour ce fichier importé.",
+    "dialog": {
+      "title": "Partager ce parcours",
+      "close": "Fermer",
+      "kindLabel": "Type de lien",
+      "contained": {
+        "title": "Le lien contient le parcours",
+        "description": "Le parcours est écrit dans le lien lui-même. Aucun serveur ne le garde, et le lien fonctionne tant que l'application existe. Il est long : le QR code est possible pour un parcours simple. Celui qui l'ouvre voit la route recalculée par l'application, avec une connexion.",
+        "hint": "À préférer pour vous envoyer un parcours à vous-même, ou à des amis."
+      },
+      "short": {
+        "title": "Lien court, conservé un temps",
+        "description": "Une copie du parcours est gardée sur notre serveur jusqu'à la date choisie. Le lien est court, donc facile à scanner et à coller. Celui qui l'ouvre voit exactement le même tracé. Après la date, le lien ne marche plus, et vous pouvez supprimer la copie avant.",
+        "hint": "À préférer pour un parcours long, un QR code, ou un groupe qui doit voir le même tracé."
+      },
+      "lifetimeLabel": "Conserver",
+      "lifetime": {
+        "day": "1 jour",
+        "week": "1 semaine",
+        "month": "1 mois"
+      },
+      "create": "Créer le lien court",
+      "creating": "Création…",
+      "validUntil": "Valable jusqu'au {{date}}",
+      "deleteCopy": "Supprimer la copie",
+      "needsSave": "Enregistrez d'abord le parcours : un lien court se fait à partir d'un parcours enregistré.",
+      "privacyContained": "Toute personne qui a ce lien peut voir le parcours. Il n'est enregistré sur aucun serveur.",
+      "privacyShort": "Toute personne qui a ce lien peut voir le parcours jusqu'au {{date}}. Une copie est gardée sur notre serveur jusque-là.",
+      "privacyShortPending": "Une fois créé, toute personne qui a le lien peut voir le parcours jusqu'à la date. Une copie est gardée sur notre serveur jusque-là."
+    }
   },
   "profile": {
     "title": "Profil d'altitude",

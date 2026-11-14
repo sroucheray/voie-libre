@@ -754,7 +754,14 @@
       @if (store.routes().length > 0 && savedRoutes(); as saved) {
       <ng-container [ngTemplateOutlet]="saved.saveForm()" />
       }
-      <vl-copy-link-button [link]="routeLink()" />
+      <button
+        type="button"
+        class="share"
+        [disabled]="!routeLink()"
+        (click)="openShare()"
+      >
+        {{ 'sharing.link.openDialog' | transloco }}
+      </button>
       <button type="button" class="clear" (click)="store.clear()">
         {{ 'planner.clear' | transloco }}
       </button>
@@ -774,3 +781,4 @@
   </section>
 </div>
 <vl-elevation-panel />
+<vl-share-dialog />

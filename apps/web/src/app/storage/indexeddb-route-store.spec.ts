@@ -100,8 +100,13 @@ describe('IndexedDbRouteStore', () => {
     const shared = await store.setShare(saved.id, {
       deleteToken: 'secret',
       sharedAt: 5,
+      expiresAt: 9,
     });
-    expect(shared.share).toEqual({ deleteToken: 'secret', sharedAt: 5 });
+    expect(shared.share).toEqual({
+      deleteToken: 'secret',
+      sharedAt: 5,
+      expiresAt: 9,
+    });
     expect((await store.get(saved.id))?.share?.deleteToken).toBe('secret');
     // Sharing does not touch the rest of the record, nor the modification date.
     expect({ ...shared, share: undefined }).toEqual({
@@ -151,7 +156,11 @@ describe('IndexedDbRouteStore', () => {
 
   it('keeps the share when a shared route is renamed', async () => {
     const saved = await store.save(route('old'));
-    await store.setShare(saved.id, { deleteToken: 'secret', sharedAt: 5 });
+    await store.setShare(saved.id, {
+      deleteToken: 'secret',
+      sharedAt: 5,
+      expiresAt: 9,
+    });
     const renamed = await store.rename(saved.id, 'new');
     expect(renamed.share?.deleteToken).toBe('secret');
   });
@@ -180,7 +189,11 @@ describe('IndexedDbRouteStore', () => {
       expect(
         (
           await rejection(
-            store.setShare('nope', { deleteToken: 't', sharedAt: 1 }),
+            store.setShare('nope', {
+              deleteToken: 't',
+              sharedAt: 1,
+              expiresAt: 2,
+            }),
           )
         ).code,
       ).toBe('not_found');

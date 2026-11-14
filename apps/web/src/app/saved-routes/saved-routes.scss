@@ -175,8 +175,6 @@
   }
 
   button:not(.name),
-  // The link buttons are another component: its buttons are not reached by the rule above.
-  vl-copy-link-button,
   input,
   textarea,
   a,

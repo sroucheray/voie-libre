@@ -13,7 +13,7 @@ import { FakeMap, provideFakeMap } from '../../testing/fake-map';
 import { provideTestTransloco } from '../../testing/transloco-testing';
 import { API_CLIENT } from '../core/api/api-client';
 import { LanguageService } from '../core/i18n/language.service';
-import { SHARING_ENABLED } from '../sharing/share.service';
+import { ShareDialogService } from '../sharing/share-dialog.service';
 import { Planner } from '../planner/planner';
 import { ROUTE_DEBOUNCE_MS } from '../planner/route-planner';
 import { FILE_DOWNLOADER } from '../export/file-download';
@@ -51,7 +51,6 @@ describe('Saved routes', () => {
   let sheetCanShareFile: boolean;
   let sheetOutcome: ShareOutcome;
   let sheetFiles: { name: string; type: string; title?: string }[];
-  let sharingEnabled: boolean;
   let sharingCalls: {
     method: string;
     path: string;
@@ -86,7 +85,6 @@ describe('Saved routes', () => {
     sheetOutcome = 'shared';
     sheetFiles = [];
     sharingCalls = [];
-    sharingEnabled = true;
     shareRespond = () => json({ id: 'x', deleteToken: 'secret-token' }, 201);
     elevationRequests = 0;
     elevationRespond = (count) =>
@@ -100,7 +98,6 @@ describe('Saved routes', () => {
         provideFakeMap([] as FakeMap[]),
         provideFakePlannerDriver(drivers),
         provideInMemoryRouteStore(routeStore),
-        { provide: SHARING_ENABLED, useFactory: () => sharingEnabled },
         {
           provide: SHARE_SHEET,
           useFactory: () => ({
@@ -575,12 +572,6 @@ describe('Saved routes', () => {
       expect(view.root.querySelectorAll('.points li')).toHaveLength(0);
     });
 
-    it('hides the share button while sharing is off', async () => {
-      sharingEnabled = false;
-      const view = await renderWithSavedRoute();
-      expect(view.root.querySelector('.share')).toBeNull();
-    });
-
     it('restores the route without calling the API, and shows it on the map', async () => {
       const view = await renderWithSavedRoute();
       expect(calls).toBe(1);
@@ -941,77 +932,53 @@ describe('Saved routes', () => {
 
   describe('sharing', () => {
     const shareButton = (view: Awaited<ReturnType<typeof render>>) =>
-      view.button('Share Road, 41 km by link');
+      view.button('Share Road, 41 km');
 
-    async function renderWithSharedRoute() {
+    /** A saved route that has a short link, as the share dialog leaves it. */
+    async function renderWithSharedRoute(expiresIn = 24 * 60 * 60 * 1000) {
       const view = await renderWithSavedRoute();
-      shareButton(view).click();
+      const [saved] = [...routeStore.records.values()];
+      await routeStore.setShare(saved.id, {
+        deleteToken: 'secret-token',
+        sharedAt: Date.now(),
+        expiresAt: Date.now() + expiresIn,
+      });
+      TestBed.inject(ShareDialogService).notifyChanged();
       await view.settle();
       return view;
     }
 
-    it('shares only when the user asks: saving sends nothing to the server', async () => {
+    it('sends nothing to the server when a route is saved', async () => {
       await renderWithSavedRoute();
       expect(sharingCalls).toEqual([]);
     });
 
-    it('puts the route under its own id and keeps the delete token on the device only', async () => {
+    it('opens the share dialog for the route, without calling the server', async () => {
       const view = await renderWithSavedRoute();
       const [saved] = [...routeStore.records.values()];
       shareButton(view).click();
       await view.settle();
-
-      expect(sharingCalls).toHaveLength(1);
-      expect(sharingCalls[0].method).toBe('PUT');
-      expect(sharingCalls[0].path).toBe(`/p/${saved.id}`);
-      expect(sharingCalls[0].body).toMatchObject({
-        name: 'Road, 41 km',
-        profile: 'road',
-        distanceMeters: 41007,
+      expect(TestBed.inject(ShareDialogService).target()).toMatchObject({
+        savedId: saved.id,
+        link: { profile: 'road', name: 'Road, 41 km' },
       });
-      expect(routeStore.records.get(saved.id)?.share?.deleteToken).toBe(
-        'secret-token',
-      );
-      expect(view.root.textContent).not.toContain('secret-token');
+      expect(sharingCalls).toEqual([]);
+    });
+
+    it('says until when the short link of a route works', async () => {
+      const view = await renderWithSharedRoute();
       expect(
-        (view.root.querySelector('.share-link input') as HTMLInputElement)
-          .value,
-      ).toMatch(new RegExp(`/p/${saved.id}$`));
-      expect(view.root.querySelector('.badge')?.textContent).toContain(
-        'Shared',
-      );
-      expect(view.button('Share Road, 41 km by link')).toBeNull();
-      expect(view.alert()).toBeNull();
+        view.items()[0].querySelector('.share-meta')?.textContent,
+      ).toContain('Valid until');
+      expect(view.root.textContent).not.toContain('secret-token');
     });
 
-    it('copies the link', async () => {
-      const view = await renderWithSharedRoute();
-      const writeText = vi.fn().mockResolvedValue(undefined);
-      vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
-      (view.root.querySelector('.copy') as HTMLButtonElement).click();
-      await view.settle();
-      expect(writeText).toHaveBeenCalledWith(
-        expect.stringMatching(/\/p\/[a-z2-9]{10}$/),
-      );
-      expect(view.text()).toContain('Link copied');
-      vi.unstubAllGlobals();
+    it('says nothing once the copy has expired', async () => {
+      const view = await renderWithSharedRoute(-1000);
+      expect(view.items()[0].querySelector('.share-meta')).toBeNull();
     });
 
-    it('stops sharing with the token, then offers to share again', async () => {
-      const view = await renderWithSharedRoute();
-      sharingCalls.length = 0;
-      shareRespond = () => new Response(null, { status: 204 });
-      view.button('Stop sharing Road, 41 km').click();
-      await view.settle();
-      expect(sharingCalls).toHaveLength(1);
-      expect(sharingCalls[0].method).toBe('DELETE');
-      expect(sharingCalls[0].authorization).toBe('Bearer secret-token');
-      expect([...routeStore.records.values()][0].share).toBeUndefined();
-      expect(view.root.querySelector('.share-link')).toBeNull();
-      expect(shareButton(view)).not.toBeNull();
-    });
-
-    it('unshares before deleting a shared route, and says so in the confirmation', async () => {
+    it('unshares before deleting a route with a short link, and says so in the confirmation', async () => {
       const view = await renderWithSharedRoute();
       sharingCalls.length = 0;
       shareRespond = () => new Response(null, { status: 204 });
@@ -1023,6 +990,7 @@ describe('Saved routes', () => {
       view.confirmButton('Delete').click();
       await view.settle();
       expect(sharingCalls.map((c) => c.method)).toEqual(['DELETE']);
+      expect(sharingCalls[0].authorization).toBe('Bearer secret-token');
       expect(routeStore.records.size).toBe(0);
     });
 
@@ -1039,54 +1007,6 @@ describe('Saved routes', () => {
       expect([...routeStore.records.values()][0].share?.deleteToken).toBe(
         'secret-token',
       );
-      expect(view.alert()).toContain('cannot be reached');
-    });
-
-    it.each([
-      [
-        429,
-        { statusCode: 429, message: 'Rate limit exceeded' },
-        'Too many routes',
-        'Trop de parcours',
-      ],
-      [
-        409,
-        { code: 'already_exists', message: 'x' },
-        'already uses this identifier',
-        'utilise déjà cet identifiant',
-      ],
-      [
-        413,
-        { code: 'payload_too_large', message: 'x' },
-        'too large to share',
-        'trop volumineux',
-      ],
-    ] as const)(
-      'translates a %i and keeps the route local',
-      async (status, body, english, french) => {
-        const view = await renderWithSavedRoute();
-        shareRespond = () => json(body, status);
-        shareButton(view).click();
-        await view.settle();
-        expect(view.alert()).toContain(english);
-        expect(view.alert()).not.toContain('Rate limit exceeded');
-        expect([...routeStore.records.values()][0].share).toBeUndefined();
-        expect(view.driver.routes).toHaveLength(1);
-
-        TestBed.inject(LanguageService).use('fr');
-        await view.settle();
-        await view.settle();
-        expect(view.alert()).toContain(french);
-      },
-    );
-
-    it('reports an unreachable server when sharing', async () => {
-      const view = await renderWithSavedRoute();
-      shareRespond = () => {
-        throw new TypeError('Failed to fetch');
-      };
-      shareButton(view).click();
-      await view.settle();
       expect(view.alert()).toContain('cannot be reached');
     });
   });
@@ -1233,28 +1153,6 @@ describe('Saved routes', () => {
     });
   });
 
-  describe('the link buttons of a saved route', () => {
-    it('are enabled and copy a link that opens the route', async () => {
-      const written: string[] = [];
-      Object.defineProperty(navigator, 'clipboard', {
-        configurable: true,
-        value: { writeText: async (text: string) => void written.push(text) },
-      });
-      const view = await renderWithSavedRoute();
-      const copy = view.root.querySelector<HTMLButtonElement>('li .copy-link');
-      const qr = view.root.querySelector<HTMLButtonElement>('li .show-qr');
-      expect(copy?.disabled).toBe(false);
-      expect(qr?.disabled).toBe(false);
-      copy?.click();
-      await view.settle();
-      expect(written).toHaveLength(1);
-      expect(written[0]).toContain('/r#v=1&p=road');
-      qr?.click();
-      await view.settle();
-      expect(view.root.querySelector('li svg path')).not.toBeNull();
-    });
-  });
-
   describe('the backup file', () => {
     async function importBackupText(
       view: Awaited<ReturnType<typeof render>>,
@@ -1303,6 +1201,7 @@ describe('Saved routes', () => {
       await routeStore.setShare(saved.id, {
         deleteToken: 'secret-token',
         sharedAt: 5,
+        expiresAt: 9,
       });
       calls = 0;
       view.root.querySelector<HTMLButtonElement>('.backup-export')!.click();
@@ -1431,7 +1330,7 @@ describe('Saved routes', () => {
       expect((await routeStore.list())[0].name).toBe('Col de la Ventouse');
     });
 
-    it('imports without elevation: tells the user, hides the profile, blocks sharing', async () => {
+    it('imports without elevation: tells the user and hides the profile', async () => {
       const view = await render();
       await importFile(view, gpx(noEle));
       expect(view.root.querySelector('.notice')?.textContent).toContain(
@@ -1439,9 +1338,6 @@ describe('Saved routes', () => {
       );
       expect((await routeStore.list())[0].ascentMeters).toBeNull();
       expect(view.root.querySelector('vl-elevation-panel .profile')).toBeNull();
-      expect(
-        view.root.querySelector<HTMLButtonElement>('button.share')!.disabled,
-      ).toBe(true);
     });
 
     it('exports an imported route without elevation with no <ele>', async () => {
@@ -1468,7 +1364,7 @@ describe('Saved routes', () => {
       expect((await routeStore.list())[0].ascentMeters).toBeNull();
     });
 
-    it('computes the climb on request: stores it, shows the profile, enables sharing', async () => {
+    it('computes the climb on request: stores it and shows the profile', async () => {
       const view = await render();
       await importFile(view, gpx(noEle));
       view.root
@@ -1492,9 +1388,6 @@ describe('Saved routes', () => {
       expect(
         view.root.querySelector('vl-elevation-panel .profile'),
       ).not.toBeNull();
-      expect(
-        view.root.querySelector<HTMLButtonElement>('button.share')!.disabled,
-      ).toBe(false);
       expect(view.alert()).toBeNull();
     });
 

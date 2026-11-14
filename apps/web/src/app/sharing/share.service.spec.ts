@@ -2,7 +2,12 @@ import { TestBed } from '@angular/core/testing';
 import { createApiClient } from '@voie-libre/api-client';
 import { API_CLIENT } from '../core/api/api-client';
 import type { SavedRoute } from '../storage/saved-route';
-import { ShareError, ShareService, shareErrorFrom } from './share.service';
+import {
+  ShareError,
+  ShareService,
+  activeShare,
+  shareErrorFrom,
+} from './share.service';
 
 const route: SavedRoute = {
   schemaVersion: 1,
@@ -98,8 +103,12 @@ describe('ShareService', () => {
 
   describe('share', () => {
     it('puts the route under its own id, without the local-only fields', async () => {
-      respond = () => json({ id: route.id, deleteToken: 'secret' }, 201);
-      const info = await service.share(route);
+      respond = () =>
+        json(
+          { id: route.id, deleteToken: 'secret', expiresAt: 1_800_000_000_000 },
+          201,
+        );
+      const info = await service.share(route, 'week');
       expect(requests).toHaveLength(1);
       expect(requests[0].method).toBe('PUT');
       expect(requests[0].url).toBe('http://api.test/p/abcdefghjk');
@@ -112,9 +121,11 @@ describe('ShareService', () => {
         ascentMeters: 399,
         durationSeconds: 8674,
         createdAt: 1_700_000_000_000,
+        lifetime: 'week',
       });
       expect(info.deleteToken).toBe('secret');
       expect(info.sharedAt).toBeGreaterThan(0);
+      expect(info.expiresAt).toBe(1_800_000_000_000);
     });
 
     it.each([
@@ -128,19 +139,22 @@ describe('ShareService', () => {
       [400, { code: 'invalid_request', message: 'x' }, 'invalid_request'],
     ] as const)('reports a %i as %s', async (status, body, code) => {
       respond = () => json(body, status);
-      expect((await failure(service.share(route))).code).toBe(code);
+      expect((await failure(service.share(route, 'day'))).code).toBe(code);
     });
 
     it('reports an unreachable server as a network failure', async () => {
       respond = () => {
         throw new TypeError('Failed to fetch');
       };
-      expect((await failure(service.share(route))).code).toBe('network');
+      expect((await failure(service.share(route, 'day'))).code).toBe('network');
     });
   });
 
   describe('unshare', () => {
-    const shared = { ...route, share: { deleteToken: 'secret', sharedAt: 1 } };
+    const shared = {
+      ...route,
+      share: { deleteToken: 'secret', sharedAt: 1, expiresAt: 2 },
+    };
 
     it('sends the token as a bearer token, never in the URL', async () => {
       respond = () => json(null, 204);
@@ -191,5 +205,19 @@ describe('ShareService', () => {
       respond = () => json({ code: 'not_found', message: 'x' }, 404);
       expect((await failure(service.fetch('zzzzzzzz'))).code).toBe('not_found');
     });
+  });
+});
+
+describe('activeShare', () => {
+  const share = { deleteToken: 't', sharedAt: 1, expiresAt: 1_000 };
+
+  it('is the share while its time is not up', () => {
+    expect(activeShare({ share }, 999)).toBe(share);
+  });
+
+  it('is null once its time is up, and when there is no share', () => {
+    expect(activeShare({ share }, 1_000)).toBeNull();
+    expect(activeShare({ share }, 5_000)).toBeNull();
+    expect(activeShare({})).toBeNull();
   });
 });

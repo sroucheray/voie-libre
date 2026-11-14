@@ -7,12 +7,14 @@ import type { LoopMode, PlannedRoute, Profile } from '../planner/planner-store';
  */
 export const SAVED_ROUTE_SCHEMA_VERSION = 1;
 
-/** Kept with a route once it is shared by link: what is needed to stop sharing it later. */
+/** Kept with a route once a short link was made: what is needed to remove the copy sooner. */
 export interface ShareInfo {
   /** Secret returned once by the API; the only way to remove the shared route. Never shown. */
   deleteToken: string;
   /** Milliseconds since the epoch. */
   sharedAt: number;
+  /** When the server removes the copy, in milliseconds since the epoch. */
+  expiresAt: number;
 }
 
 /**

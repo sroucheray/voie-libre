@@ -5,7 +5,6 @@
   [attr.aria-label]="
     name() ? ('sharing.link.copyNamed' | transloco : { name: name() }) : null
   "
-  [attr.title]="'sharing.link.privacy' | transloco"
   (click)="copy()"
 >
   {{ 'sharing.link.copy' | transloco }}
@@ -18,7 +17,6 @@
   [attr.aria-label]="
     name() ? ('sharing.link.shareNamed' | transloco : { name: name() }) : null
   "
-  [attr.title]="'sharing.link.privacy' | transloco"
   (click)="share()"
 >
   {{ 'sharing.link.share' | transloco }}

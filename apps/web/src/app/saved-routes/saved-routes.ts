@@ -1,6 +1,5 @@
 import { SHARE_SHEET } from '../sharing/share-sheet';
-import { CopyLinkButton } from '../sharing/copy-link-button';
-import type { RouteLink } from '../sharing/route-link';
+import { ShareDialogService } from '../sharing/share-dialog.service';
 import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -50,8 +49,8 @@ import { PlannerStore, pointRole } from '../planner/planner-store';
 import {
   ShareError,
   type ShareErrorCode,
-  SHARING_ENABLED,
   ShareService,
+  activeShare,
 } from '../sharing/share.service';
 import {
   ROUTE_STORE,
@@ -93,7 +92,7 @@ type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
 @Component({
   selector: 'vl-saved-routes',
-  imports: [TranslocoPipe, NgTemplateOutlet, CopyLinkButton],
+  imports: [TranslocoPipe, NgTemplateOutlet],
   templateUrl: './saved-routes.html',
   styleUrl: './saved-routes.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -106,7 +105,7 @@ export class SavedRoutes {
   private readonly sheet = inject(SHARE_SHEET);
   private readonly transloco = inject(TranslocoService);
   private readonly sharing = inject(ShareService);
-  protected readonly sharingEnabled = inject(SHARING_ENABLED);
+  private readonly shareDialog = inject(ShareDialogService);
   private readonly relief = inject(ElevationService);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -133,8 +132,6 @@ export class SavedRoutes {
   >(null);
   /** The route whose share or unshare request is running. */
   protected readonly busyId = signal<string | null>(null);
-  /** The route whose link was just copied. */
-  protected readonly copiedId = signal<string | null>(null);
   protected readonly renamingId = signal<string | null>(null);
   protected readonly confirmingId = signal<string | null>(null);
   /** The route whose export formats are offered. */
@@ -195,6 +192,14 @@ export class SavedRoutes {
 
   constructor() {
     void this.refresh();
+    // A short link was made or removed in the share dialog: read the records again.
+    let seen = this.shareDialog.changed();
+    effect(() => {
+      const changed = this.shareDialog.changed();
+      if (changed === seen) return;
+      seen = changed;
+      untracked(() => void this.refresh());
+    });
     // A route cleared is a new route: its name is proposed again, whatever was typed for the last.
     effect(() => {
       if (this.planner.points().length === 0) {
@@ -580,50 +585,27 @@ export class SavedRoutes {
 
   /** Deleting a shared route also stops sharing it: the confirmation says so. */
   protected confirmDeleteKey(route: SavedRoute): string {
-    return route.share ? 'sharing.confirmDeleteShared' : 'saved.confirmDelete';
+    return activeShare(route)
+      ? 'sharing.confirmDeleteShared'
+      : 'saved.confirmDelete';
   }
 
-  protected linkFor(id: string): string {
-    return this.sharing.linkFor(id);
-  }
-
-  /** Sends the route to the server on request, and keeps the delete token on the device. */
-  protected async share(id: string): Promise<void> {
-    await this.withRoute(id, async (route) => {
-      const info = await this.sharing.share(route);
-      this.replace(await this.routeStore.setShare(id, info));
+  /** Opens the share dialog for a saved route. */
+  protected openShare(route: SavedRoute): void {
+    this.shareDialog.open({
+      link: {
+        points: route.points,
+        profile: route.profile,
+        loop: route.loop ?? null,
+        name: route.name,
+      },
+      savedId: route.id,
     });
   }
 
-  protected async stopSharing(id: string): Promise<void> {
-    await this.withRoute(id, async (route) => {
-      await this.sharing.unshare(route);
-      this.replace(await this.routeStore.setShare(id, null));
-    });
-  }
-
-  /** What a link to this saved route carries: its points, profile, loop mode and name. */
-  protected linkOf(route: SavedRoute): RouteLink {
-    return {
-      points: route.points,
-      profile: route.profile,
-      loop: route.loop ?? null,
-      name: route.name,
-    };
-  }
-
-  protected async copyLink(id: string): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(this.linkFor(id));
-      this.copiedId.set(id);
-    } catch {
-      // No clipboard access (insecure page, denied): the link stays selectable in its field.
-      this.copiedId.set(null);
-    }
-  }
-
-  protected selectLink(event: Event): void {
-    (event.target as HTMLInputElement).select();
+  /** When the short link of a route stops working, while its copy is on the server. */
+  protected shareUntil(route: SavedRoute): number | null {
+    return activeShare(route)?.expiresAt ?? null;
   }
 
   /** Runs a request on one route, disabling its buttons meanwhile. */

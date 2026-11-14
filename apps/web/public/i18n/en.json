@@ -346,9 +346,6 @@
     }
   },
   "sharing": {
-    "share": "Share",
-    "shareNamed": "Share {{name}} by link",
-    "shared": "Shared",
     "link": {
       "title": "Route from a link",
       "confirm": "This replaces the route on screen, which is not saved.",
@@ -362,7 +359,6 @@
       "copy": "Copy the link",
       "copyNamed": "Copy the link to {{name}}",
       "copied": "Link copied.",
-      "privacy": "Anyone who has this link can see the route. It is not stored on any server.",
       "failed": "The link could not be copied. Select it here:",
       "field": "Link to the route",
       "share": "Share…",
@@ -371,12 +367,10 @@
       "qrNamed": "Show the QR code of the link to {{name}}",
       "qrHide": "Hide the QR code",
       "qrLabel": "QR code of the link",
-      "qrHelp": "Scan it with the camera of a phone to open the route there."
+      "qrHelp": "Scan it with the camera of a phone to open the route there.",
+      "openDialog": "Share…",
+      "openDialogNamed": "Share {{name}}"
     },
-    "copy": "Copy link",
-    "copied": "Link copied",
-    "stop": "Stop sharing",
-    "stopNamed": "Stop sharing {{name}}",
     "confirmDeleteShared": "Delete \"{{name}}\" from this device and stop sharing it? This cannot be undone.",
     "page": {
       "title": "Shared route",
@@ -392,10 +386,39 @@
       "already_exists": "A shared route already uses this identifier, so this one cannot be shared.",
       "invalid_request": "This route cannot be shared.",
       "forbidden": "The server refused to stop sharing this route.",
-      "not_found": "This shared route does not exist, or is no longer shared.",
+      "not_found": "This shared route does not exist, or has expired.",
       "unknown": "Sharing failed."
     },
-    "needsClimb": "Sharing needs the climb, which is unknown for this imported file."
+    "needsClimb": "Sharing needs the climb, which is unknown for this imported file.",
+    "dialog": {
+      "title": "Share this route",
+      "close": "Close",
+      "kindLabel": "Kind of link",
+      "contained": {
+        "title": "The link contains the route",
+        "description": "The route is written in the link itself. No server keeps it, and the link works as long as the app exists. It is long: a QR code works for a simple route. Whoever opens it sees the route calculated again by the app, with a connection.",
+        "hint": "Best for sending a route to yourself or to friends."
+      },
+      "short": {
+        "title": "Short link, kept for a while",
+        "description": "A copy of the route is kept on our server until the date you choose. The link is short, so it is easy to scan and paste. Whoever opens it sees exactly the same track. After that date the link stops working, and you can delete the copy sooner.",
+        "hint": "Best for a long route, a QR code, or a group that needs the same track."
+      },
+      "lifetimeLabel": "Keep it for",
+      "lifetime": {
+        "day": "1 day",
+        "week": "1 week",
+        "month": "1 month"
+      },
+      "create": "Create the short link",
+      "creating": "Creating…",
+      "validUntil": "Valid until {{date}}",
+      "deleteCopy": "Delete the copy",
+      "needsSave": "Save the route first: a short link is made from a saved route.",
+      "privacyContained": "Anyone who has this link can see the route. It is not stored on any server.",
+      "privacyShort": "Anyone who has this link can see the route until {{date}}. A copy is kept on our server until then.",
+      "privacyShortPending": "Once created, anyone who has the link can see the route until the date. A copy is kept on our server until then."
+    }
   },
   "profile": {
     "title": "Elevation profile",

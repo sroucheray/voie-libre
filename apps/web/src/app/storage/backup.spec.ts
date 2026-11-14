@@ -72,7 +72,11 @@ describe('backup', () => {
 
   it('never writes the id, the dates or the delete token of a shared route', () => {
     const text = buildBackup(
-      [route({ share: { deleteToken: 'secret-token', sharedAt: 1 } })],
+      [
+        route({
+          share: { deleteToken: 'secret-token', sharedAt: 1, expiresAt: 2 },
+        }),
+      ],
       date,
     );
     expect(text).not.toContain('secret-token');

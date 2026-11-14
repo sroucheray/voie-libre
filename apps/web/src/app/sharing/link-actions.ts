@@ -1,4 +1,3 @@
-import { DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -10,7 +9,6 @@ import {
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { encodeQr, qrSvgPath } from './qr-code';
-import { routeLinkUrl, type RouteLink } from './route-link';
 import { SHARE_SHEET } from './share-sheet';
 
 /** The biggest QR code offered: a denser one is hard to scan from a screen. */
@@ -22,33 +20,27 @@ const QR_BORDER = 4;
 export const COPIED_VISIBLE_MS = 6000;
 
 /**
- * "Copy the link" for a route: the link carries the points, the profile, the loop mode and the
- * name, and goes to the clipboard (it works on every browser, unlike the share sheet). Nothing is
- * sent to the server. The text that follows a copy says who can see the route.
+ * What to do with a link: copy it (the clipboard works on every browser, unlike the share sheet),
+ * hand it to the system share sheet where there is one, or show it as a QR code. Nothing is sent
+ * anywhere by these buttons: they only carry the address they are given.
  */
 @Component({
-  selector: 'vl-copy-link-button',
+  selector: 'vl-link-actions',
   imports: [TranslocoPipe],
-  templateUrl: './copy-link-button.html',
-  styleUrl: './copy-link-button.scss',
+  templateUrl: './link-actions.html',
+  styleUrl: './link-actions.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CopyLinkButton implements OnDestroy {
-  /** The route to link to; `null` when there is none yet (the button is then off). */
-  readonly link = input.required<RouteLink | null>();
-  /** Names the route for assistive technology (a list has one button per route). */
+export class LinkActions implements OnDestroy {
+  /** The address to carry; `null` when there is none yet (the buttons are then off). */
+  readonly url = input.required<string | null>();
+  /** Names the route for assistive technology and gives the share sheet a title. */
   readonly name = input<string | null>(null);
 
-  private readonly document = inject(DOCUMENT);
   private readonly sheet = inject(SHARE_SHEET);
   /** The system share sheet is offered only where the browser has one (not Firefox desktop). */
   protected readonly canShare = this.sheet.canShareUrl();
   protected readonly state = signal<'idle' | 'copied' | 'failed'>('idle');
-  protected readonly url = computed(() => {
-    const link = this.link();
-    const origin = this.document.defaultView?.location.origin;
-    return link && origin ? routeLinkUrl(origin, link) : null;
-  });
   /** The QR code of the link, or `null` when it is too long to scan from a screen. */
   protected readonly qr = computed(() => {
     const url = this.url();

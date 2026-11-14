@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { Injectable, InjectionToken, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { API_CLIENT } from '../core/api/api-client';
 import type { PlannedRoute, Profile } from '../planner/planner-store';
 import type { LngLat } from '../core/map/map-factory';
@@ -49,17 +49,28 @@ export interface SharedRoute extends PlannedRoute {
   points: LngLat[];
   createdAt: number;
   sharedAt: number;
+  expiresAt: number;
+}
+
+/** How long a short link is kept (the server turns these into a day, 7 days and 30 days). */
+export const LIFETIMES = ['day', 'week', 'month'] as const;
+export type Lifetime = (typeof LIFETIMES)[number];
+
+/** The short link is still served: it has a copy on the server whose time is not up. */
+export function activeShare(
+  route: Pick<SavedRoute, 'share'>,
+  now = Date.now(),
+): ShareInfo | null {
+  const share = route.share;
+  return share && share.expiresAt > now ? share : null;
 }
 
 /**
- * Sharing by link, without an account: `PUT /p/{id}` under the id drawn on the device, `GET` to
- * open a link, `DELETE` with the secret token returned at creation. A shared route is a snapshot:
- * it never follows later changes of the local one.
+ * Short links, kept on the server for a time the person chooses: `PUT /p/{id}` under the id of the
+ * saved route, `GET` to open a link, `DELETE` with the secret token returned at creation. A shared
+ * route is a snapshot: it never follows later changes of the local one, and it is removed when
+ * its time is up.
  */
-/** Whether the UI offers to share a route by link. Off for now: the API and the code stay. */
-export const SHARING_ENABLED = new InjectionToken<boolean>('SHARING_ENABLED', {
-  factory: () => false,
-});
 
 @Injectable({ providedIn: 'root' })
 export class ShareService {
@@ -72,7 +83,7 @@ export class ShareService {
   }
 
   /** Sends the route and returns what must be kept to stop sharing it. */
-  async share(route: SavedRoute): Promise<ShareInfo> {
+  async share(route: SavedRoute, lifetime: Lifetime): Promise<ShareInfo> {
     const { data, error, response } = await this.call(() =>
       this.client.PUT('/p/{id}', {
         params: { path: { id: route.id } },
@@ -85,11 +96,16 @@ export class ShareService {
           ascentMeters: route.ascentMeters ?? 0,
           durationSeconds: route.durationSeconds,
           createdAt: route.createdAt,
+          lifetime,
         },
       }),
     );
     if (!data) throw new ShareError(shareErrorFrom(response.status, error));
-    return { deleteToken: data.deleteToken, sharedAt: Date.now() };
+    return {
+      deleteToken: data.deleteToken,
+      sharedAt: Date.now(),
+      expiresAt: data.expiresAt,
+    };
   }
 
   /** Removes the shared copy. A copy that is already gone counts as removed. */

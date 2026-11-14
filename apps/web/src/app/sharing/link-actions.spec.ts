@@ -3,8 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideTestTransloco } from '../../testing/transloco-testing';
 import { SHARE_SHEET, type ShareOutcome, type ShareSheet } from './share-sheet';
 import { LanguageService } from '../core/i18n/language.service';
-import { CopyLinkButton } from './copy-link-button';
-import { decodeRouteLink, type RouteLink } from './route-link';
+import { LinkActions } from './link-actions';
+import { decodeRouteLink, routeLinkUrl, type RouteLink } from './route-link';
 
 const link: RouteLink = {
   points: [
@@ -16,18 +16,18 @@ const link: RouteLink = {
   name: 'Clermont to Issoire',
 };
 
+const urlOf = (value: RouteLink | null) =>
+  value ? routeLinkUrl('http://localhost:4200', value) : null;
+
 @Component({
-  imports: [CopyLinkButton],
-  template: `<vl-copy-link-button
-    [link]="link()"
-    name="Clermont to Issoire"
-  />`,
+  imports: [LinkActions],
+  template: `<vl-link-actions [url]="url()" name="Clermont to Issoire" />`,
 })
 class Host {
-  readonly link = signal<RouteLink | null>(link);
+  readonly url = signal<string | null>(urlOf(link));
 }
 
-describe('CopyLinkButton', () => {
+describe('LinkActions', () => {
   let written: string[];
   let writeText: (text: string) => Promise<void>;
   let canShareUrl: boolean;
@@ -88,12 +88,11 @@ describe('CopyLinkButton', () => {
     const result = decodeRouteLink(url.hash);
     expect(result).toEqual({ ok: true, link });
     expect(el.textContent).toContain('Link copied.');
-    expect(el.textContent).toContain('Anyone who has this link');
   });
 
   it('is off while there is no route', () => {
     const { fixture, button } = create();
-    fixture.componentInstance.link.set(null);
+    fixture.componentInstance.url.set(null);
     fixture.detectChanges();
     expect(button?.disabled).toBe(true);
   });
@@ -175,12 +174,9 @@ describe('CopyLinkButton', () => {
         42.5 + i * 0.29,
       ]);
       const set = (name: string) => {
-        fixture.componentInstance.link.set({
-          points,
-          profile: 'road',
-          loop: null,
-          name,
-        });
+        fixture.componentInstance.url.set(
+          urlOf({ points, profile: 'road', loop: null, name }),
+        );
         fixture.detectChanges();
       };
       set('x'.repeat(80));

@@ -175,32 +175,11 @@
       <span class="meta laps-meta"
         >{{ lapsTotalKey(route) | transloco : lapsTotalParams(route) }}</span
       >
-      } @if (route.share) {
-      <div class="share-link">
-        <span class="badge">{{ 'sharing.shared' | transloco }}</span>
-        <input
-          type="text"
-          readonly
-          [value]="linkFor(route.id)"
-          [attr.aria-label]="'sharing.link' | transloco"
-          (focus)="selectLink($event)"
-        />
-        <button type="button" class="copy" (click)="copyLink(route.id)">
-          {{ 'sharing.copy' | transloco }}
-        </button>
-        <button
-          type="button"
-          class="stop-sharing"
-          [disabled]="busyId() === route.id"
-          [attr.aria-label]="'sharing.stopNamed' | transloco : { name: route.name }"
-          (click)="stopSharing(route.id)"
-        >
-          {{ 'sharing.stop' | transloco }}
-        </button>
-        @if (copiedId() === route.id) {
-        <span role="status">{{ 'sharing.copied' | transloco }}</span>
-        }
-      </div>
+      } @if (shareUntil(route); as until) {
+      <span class="meta share-meta"
+        >{{ 'sharing.dialog.validUntil' | transloco : { date: format.date(until)
+        } }}</span
+      >
       } @if (confirmingId() === route.id) {
       <div
         class="confirm"
@@ -302,19 +281,15 @@
         >
           {{ 'relief.compute' | transloco }}
         </button>
-        } @if (sharingEnabled && !route.share) {
+        }
         <button
           type="button"
           class="share"
-          [disabled]="busyId() === route.id || route.ascentMeters === null"
-          [attr.title]="route.ascentMeters === null ? ('sharing.needsClimb' | transloco) : null"
-          [attr.aria-label]="'sharing.shareNamed' | transloco : { name: route.name }"
-          (click)="share(route.id)"
+          [attr.aria-label]="'sharing.link.openDialogNamed' | transloco : { name: route.name }"
+          (click)="openShare(route)"
         >
-          {{ 'sharing.share' | transloco }}
+          {{ 'sharing.link.openDialog' | transloco }}
         </button>
-        }
-        <vl-copy-link-button [link]="linkOf(route)" [name]="route.name" />
         <button
           type="button"
           class="export"
