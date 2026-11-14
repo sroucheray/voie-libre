@@ -97,4 +97,4 @@ Phases 1 and 2 are one build (the link, the page `/r`, the Share button); the di
 
 ## Plan
 
-Not started; waits for the author's choice. Proposed steps, one commit each: (1) `route-link` encode and decode with tests; (2) the `/r` page and the confirmation; (3) the Share button (copy, share sheet, GPX through the sheet) with the privacy line and the translations; (4) the backup file, export and import; (5) the QR code, after the author chooses an encoder; (6) documentation and the privacy texts.
+Design approved by the author on 2026-11-14; not started. Proposed steps, one commit each: (1) `route-link` encode and decode with tests; (2) the `/r` page and the confirmation; (3) the Share button (copy, share sheet, GPX through the sheet) with the privacy line and the translations; (4) the backup file, export and import; (5) the QR code, after the author chooses an encoder; (6) documentation and the privacy texts.
