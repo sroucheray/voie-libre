@@ -72,6 +72,17 @@ describe('shared routes', () => {
       expect(store.size).toBe(1);
     });
 
+    it('accepts a long route: 20,000 points, as a ride of 200 km gives', async () => {
+      await start();
+      const geometry = Array.from({ length: 20_000 }, (_, i) => [
+        3 + i * 1e-5,
+        45 + i * 1e-5,
+        400.5,
+      ]);
+      const response = await put(ID, { ...body, lifetime: 'week', geometry });
+      expect(response.statusCode).toBe(201);
+    });
+
     it.each([
       ['day', DAY],
       ['week', 7 * DAY],
@@ -155,7 +166,7 @@ describe('shared routes', () => {
         {
           ...body,
           lifetime: 'week',
-          geometry: Array.from({ length: 5001 }, () => [3, 45, 400]),
+          geometry: Array.from({ length: 50_001 }, () => [3, 45, 400]),
         },
       ],
     ])(

@@ -13,8 +13,12 @@ import {
 import type { SharedRouteStore } from '../../db/shared-routes';
 
 const MAX_POINTS = 20;
-/** About 5 km of a very long route at one point every metre; BRouter returns far fewer. */
-const MAX_GEOMETRY_POINTS = 5000;
+/**
+ * A route of a few hundred km, with a point every 10 m or so. 5000 was far too few: a ride
+ * of 60 km is refused. About 35 bytes a point in JSON, so the body limit (2 MB) is what
+ * really stops a request at this size.
+ */
+const MAX_GEOMETRY_POINTS = 50_000;
 
 const Position = Type.Tuple([
   Type.Number({ minimum: -180, maximum: 180 }),

@@ -1044,7 +1044,7 @@
                   },
                   "geometry": {
                     "minItems": 2,
-                    "maxItems": 5000,
+                    "maxItems": 50000,
                     "description": "[longitude, latitude, elevation in meters] per point.",
                     "type": "array",
                     "items": {
@@ -1356,7 +1356,7 @@
                     },
                     "geometry": {
                       "minItems": 2,
-                      "maxItems": 5000,
+                      "maxItems": 50000,
                       "description": "[longitude, latitude, elevation in meters] per point.",
                       "type": "array",
                       "items": {

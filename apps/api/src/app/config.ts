@@ -92,7 +92,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     shareBodyLimitBytes: integer(
       'SHARE_BODY_LIMIT_BYTES',
       env['SHARE_BODY_LIMIT_BYTES'],
-      1_000_000,
+      2_000_000,
     ),
     brouterUrl: env['BROUTER_URL'] || 'http://localhost:17777',
     brouterMaxConcurrent: integer(
