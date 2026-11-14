@@ -394,7 +394,7 @@
       "create": "Create the link",
       "creating": "Creating…",
       "validUntil": "Link valid until {{date}}",
-      "deleteCopy": "Delete the copy",
+      "deleteShare": "Delete the sharing",
       "privacyShort": "Anyone who has this link can see the route until {{date}}. A copy is kept on our server until then.",
       "privacyShortPending": "Once created, anyone who has the link can see the route until the date. A copy is kept on our server until then."
     }

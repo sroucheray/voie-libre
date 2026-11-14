@@ -394,7 +394,7 @@
       "create": "Créer le lien",
       "creating": "Création…",
       "validUntil": "Lien valable jusqu'au {{date}}",
-      "deleteCopy": "Supprimer la copie",
+      "deleteShare": "Supprimer le partage",
       "privacyShort": "Toute personne qui a ce lien peut voir le parcours jusqu'au {{date}}. Une copie est gardée sur notre serveur jusque-là.",
       "privacyShortPending": "Une fois créé, toute personne qui a le lien peut voir le parcours jusqu'à la date. Une copie est gardée sur notre serveur jusque-là."
     }
