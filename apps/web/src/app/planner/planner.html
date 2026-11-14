@@ -754,6 +754,7 @@
       @if (store.routes().length > 0 && savedRoutes(); as saved) {
       <ng-container [ngTemplateOutlet]="saved.saveForm()" />
       }
+      <vl-copy-link-button [link]="routeLink()" />
       <button type="button" class="clear" (click)="store.clear()">
         {{ 'planner.clear' | transloco }}
       </button>

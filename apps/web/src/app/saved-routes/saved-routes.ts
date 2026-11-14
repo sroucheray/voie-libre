@@ -1,3 +1,5 @@
+import { CopyLinkButton } from '../sharing/copy-link-button';
+import type { RouteLink } from '../sharing/route-link';
 import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -81,7 +83,7 @@ type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
 @Component({
   selector: 'vl-saved-routes',
-  imports: [TranslocoPipe, NgTemplateOutlet],
+  imports: [TranslocoPipe, NgTemplateOutlet, CopyLinkButton],
   templateUrl: './saved-routes.html',
   styleUrl: './saved-routes.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -484,6 +486,16 @@ export class SavedRoutes {
       await this.sharing.unshare(route);
       this.replace(await this.routeStore.setShare(id, null));
     });
+  }
+
+  /** What a link to this saved route carries: its points, profile, loop mode and name. */
+  protected linkOf(route: SavedRoute): RouteLink {
+    return {
+      points: route.points,
+      profile: route.profile,
+      loop: route.loop ?? null,
+      name: route.name,
+    };
   }
 
   protected async copyLink(id: string): Promise<void> {

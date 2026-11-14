@@ -97,7 +97,7 @@ Phases 1 and 2 are one build (the link, the page `/r`, the Share button); the di
 
 ## Plan
 
-Design approved by the author on 2026-11-14; not started.
+Design approved by the author on 2026-11-14. Steps 1 to 3 done (`route-link`, the `/r` page, "Copy the link" in the panel footer and on each saved card); steps 4 to 7 not started.
 
 Choices made when starting (2026-11-14):
 

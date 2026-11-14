@@ -356,7 +356,13 @@
         "unreadable": "This link does not carry a route.",
         "unsupported_version": "This link was made by a newer version of the app. Reload the app and try again.",
         "invalid": "This link is damaged or incomplete, for example cut by a messenger."
-      }
+      },
+      "copy": "Copy the link",
+      "copyNamed": "Copy the link to {{name}}",
+      "copied": "Link copied.",
+      "privacy": "Anyone who has this link can see the route. It is not stored on any server.",
+      "failed": "The link could not be copied. Select it here:",
+      "field": "Link to the route"
     },
     "copy": "Copy link",
     "copied": "Link copied",

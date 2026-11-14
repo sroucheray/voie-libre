@@ -1,0 +1,18 @@
+:host {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.copy-status {
+  flex-basis: 100%;
+  color: var(--color-text-2);
+  font-size: var(--font-size-xs);
+
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 0.25rem;
+  }
+}

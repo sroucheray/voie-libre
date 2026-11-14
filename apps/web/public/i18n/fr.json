@@ -356,7 +356,13 @@
         "unreadable": "Ce lien ne contient pas de parcours.",
         "unsupported_version": "Ce lien a été fait par une version plus récente de l'application. Rechargez l'application et réessayez.",
         "invalid": "Ce lien est abîmé ou incomplet, par exemple coupé par une messagerie."
-      }
+      },
+      "copy": "Copier le lien",
+      "copyNamed": "Copier le lien vers {{name}}",
+      "copied": "Lien copié.",
+      "privacy": "Toute personne qui a ce lien peut voir le parcours. Il n'est enregistré sur aucun serveur.",
+      "failed": "Le lien n'a pas pu être copié. Sélectionnez-le ici :",
+      "field": "Lien vers le parcours"
     },
     "copy": "Copier le lien",
     "copied": "Lien copié",

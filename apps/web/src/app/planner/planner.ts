@@ -9,6 +9,8 @@ import {
   type SheetState,
 } from '../core/gestures/sheet-snap';
 import { ProfileMini } from './profile-mini';
+import { CopyLinkButton } from '../sharing/copy-link-button';
+import type { RouteLink } from '../sharing/route-link';
 import { VerticalSwipe } from '../core/gestures/vertical-swipe';
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import {
@@ -131,6 +133,7 @@ const SHEET_PEEK_REM = 4.25;
     SheetScrollDrag,
     ProfileMini,
     ComputeBadge,
+    CopyLinkButton,
   ],
   templateUrl: './planner.html',
   styleUrls: ['./planner.scss', './planner-route.scss', './planner-phone.scss'],
@@ -139,6 +142,17 @@ const SHEET_PEEK_REM = 4.25;
 })
 export class Planner {
   protected readonly store = inject(PlannerStore);
+  /** The route on screen as a link: its points, whether saved or not (nothing needs computing). */
+  protected readonly routeLink = computed<RouteLink | null>(() => {
+    const points = this.store.points();
+    if (points.length < 2) return null;
+    return {
+      points: [...points],
+      profile: this.store.profile(),
+      loop: this.store.loop(),
+      name: this.store.savedAs()?.name,
+    };
+  });
   protected readonly format = inject(FormattingService);
   protected readonly location = inject(LocationStore);
   private readonly mapLayers = inject(MapLayers);

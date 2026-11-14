@@ -271,6 +271,7 @@
           {{ 'sharing.share' | transloco }}
         </button>
         }
+        <vl-copy-link-button [link]="linkOf(route)" [name]="route.name" />
         <button
           type="button"
           class="export"
