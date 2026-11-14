@@ -121,7 +121,13 @@ Country or city of the visitor, a public statistics page, a graphical dashboard,
 
 One commit per step after lint, build and the targeted tests.
 
-- [ ] **1. API.** Migration `stats_daily(day, metric, dimension, count, total)`; `POST /stats` with a whitelist schema, daily in-memory salt for the uniques, rate limit; pruning at 13 months. Targeted tests in `apps/api`.
-- [ ] **2. Web.** `Analytics` service (visit at start, events from the existing code paths, a switch and Do Not Track), regenerate the client with `npm run generate-client`. Targeted tests.
-- [ ] **3. Texts.** README, `about.privacy`, the About switch, `docs/implementation.md`, `CLAUDE.md`, French and English keys.
-- [ ] **4. Reading the numbers.** `scripts/stats.sh`, run from the author's machine over SSH.
+- [x] **1. API.** Migration `stats_daily(day, metric, dimension, count, total)`; `POST /stats` with a whitelist schema, daily in-memory salt for the uniques, rate limit; pruning at 13 months. Targeted tests in `apps/api`.
+- [x] **2. Web.** `Analytics` service (visit at start, events from the existing code paths, a switch and Do Not Track), regenerate the client with `npm run generate-client`. Targeted tests.
+- [x] **3. Texts.** README, `about.privacy`, the About switch, `docs/implementation.md`, `CLAUDE.md`, French and English keys.
+- [x] **4. Reading the numbers.** `scripts/stats.sh`, run from the author's machine over SSH.
+
+### Notes
+
+- Built on 2026-11-14. Not deployed yet: it goes out with the next `v*` tag, and the `migrate` service creates `stats_daily` then. Afterwards `DEPLOY_HOST=user@host scripts/stats.sh [days]` prints the numbers from the author's machine (read only: the session sets `default_transaction_read_only`).
+- Nothing is counted in development (`ANALYTICS_ENABLED` is `!isDevMode()`), so the author's own tests stay out of the numbers; the author's visits in production count unless they tick "Do not count my visits" in About.
+- Checked: API tests of `POST /stats`, the web service, the About switch, the route planner and the translations spec; the SQL of `stats.sh` against the local database. Not run: the whole suites, and the script over SSH.
