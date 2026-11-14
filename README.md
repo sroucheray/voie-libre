@@ -51,7 +51,7 @@ It works on a phone as well as on a computer. Your saved routes stay on your dev
 
 Voie Libre is free and has no advertising. The server and the domain name are paid for by its author. If it is useful to you, you can [support it on Liberapay](https://liberapay.com/sroucheray).
 
-Found a problem, or have an idea? [Open an issue](https://github.com/sroucheray/voie-libre/issues). The code is open: see [CONTRIBUTING.md](CONTRIBUTING.md) if you want to look at it or to contribute.
+What changed in each version is in the [changelog](CHANGELOG.md). Found a problem, or have an idea? [Open an issue](https://github.com/sroucheray/voie-libre/issues). The code is open: see [CONTRIBUTING.md](CONTRIBUTING.md) if you want to look at it or to contribute.
 
 ---
 

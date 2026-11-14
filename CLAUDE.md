@@ -51,6 +51,8 @@ Open-source (AGPL-3.0) route planner for road/gravel cycling and trail running, 
 - **No secret in the repository.** Configuration comes from environment variables; `.env.example` lists them all with development defaults only.
 - The API returns stable error codes; the web app translates them. Validate requests and responses with schemas.
 - Small verified steps: follow the plan of the work in hand (the `## Plan` section of its file in `docs/features/`; once the work is done the plan is folded into `## How it went`), commit once per step in English with a conventional message (`feat:`, `chore:`, `docs:`) after lint, build and targeted tests pass.
+- `CHANGELOG.md` is for the people who use the app: plain words, nothing technical. Every change an end user can see goes under "Next version" in the commit that makes it; a release renames that title to the version and its date.
+- Commit messages and pull request descriptions carry no `Co-Authored-By` or other attribution line.
 - Documentation moves with the code: when a feature changes, update its section in `docs/implementation.md` and keep its summary here to one line (the long text lives there, not here).
 - Out of scope for milestone 1: accounts and sync, avoid zones and reports, Android APK.
 

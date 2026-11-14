@@ -124,6 +124,7 @@ Tests against a real BRouter are opt-in: `docker compose up -d brouter`, then `B
 The app runs at https://voielibre.app on a small VPS, with Docker Compose behind Caddy (HTTPS, one origin: the web app, `/api` and `/tiles`). Only Caddy publishes ports; PostgreSQL, BRouter, the tiles server and the API stay inside the Compose network.
 
 - [docker-compose.prod.yml](docker-compose.prod.yml), [docker/caddy/Caddyfile](docker/caddy/Caddyfile) and [.env.production.example](.env.production.example) describe the stack; nothing secret is in the repository.
+- Before a version is tagged, [CHANGELOG.md](CHANGELOG.md) gets its entry: what changed for the people who use the app, in plain words, no code names ("Next version" becomes the version number and its date).
 - A version is a tag `vX.Y.Z` on `main`. `.github/workflows/deploy.yml` runs lint, build and tests for it, then builds the images (`ghcr.io`) and deploys them to the server over SSH; if the tests fail, nothing is deployed. `scripts/deploy.sh` does the same by hand from a developer's machine. The version shown in the About window is the tag.
 - [docs/features/deploy.md](docs/features/deploy.md) tells the choices, the steps and what the first deployment taught.
 
