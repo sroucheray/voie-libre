@@ -36,6 +36,12 @@ Ideas noted after the first release (`v0.1.0`). Nothing here is started; each it
     - **Saving routes and the view offline**: whichever option, one entry point, "Keep offline", with two choices inside (this route, this view) in the menu or in the Saved tab, with the same status text as today.
       To decide: A or B, where the offline actions go, and whether the language needs a menu at all (a two-letter flip button is enough for two languages).
 
+17. **Share a route by a link, without the server (idea of 2026-11-14).** Put the route in the fragment of the URL (`https://voielibre.app/#r=…`): the part after the `#` is never sent to a server, nor to the link previews of messengers, so nothing is stored anywhere and the link carries the route. Two contents to compare:
+    - **Points only (recommended):** the points (20 at most), the profile, the loop mode and the name, about 400 to 600 characters. The device that opens the link computes the route again with one request to the API, as for any itinerary; it needs the network and the result may change a little if the routing data changes.
+    - **Points and track:** adds the computed track as a compressed polyline with the elevations, about 5,000 to 8,000 characters for a 50 km route, thinned. It opens at once and offline, but some messengers or SMS cut such a long link.
+
+    How the link goes from a desktop to a phone: a "Copy the link" button; the system share sheet (Web Share) on a phone; and later a QR code on the screen for the phone to scan (the QR code left aside earlier; it needs a small encoder of our own or a library, never added without a clear yes). It replaces the sharing through the server (`SHARING_ENABLED`, hidden for now). To decide: the route to open it (`/r` with the fragment), what happens to a route being planned when a link is opened (the confirmation of the saved list), and whether the link keeps the selected alternative. Privacy: anyone with the link sees the route, and the URL stays in the browser history; the points still go to the API when the route is computed.
+
 ## Constraints
 
 - The rules of `CLAUDE.md`: no hard-coded label, local first (a speed is a setting kept on the device).
