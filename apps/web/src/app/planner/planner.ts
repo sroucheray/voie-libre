@@ -1,5 +1,6 @@
 import { ComputeBadge } from './compute-badge';
 import { SheetDrag, type SheetRelease } from '../core/gestures/sheet-drag';
+import { SheetScrollDrag } from '../core/gestures/sheet-scroll-drag';
 import {
   nextState,
   sheetHeights,
@@ -127,6 +128,7 @@ const SHEET_PEEK_REM = 4.25;
     Icon,
     VerticalSwipe,
     SheetDrag,
+    SheetScrollDrag,
     ProfileMini,
     ComputeBadge,
   ],

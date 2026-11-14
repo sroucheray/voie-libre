@@ -319,6 +319,10 @@
       type="button"
       class="sheet-summary"
       [class.sheet-summary--open]="store.open()"
+      vlSheetDrag
+      (started)="startSheetDrag(panel)"
+      (moved)="moveSheetDrag($event)"
+      (released)="releaseSheetDrag($event)"
       (click)="raiseSheet()"
     >
       @if (peekRoute(); as route) { @if (route.ascentMeters === null) { {{
@@ -381,7 +385,15 @@
       </button>
     </div>
 
-    <div class="tab-route" [hidden]="tab() !== 'route'">
+    <div
+      class="tab-route"
+      [hidden]="tab() !== 'route'"
+      vlSheetScrollDrag
+      [sheetFull]="sheetState() === 'full'"
+      (started)="startSheetDrag(panel)"
+      (moved)="moveSheetDrag($event)"
+      (released)="releaseSheetDrag($event)"
+    >
       <div
         class="history"
         role="group"
@@ -750,6 +762,11 @@
 
     <vl-saved-routes
       [hidden]="tab() !== 'saved'"
+      vlSheetScrollDrag
+      [sheetFull]="sheetState() === 'full'"
+      (started)="startSheetDrag(panel)"
+      (moved)="moveSheetDrag($event)"
+      (released)="releaseSheetDrag($event)"
       [formElsewhere]="true"
       (showSaved)="openSaved($event)"
     />
