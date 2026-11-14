@@ -138,6 +138,14 @@
       <section aria-labelledby="about-privacy-title">
         <h3 id="about-privacy-title">{{ 'about.privacyTitle' | transloco }}</h3>
         <p class="about__note">{{ 'about.privacy' | transloco }}</p>
+        <label class="about__count-off">
+          <input
+            type="checkbox"
+            [checked]="analytics.off()"
+            (change)="analytics.setOff($any($event.target).checked)"
+          />
+          {{ 'about.countOff' | transloco }}
+        </label>
       </section>
 
       <section aria-labelledby="about-credits-title">

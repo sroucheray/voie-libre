@@ -7,6 +7,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { Analytics } from '../analytics/analytics';
 import { Icon } from '../icons/icon';
 import { ABOUT_LINKS } from './about-config';
 import { AboutScreen } from './about-screen';
@@ -28,6 +29,7 @@ export class About {
   private readonly welcome = inject(WelcomeScreen);
   protected readonly screen = inject(AboutScreen);
   protected readonly install = inject(PwaInstall);
+  protected readonly analytics = inject(Analytics);
   private readonly box = viewChild<ElementRef<HTMLElement>>('box');
 
   constructor() {

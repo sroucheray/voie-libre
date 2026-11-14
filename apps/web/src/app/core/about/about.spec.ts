@@ -3,6 +3,7 @@ import { provideTestTransloco } from '../../../testing/transloco-testing';
 import { LanguageService } from '../i18n/language.service';
 import { ABOUT_LINKS, type AboutLinks } from './about-config';
 import { About } from './about';
+import { Analytics } from '../analytics/analytics';
 import { PwaInstall } from '../pwa/pwa-install';
 import { WelcomeScreen } from '../welcome/welcome-screen';
 import { ApplicationRef } from '@angular/core';
@@ -90,6 +91,18 @@ describe('About', () => {
       await fixture.whenStable();
       expect(root.querySelector('[role="dialog"]')).toBeNull();
     }
+  });
+
+  it('lets the visitor stop the counting of their visits', async () => {
+    localStorage.clear();
+    const { root, open } = setup();
+    await open();
+    const box = root.querySelector<HTMLInputElement>('.about__count-off input');
+    expect(box?.checked).toBe(false);
+    box?.click();
+    expect(TestBed.inject(Analytics).off()).toBe(true);
+    box?.click();
+    expect(TestBed.inject(Analytics).off()).toBe(false);
   });
 
   it('shows the version of the app', async () => {
