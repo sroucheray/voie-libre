@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   signal,
@@ -11,6 +12,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { map } from 'rxjs';
 import { PlannerStore } from '../planner/planner-store';
+import { OpenedRouteDialog } from './opened-route-dialog';
 import {
   decodeRouteLink,
   type RouteLink,
@@ -25,7 +27,7 @@ import {
  */
 @Component({
   selector: 'vl-route-link-page',
-  imports: [TranslocoPipe, RouterLink],
+  imports: [TranslocoPipe, RouterLink, OpenedRouteDialog],
   templateUrl: './route-link-page.html',
   styleUrl: './route-link-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,6 +39,16 @@ export class RouteLinkPage {
   protected readonly error = signal<RouteLinkErrorCode | null>(null);
   /** A route is waiting for the answer to "replace what is on screen?". */
   protected readonly pending = signal<RouteLink | null>(null);
+  /** The route of the link is in the planner: the dialog asks what to do with it. */
+  protected readonly opened = signal<RouteLink | null>(null);
+  /** The calculated route, once the planner has it (it is only computed from the points). */
+  protected readonly route = computed(() => {
+    const route = this.planner.savable();
+    return this.opened() && route ? route : null;
+  });
+  protected readonly failed = computed(
+    () => this.opened() !== null && this.planner.status() === 'error',
+  );
 
   private readonly fragment = toSignal(
     inject(ActivatedRoute).fragment.pipe(map((fragment) => fragment ?? '')),
@@ -53,6 +65,8 @@ export class RouteLinkPage {
   private read(fragment: string): void {
     this.error.set(null);
     this.pending.set(null);
+    // Another link arrives while a dialog is open: the new one takes its place.
+    this.opened.set(null);
     const result = decodeRouteLink(fragment);
     if (!result.ok) {
       this.error.set(result.code);
@@ -76,7 +90,14 @@ export class RouteLinkPage {
   }
 
   private open(link: RouteLink): void {
+    this.pending.set(null);
     this.planner.openLink(link);
+    this.opened.set(link);
+  }
+
+  /** The dialog is answered: back to the planner, replacing the entry that holds the link. */
+  protected done(): void {
+    this.opened.set(null);
     void this.leave();
   }
 

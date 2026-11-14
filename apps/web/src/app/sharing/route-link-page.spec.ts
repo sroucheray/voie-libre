@@ -3,7 +3,10 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { createApiClient } from '@voie-libre/api-client';
-import { provideInMemoryRouteStore } from '../../testing/in-memory-route-store';
+import {
+  InMemoryRouteStore,
+  provideInMemoryRouteStore,
+} from '../../testing/in-memory-route-store';
 import { provideTestTransloco } from '../../testing/transloco-testing';
 import { API_CLIENT } from '../core/api/api-client';
 import { LanguageService } from '../core/i18n/language.service';
@@ -24,11 +27,15 @@ const link: RouteLink = {
 
 describe('RouteLinkPage', () => {
   let calls: string[];
+  let routeStore: InMemoryRouteStore;
+  let respond: () => Response;
 
   beforeEach(async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     localStorage.clear();
     calls = [];
+    routeStore = new InMemoryRouteStore();
+    respond = () => new Response('{}', { status: 500 });
     await TestBed.configureTestingModule({
       providers: [
         provideTestTransloco(),
@@ -36,14 +43,14 @@ describe('RouteLinkPage', () => {
           { path: 'r', component: RouteLinkPage },
           { path: '', children: [] },
         ]),
-        provideInMemoryRouteStore(),
+        provideInMemoryRouteStore(routeStore),
         {
           provide: API_CLIENT,
           useValue: createApiClient({
             baseUrl: 'http://api.test',
             fetch: async (request) => {
               calls.push(`${request.method} ${new URL(request.url).pathname}`);
-              return new Response('{}', { status: 500 });
+              return respond();
             },
           }),
         },
@@ -72,15 +79,97 @@ describe('RouteLinkPage', () => {
       ' ',
     );
 
-  it('puts the points in the planner as unsaved work, and clears the link from the address', async () => {
-    await open(encodeRouteLink(link));
+  it('puts the points in the planner as unsaved work and asks what to do with the route', async () => {
+    const harness = await open(encodeRouteLink(link));
     const planner = TestBed.inject(PlannerStore);
     expect(planner.points()).toEqual(link.points);
     expect(planner.profile()).toBe('gravel');
     expect(planner.unsaved()).toBe(true);
-    expect(TestBed.inject(Location).path()).toBe('');
+    expect(text(harness)).toContain('A route was shared with you');
+    expect(text(harness)).toContain('Clermont to Issoire');
     // The route is computed like any itinerary: one request, no link-specific call.
     expect(calls).toEqual(['POST /route']);
+  });
+
+  it('waits for the route before offering to save or export it, and says when it failed', async () => {
+    const harness = await open(encodeRouteLink(link));
+    const root = harness.routeNativeElement as HTMLElement;
+    // The test server answers the calculation with an error.
+    expect(text(harness)).toContain('could not be calculated');
+    expect(root.querySelector<HTMLButtonElement>('.save')!.disabled).toBe(true);
+    expect(root.querySelector<HTMLButtonElement>('.export-gpx')!.disabled).toBe(
+      true,
+    );
+    expect(root.querySelector<HTMLButtonElement>('.show')!.disabled).toBe(
+      false,
+    );
+  });
+
+  it('saves the calculated route under the name of the link, or exports it, once it is there', async () => {
+    respond = () =>
+      new Response(
+        JSON.stringify({
+          routes: [
+            {
+              geometry: [
+                [3.087, 45.777, 402],
+                [3.249, 45.544, 380],
+              ],
+              distanceMeters: 41007,
+              ascentMeters: 399,
+              durationSeconds: 8674,
+            },
+          ],
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    const harness = await open(encodeRouteLink(link));
+    const root = harness.routeNativeElement as HTMLElement;
+    expect(root.querySelector<HTMLButtonElement>('.save')!.disabled).toBe(
+      false,
+    );
+    expect(root.querySelector<HTMLButtonElement>('.export-gpx')!.disabled).toBe(
+      false,
+    );
+    root.querySelector<HTMLButtonElement>('.save')!.click();
+    await vi.advanceTimersByTimeAsync(0);
+    const [saved] = [...routeStore.records.values()];
+    expect(saved).toMatchObject({
+      name: 'Clermont to Issoire',
+      profile: 'gravel',
+      points: link.points,
+      distanceMeters: 41007,
+    });
+    expect(TestBed.inject(PlannerStore).savedAs()?.id).toBe(saved.id);
+    expect(TestBed.inject(Location).path()).toBe('');
+  });
+
+  it('replaces the dialog when another link is opened while it is still there', async () => {
+    const harness = await open(encodeRouteLink(link));
+    expect(
+      (harness.routeNativeElement as HTMLElement).querySelector('dialog'),
+    ).not.toBeNull();
+    // Unsaved work (the first route) is on screen: the second link asks before replacing it.
+    await harness.navigateByUrl(
+      `/r#${encodeRouteLink({ ...link, name: 'Second' })}`,
+    );
+    await vi.advanceTimersByTimeAsync(10);
+    TestBed.tick();
+    harness.detectChanges();
+    expect(
+      (harness.routeNativeElement as HTMLElement).querySelector('dialog'),
+    ).toBeNull();
+    expect(text(harness)).toContain('replaces the route on screen');
+  });
+
+  it('goes back to the planner, with the link gone from the address, once answered', async () => {
+    const harness = await open(encodeRouteLink(link));
+    (harness.routeNativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('.show')!
+      .click();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(TestBed.inject(Location).path()).toBe('');
+    expect(TestBed.inject(PlannerStore).points()).toEqual(link.points);
   });
 
   it('asks before replacing unsaved work, and keeps it when told to', async () => {
@@ -101,6 +190,7 @@ describe('RouteLinkPage', () => {
       [2, 46],
       [2.1, 46.1],
     ]);
+    expect(TestBed.inject(Location).path()).toBe('');
   });
 
   it('replaces unsaved work once the person agrees', async () => {

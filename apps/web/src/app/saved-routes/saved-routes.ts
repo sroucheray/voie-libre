@@ -26,15 +26,12 @@ import {
 import { FormattingService } from '../core/format/formatting.service';
 import { autoRouteName, type AutoName } from '../planner/route-name';
 import { FILE_DOWNLOADER } from '../export/file-download';
-import { buildFit, fitFileName } from '../export/fit';
 import {
-  MAX_LAPS,
-  clampLaps,
-  isLoopRoute,
-  lapTotals,
-  repeatGeometry,
-} from '../export/laps';
-import { buildGpx, gpxFileName } from '@voie-libre/shared';
+  EXPORT_FORMATS,
+  buildExportFile,
+  type ExportFormat,
+} from '../export/route-export';
+import { MAX_LAPS, clampLaps, isLoopRoute, lapTotals } from '../export/laps';
 import {
   ElevationError,
   type ElevationErrorCode,
@@ -83,12 +80,8 @@ class ExportError extends Error {}
  * (after a confirmation). A storage failure shows a translated message and leaves the planner
  * fully usable.
  */
-/** The file formats a saved route exports to. */
-const EXPORT_FORMATS = ['gpx', 'fit'] as const;
-
 /** The longest name a route can be given. */
 export const NAME_MAX_LENGTH = 120;
-type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
 @Component({
   selector: 'vl-saved-routes',
@@ -474,31 +467,18 @@ export class SavedRoutes {
         this.routes.update((routes) => routes.filter((r) => r.id !== id));
         throw new RouteStoreError('not_found');
       }
-      let content: string | Uint8Array<ArrayBuffer>;
-      let name: string;
-      let mime: string;
+      let file;
       try {
-        const names = this.pointNames(saved);
-        const laps = this.lapsOf(saved);
-        if (format === 'fit') {
-          content = buildFit(saved, names.slice(1, -1), laps);
-          name = fitFileName(saved.name);
-          mime = 'application/vnd.ant.fit';
-        } else {
-          content = buildGpx(
-            {
-              ...saved,
-              geometry: repeatGeometry(saved.geometry, laps),
-              withElevation: saved.ascentMeters !== null,
-            },
-            names,
-          );
-          name = gpxFileName(saved.name);
-          mime = 'application/gpx+xml';
-        }
+        file = buildExportFile(
+          saved,
+          format,
+          this.pointNames(saved),
+          this.lapsOf(saved),
+        );
       } catch {
         throw new ExportError();
       }
+      const { content, fileName: name, mimeType: mime } = file;
       if (how === 'download') {
         try {
           this.download(content, name, mime);

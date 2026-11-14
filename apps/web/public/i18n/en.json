@@ -373,8 +373,6 @@
     "page": {
       "title": "Shared route",
       "loading": "Loading the shared route…",
-      "keep": "Keep on this device",
-      "kept": "Saved on this device.",
       "close": "Close"
     },
     "errors": {
@@ -528,5 +526,18 @@
       "invalid": "This file is damaged: nothing was imported.",
       "too_large": "This file is too large to import."
     }
+  },
+  "openedRoute": {
+    "title": "A route was shared with you",
+    "question": "What do you want to do with it?",
+    "computing": "Calculating the route…",
+    "failed": "The route could not be calculated, so it cannot be saved or exported. You can still look at its points.",
+    "save": "Save to my routes",
+    "show": "Just show it",
+    "export": {
+      "gpx": "Export as GPX",
+      "fit": "Export as FIT"
+    },
+    "exported": "File created."
   }
 }

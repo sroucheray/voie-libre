@@ -373,8 +373,6 @@
     "page": {
       "title": "Parcours partagé",
       "loading": "Chargement du parcours partagé…",
-      "keep": "Garder sur cet appareil",
-      "kept": "Enregistré sur cet appareil.",
       "close": "Fermer"
     },
     "errors": {
@@ -528,5 +526,18 @@
       "invalid": "Ce fichier est abîmé : rien n'a été importé.",
       "too_large": "Ce fichier est trop gros pour être importé."
     }
+  },
+  "openedRoute": {
+    "title": "Un parcours a été partagé avec vous",
+    "question": "Que voulez-vous en faire ?",
+    "computing": "Calcul du parcours…",
+    "failed": "Le parcours n'a pas pu être calculé : il ne peut être ni enregistré ni exporté. Vous pouvez toujours regarder ses points.",
+    "save": "L'enregistrer dans mes parcours",
+    "show": "Simplement l'afficher",
+    "export": {
+      "gpx": "Exporter en GPX",
+      "fit": "Exporter en FIT"
+    },
+    "exported": "Fichier créé."
   }
 }

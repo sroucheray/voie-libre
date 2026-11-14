@@ -1,0 +1,52 @@
+<dialog
+  #dialog
+  class="opened-route"
+  [attr.aria-label]="'openedRoute.title' | transloco"
+  (cancel)="onCancel($event)"
+>
+  <div class="content">
+    <h2>{{ 'openedRoute.title' | transloco }}</h2>
+    @if (name(); as routeName) {
+    <p class="route-name">{{ routeName }}</p>
+    }
+    <p class="question">{{ 'openedRoute.question' | transloco }}</p>
+
+    @if (failed()) {
+    <p class="error" role="alert">{{ 'openedRoute.failed' | transloco }}</p>
+    } @else if (!route()) {
+    <p class="computing" role="status">
+      {{ 'openedRoute.computing' | transloco }}
+    </p>
+    }
+
+    <div class="choices">
+      <button
+        type="button"
+        class="save"
+        [disabled]="!route() || busy()"
+        (click)="save()"
+      >
+        {{ 'openedRoute.save' | transloco }}
+      </button>
+      <button type="button" class="show" (click)="show()">
+        {{ 'openedRoute.show' | transloco }}
+      </button>
+      @for (format of formats; track format) {
+      <button
+        type="button"
+        [class]="'export export-' + format"
+        [disabled]="!route()"
+        (click)="exportAs(format)"
+      >
+        {{ 'openedRoute.export.' + format | transloco }}
+      </button>
+      }
+    </div>
+
+    @if (notice()) {
+    <p class="notice" role="status">{{ 'openedRoute.exported' | transloco }}</p>
+    } @if (error(); as key) {
+    <p class="error" role="alert">{{ key | transloco }}</p>
+    }
+  </div>
+</dialog>

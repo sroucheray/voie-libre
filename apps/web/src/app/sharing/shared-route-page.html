@@ -1,29 +1,19 @@
+@if (loading() || error()) {
 <aside class="shared" [attr.aria-label]="'sharing.page.title' | transloco">
   <h2>{{ 'sharing.page.title' | transloco }}</h2>
-
   @if (loading()) {
   <p role="status">{{ 'sharing.page.loading' | transloco }}</p>
-  } @if (route(); as shared) {
-  <p class="name">{{ shared.name }}</p>
-  <p class="meta">
-    @if (shared.ascentMeters === null) { {{ 'saved.summaryNoClimb' | transloco :
-    { distance: format.distance(shared.distanceMeters), date:
-    format.date(shared.sharedAt) } }} } @else { {{ 'saved.summary' | transloco :
-    { distance: format.distance(shared.distanceMeters), ascent:
-    format.elevation(shared.ascentMeters), date: format.date(shared.sharedAt) }
-    }} }
-  </p>
-  @if (kept()) {
-  <p role="status">{{ 'sharing.page.kept' | transloco }}</p>
-  } @else {
-  <button type="button" class="keep" (click)="keep()">
-    {{ 'sharing.page.keep' | transloco }}
-  </button>
-  } } @if (error(); as code) {
-  <p class="error" role="alert">
-    {{ (code === 'unavailable' || code === 'quota' ? 'saved.errors.' :
-    'sharing.errors.') + code | transloco }}
-  </p>
+  } @if (error(); as code) {
+  <p class="error" role="alert">{{ 'sharing.errors.' + code | transloco }}</p>
   }
-  <a routerLink="/" class="close">{{ 'sharing.page.close' | transloco }}</a>
+  <a routerLink="/" replaceUrl class="close"
+    >{{ 'sharing.page.close' | transloco }}</a
+  >
 </aside>
+} @if (route(); as shared) {
+<vl-opened-route-dialog
+  [name]="shared.name"
+  [route]="openedRoute()"
+  (closed)="done()"
+/>
+}

@@ -19,4 +19,11 @@
     {{ 'sharing.link.keep' | transloco }}
   </button>
 </aside>
+} @if (opened(); as link) {
+<vl-opened-route-dialog
+  [name]="link.name ?? null"
+  [route]="route()"
+  [failed]="failed()"
+  (closed)="done()"
+/>
 }

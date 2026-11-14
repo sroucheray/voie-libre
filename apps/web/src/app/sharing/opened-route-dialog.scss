@@ -1,0 +1,51 @@
+:host {
+  display: contents;
+}
+
+.opened-route {
+  width: min(24rem, calc(100vw - 2rem));
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-3, var(--shadow-2));
+
+  &::backdrop {
+    background: rgb(0 0 0 / 0.4);
+  }
+}
+
+.content {
+  padding: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: var(--font-size-md);
+  }
+
+  p {
+    margin: 0.5rem 0 0;
+  }
+}
+
+.route-name {
+  color: var(--color-text-2);
+  font-size: var(--font-size-xs);
+}
+
+.computing,
+.notice {
+  color: var(--color-text-2);
+  font-size: var(--font-size-xs);
+}
+
+.choices {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.error {
+  color: var(--color-danger);
+}

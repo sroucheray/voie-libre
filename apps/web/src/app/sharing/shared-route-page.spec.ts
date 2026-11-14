@@ -11,6 +11,7 @@ import { API_CLIENT } from '../core/api/api-client';
 import { LanguageService } from '../core/i18n/language.service';
 import { PlannerStore } from '../planner/planner-store';
 import { RoutePlanner } from '../planner/route-planner';
+import { FILE_DOWNLOADER } from '../export/file-download';
 import { RouteStoreError } from '../storage/route-store';
 import { SharedRoutePage } from './shared-route-page';
 
@@ -46,6 +47,7 @@ describe('SharedRoutePage', () => {
   let calls: { method: string; path: string }[];
   let respond: () => Response;
   let routeStore: InMemoryRouteStore;
+  let downloads: { fileName: string; mimeType: string; text: boolean }[];
 
   beforeEach(async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
@@ -53,11 +55,25 @@ describe('SharedRoutePage', () => {
     calls = [];
     respond = () => json(shared);
     routeStore = new InMemoryRouteStore();
+    downloads = [];
     await TestBed.configureTestingModule({
       providers: [
         provideTestTransloco(),
         provideRouter([{ path: 'p/:id', component: SharedRoutePage }]),
         provideInMemoryRouteStore(routeStore),
+        {
+          provide: FILE_DOWNLOADER,
+          useValue: (
+            content: string | Uint8Array,
+            fileName: string,
+            mimeType: string,
+          ) =>
+            downloads.push({
+              fileName,
+              mimeType,
+              text: typeof content === 'string',
+            }),
+        },
         {
           provide: API_CLIENT,
           useValue: createApiClient({
@@ -106,9 +122,10 @@ describe('SharedRoutePage', () => {
     expect(planner.routes()).toHaveLength(1);
     expect(planner.routes()[0].geometry).toEqual(geometry);
     expect(planner.status()).toBe('ready');
-    expect(text(harness)).toContain('Shared route');
+    // The dialog asks what to do with it.
+    expect(text(harness)).toContain('A route was shared with you');
     expect(text(harness)).toContain('Col de la Ventouse');
-    expect(text(harness)).toMatch(/41(\.0)? km/);
+    expect(text(harness)).toContain('What do you want to do with it?');
   });
 
   it('keeps nothing on the device until asked', async () => {
@@ -119,7 +136,7 @@ describe('SharedRoutePage', () => {
   it('saves a copy on the device on request, under a new id and not shared', async () => {
     const harness = await open();
     (harness.routeNativeElement as HTMLElement)
-      .querySelector<HTMLButtonElement>('.keep')!
+      .querySelector<HTMLButtonElement>('.save')!
       .click();
     await vi.advanceTimersByTimeAsync(0);
     harness.detectChanges();
@@ -133,8 +150,41 @@ describe('SharedRoutePage', () => {
     });
     expect(saved.id).not.toBe('abcdefghjk');
     expect(saved.share).toBeUndefined();
-    expect(text(harness)).toContain('Saved on this device.');
+    // Saved: the dialog is answered and the planner is shown, with the route marked as saved.
+    expect(TestBed.inject(PlannerStore).savedAs()?.id).toBe(saved.id);
     expect(calls).toHaveLength(1);
+  });
+
+  it('shows the route without saving when asked to', async () => {
+    const harness = await open();
+    (harness.routeNativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('.show')!
+      .click();
+    await vi.advanceTimersByTimeAsync(0);
+    harness.detectChanges();
+    expect(routeStore.records.size).toBe(0);
+    expect(TestBed.inject(PlannerStore).routes()).toHaveLength(1);
+  });
+
+  it('exports a GPX or a FIT file at once, without saving', async () => {
+    const harness = await open();
+    const root = harness.routeNativeElement as HTMLElement;
+    root.querySelector<HTMLButtonElement>('.export-gpx')!.click();
+    root.querySelector<HTMLButtonElement>('.export-fit')!.click();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(downloads).toEqual([
+      {
+        fileName: 'col-de-la-ventouse.gpx',
+        mimeType: 'application/gpx+xml',
+        text: true,
+      },
+      {
+        fileName: 'col-de-la-ventouse.fit',
+        mimeType: 'application/vnd.ant.fit',
+        text: false,
+      },
+    ]);
+    expect(routeStore.records.size).toBe(0);
   });
 
   it('says so when the route does not exist, in the active language', async () => {
@@ -168,7 +218,7 @@ describe('SharedRoutePage', () => {
     const harness = await open();
     routeStore.failWith = new RouteStoreError('quota');
     (harness.routeNativeElement as HTMLElement)
-      .querySelector<HTMLButtonElement>('.keep')!
+      .querySelector<HTMLButtonElement>('.save')!
       .click();
     await vi.advanceTimersByTimeAsync(0);
     harness.detectChanges();
