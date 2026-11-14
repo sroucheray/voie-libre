@@ -36,7 +36,7 @@ Ideas noted after the first release (`v0.1.0`). Nothing here is started; each it
     - **Saving routes and the view offline**: whichever option, one entry point, "Keep offline", with two choices inside (this route, this view) in the menu or in the Saved tab, with the same status text as today.
       To decide: A or B, where the offline actions go, and whether the language needs a menu at all (a two-letter flip button is enough for two languages).
 
-17. **Share a route by a link, without the server (idea of 2026-11-14).** Briefed in [sharing.md](sharing.md), awaiting the author's choice. Recommended there: the points (not the track) in the URL fragment `/r#v1=…`, opened as a local copy; a Share button (copy, system share sheet where it exists, GPX through the sheet or a download); a backup file for a list of routes; the QR code as a later step. It replaces the sharing through the server (`SHARING_ENABLED`, hidden for now).
+17. **Share a route by a link, without the server (idea of 2026-11-14).** _Done (2026-11-14), briefed in [sharing.md](sharing.md): a link that contains the route in its fragment, a short link kept for a day, a week or a month, one Share dialog, a QR code of our own, a backup file for lists, and a dialog to save, show or export a route opened from a link._ Item 17 started as the first kind of link only; the short link was added when the author asked for it during the work.
 
 ## Constraints
 
