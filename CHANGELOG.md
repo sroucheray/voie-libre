@@ -2,7 +2,7 @@
 
 What changed in each version, written for the people who use the app. The newest comes first. The code, the reasons behind each change and the technical notes are in [docs/features](docs/features/README.md).
 
-## Next version
+## 0.4.2 — November 14, 2026
 
 - **Import more kinds of files, several at once.** "Import…" now takes GPX files, FIT files (from a watch or a bike computer) and the routes file made by "Export all…", and you can pick many files in one go. A short message sums up what was added and names the files that could not be read.
 - **Pop-ups for file actions.** Importing, exporting all your routes, choosing a file format for one route and deleting a route now open a pop-up, instead of changing the list in place. Renaming still happens in the route's card.
