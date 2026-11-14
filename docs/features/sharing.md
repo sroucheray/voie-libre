@@ -6,7 +6,7 @@ The author plans a route on a desktop and wants to open it on a phone; friends a
 
 ## The author's answers (interview of 2026-11-14)
 
-- **Who**: all three, in this order: (1) the author's own devices, first; (2) the author's devices and friends, who open a link in a messenger without installing anything; (3) a club or a group.
+- **Who**: all three, in this order: (1) the author's own devices, first; (2) the author's devices and friends, who open a link in a messenger without installing anything; (3) a club or a group. "If they are different kinds of features, sort them": see [the three audiences, in phases](#the-three-audiences-in-phases).
 - **What**: one route (its points), a GPX file, a list of routes. Not asked for: the route with its computed track in the link.
 - **Privacy line**: a link that carries the route, nothing stored on the server. Anyone holding the link sees the route; the link cannot be edited or revoked.
 - **When a link is opened**: a local copy the person can edit, saved only if they decide. The original link never changes.
@@ -53,6 +53,18 @@ Reading in one line: **reliable everywhere** (fragment, clipboard text, `<a down
 6. **The sharing through the server stays hidden** (`SHARING_ENABLED`) and is removed from the plan: it is no longer needed. Whether to delete its code is a separate decision.
 
 What stays out: receiving a GPX from another app, file handlers, protocol handlers, `launch_handler`, NFC, WebRTC, universal links and App Links. Each needs the installed app or a server, and App Links and Universal Links only matter when the Android and iOS apps exist; the link format `/r#v1=…` is already the right one for them.
+
+### The three audiences, in phases
+
+The author asked for all three audiences, in this order of priority, and to sort them if they need different features. They do not need different storage (none stores anything, no account anywhere), but they need different features, so they are phases:
+
+| Phase | Audience                                    | Features that carry it                                                                                                        | What it needs                                                                                                   | Stored where                              |
+| ----- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| 1     | The author's own devices (desktop to phone) | Link (copy, share sheet to one's own phone), backup file for all routes; the QR code is the most direct desktop-to-phone path | The same browser or installed app on both; no account                                                           | Nowhere: the link or the file is the copy |
+| 2     | The author's devices and friends            | The same link in a messenger; the GPX through the share sheet for friends who use another app                                 | Nothing installed on the receiver's side (a browser is enough); the link must stay short enough for messengers  | Nowhere                                   |
+| 3     | A club or a group                           | The same link, the QR code for a poster or a screen, the backup file for a set of routes                                      | Nothing new in the app; a short or revocable link or a public page would need a stored copy and is out of scope | Nowhere                                   |
+
+Phases 1 and 2 are one build (the link, the page `/r`, the Share button); the difference is only how the link travels. Phase 1 can ship with the backup file and without the QR code; the QR code and the club uses (poster, set of routes) follow. Nothing in phase 3 asks for a server today; if a club one day wants one link for many people to a route the author can correct afterwards, that is the point where the stored copy would come back, as a new brief.
 
 ### What this changes
 
