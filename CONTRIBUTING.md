@@ -54,7 +54,7 @@ npm run dev                           # API and web app together
 | http://localhost:3000/openapi.json | OpenAPI document                                               |
 | http://localhost:3000/health       | API and database state (200, or 503 when the database is down) |
 
-BRouter listens on http://localhost:17777. The segment `E0_N45` covers Clermont-Ferrand (lon 0-5, lat 45-50); other regions need other tiles: `./scripts/download-segments.sh E5_N45`.
+BRouter listens on http://localhost:17777. The segment `E0_N45` covers Clermont-Ferrand (lon 0-5, lat 45-50); other regions need other tiles (`./scripts/download-segments.sh france` fetches the seven that cover all of metropolitan France, about 850 MB): `./scripts/download-segments.sh E5_N45`.
 
 ### Basemap
 
