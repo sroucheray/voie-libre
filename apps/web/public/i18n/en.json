@@ -359,17 +359,15 @@
       "copy": "Copy the link",
       "copyNamed": "Copy the link to {{name}}",
       "copied": "Link copied.",
-      "failed": "The link could not be copied. Select it here:",
+      "failed": "The link could not be copied. Select it above.",
       "field": "Link to the route",
       "share": "Share…",
       "shareNamed": "Share the link to {{name}}",
-      "qr": "QR code",
-      "qrNamed": "Show the QR code of the link to {{name}}",
-      "qrHide": "Hide the QR code",
       "qrLabel": "QR code of the link",
       "qrHelp": "Scan it with the camera of a phone to open the route there.",
       "openDialog": "Share…",
-      "openDialogNamed": "Share {{name}}"
+      "openDialogNamed": "Share {{name}}",
+      "qrTooLong": "Too long for a QR code. The short link makes a code that scans easily."
     },
     "confirmDeleteShared": "Delete \"{{name}}\" from this device and stop sharing it? This cannot be undone.",
     "page": {

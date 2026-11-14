@@ -20,9 +20,9 @@ const QR_BORDER = 4;
 export const COPIED_VISIBLE_MS = 6000;
 
 /**
- * What to do with a link: copy it (the clipboard works on every browser, unlike the share sheet),
- * hand it to the system share sheet where there is one, or show it as a QR code. Nothing is sent
- * anywhere by these buttons: they only carry the address they are given.
+ * A link and what to do with it: its QR code at once, the address under it, then "Copy the link"
+ * (the clipboard works on every browser) and, where the browser has one, the system share sheet.
+ * Nothing is sent anywhere from here: it only carries the address it is given.
  */
 @Component({
   selector: 'vl-link-actions',
@@ -52,7 +52,6 @@ export class LinkActions implements OnDestroy {
         }
       : null;
   });
-  protected readonly qrShown = signal(false);
   private timer: ReturnType<typeof setTimeout> | null = null;
 
   protected async copy(): Promise<void> {
@@ -82,10 +81,6 @@ export class LinkActions implements OnDestroy {
       url,
     });
     this.state.set(outcome === 'failed' ? 'failed' : 'idle');
-  }
-
-  protected toggleQr(): void {
-    this.qrShown.update((shown) => !shown);
   }
 
   protected select(event: Event): void {

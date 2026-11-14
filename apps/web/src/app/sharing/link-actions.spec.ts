@@ -97,7 +97,7 @@ describe('LinkActions', () => {
     expect(button?.disabled).toBe(true);
   });
 
-  it('shows the link to select by hand when the clipboard refuses', async () => {
+  it('says so, with the address above to select by hand, when the clipboard refuses', async () => {
     writeText = async () => {
       throw new Error('denied');
     };
@@ -105,8 +105,10 @@ describe('LinkActions', () => {
     button?.click();
     await fixture.whenStable();
     fixture.detectChanges();
-    expect(el.textContent).toContain('could not be copied');
-    expect(el.querySelector<HTMLInputElement>('input')?.value).toContain(
+    expect(el.querySelector('.copy-status')?.textContent).toContain(
+      'could not be copied',
+    );
+    expect(el.querySelector<HTMLInputElement>('.address')?.value).toContain(
       '/r#v=1',
     );
   });
@@ -136,38 +138,51 @@ describe('LinkActions', () => {
       expect(el.querySelector('.copy-link')).not.toBeNull();
     });
 
-    it('stays quiet when the sheet is closed, and shows the link when it fails', async () => {
+    it('stays quiet when the sheet is closed, and says so when it fails', async () => {
       outcome = 'cancelled';
       const { fixture, el } = create();
       shareButton(el)?.click();
       await fixture.whenStable();
       fixture.detectChanges();
-      expect(el.querySelector('input')).toBeNull();
+      expect(el.querySelector('.copy-status')).toBeNull();
       outcome = 'failed';
       shareButton(el)?.click();
       await fixture.whenStable();
       fixture.detectChanges();
-      expect(el.querySelector('input')).not.toBeNull();
+      expect(el.querySelector('.copy-status')?.textContent).toContain(
+        'could not be copied',
+      );
     });
   });
 
   describe('QR code', () => {
-    it('is hidden until asked, then draws the code of the link', () => {
-      const { fixture, el } = create();
-      expect(el.querySelector('svg')).toBeNull();
-      el.querySelector<HTMLButtonElement>('.show-qr')?.click();
-      fixture.detectChanges();
+    it('is drawn at once, with the address under it and the buttons after', () => {
+      const { el } = create();
       const svg = el.querySelector('svg');
       expect(svg?.getAttribute('aria-label')).toBe('QR code of the link');
       expect(svg?.querySelector('path')?.getAttribute('d')).toContain(
         'M4 4h1v1h-1z',
       );
-      el.querySelector<HTMLButtonElement>('.show-qr')?.click();
-      fixture.detectChanges();
-      expect(el.querySelector('svg')).toBeNull();
+      const address = el.querySelector<HTMLInputElement>('.address');
+      expect(address?.value).toContain('/r#v=1&p=road');
+      const order = [svg, address, el.querySelector('.copy-link')];
+      for (let i = 0; i < order.length - 1; i++) {
+        expect(
+          order[i]!.compareDocumentPosition(order[i + 1]!) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+      }
     });
 
-    it('is offered for 20 spread points, and not for a link too long to scan', () => {
+    it('shows nothing of a link while there is none', () => {
+      const { fixture, el } = create();
+      fixture.componentInstance.url.set(null);
+      fixture.detectChanges();
+      expect(el.querySelector('svg')).toBeNull();
+      expect(el.querySelector('.address')).toBeNull();
+    });
+
+    it('is replaced by a message for a link too long to scan, keeping the address and the buttons', () => {
       const { fixture, el } = create();
       const points = Array.from({ length: 20 }, (_, i): [number, number] => [
         -4.5 + i * 0.37,
@@ -180,10 +195,15 @@ describe('LinkActions', () => {
         fixture.detectChanges();
       };
       set('x'.repeat(80));
-      expect(el.querySelector('.show-qr')).not.toBeNull();
+      expect(el.querySelector('svg')).not.toBeNull();
       // Each é becomes six characters in an address: 80 of them go past the biggest code offered.
       set('é'.repeat(80));
-      expect(el.querySelector('.show-qr')).toBeNull();
+      expect(el.querySelector('svg')).toBeNull();
+      expect(el.querySelector('.qr-too-long')?.textContent).toContain(
+        'Too long for a QR code',
+      );
+      expect(el.querySelector('.address')).not.toBeNull();
+      expect(el.querySelector('.copy-link')).not.toBeNull();
     });
   });
 });

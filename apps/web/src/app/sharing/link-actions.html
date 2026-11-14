@@ -1,39 +1,4 @@
-<button
-  type="button"
-  class="copy-link"
-  [disabled]="!url()"
-  [attr.aria-label]="
-    name() ? ('sharing.link.copyNamed' | transloco : { name: name() }) : null
-  "
-  (click)="copy()"
->
-  {{ 'sharing.link.copy' | transloco }}
-</button>
-@if (canShare) {
-<button
-  type="button"
-  class="share-link"
-  [disabled]="!url()"
-  [attr.aria-label]="
-    name() ? ('sharing.link.shareNamed' | transloco : { name: name() }) : null
-  "
-  (click)="share()"
->
-  {{ 'sharing.link.share' | transloco }}
-</button>
-} @if (qr()) {
-<button
-  type="button"
-  class="show-qr"
-  [attr.aria-expanded]="qrShown()"
-  [attr.aria-label]="
-    name() ? ('sharing.link.qrNamed' | transloco : { name: name() }) : null
-  "
-  (click)="toggleQr()"
->
-  {{ (qrShown() ? 'sharing.link.qrHide' : 'sharing.link.qr') | transloco }}
-</button>
-} @if (qrShown() && qr(); as code) {
+@if (url(); as address) { @if (qr(); as code) {
 <figure class="qr">
   <svg
     role="img"
@@ -46,19 +11,50 @@
   </svg>
   <figcaption>{{ 'sharing.link.qrHelp' | transloco }}</figcaption>
 </figure>
-} @switch (state()) { @case ('copied') {
+} @else {
+<p class="qr-too-long">{{ 'sharing.link.qrTooLong' | transloco }}</p>
+}
+<input
+  type="text"
+  class="address"
+  readonly
+  [value]="address"
+  [attr.aria-label]="'sharing.link.field' | transloco"
+  (focus)="select($event)"
+/>
+}
+<div class="buttons">
+  <button
+    type="button"
+    class="copy-link"
+    [disabled]="!url()"
+    [attr.aria-label]="
+      name() ? ('sharing.link.copyNamed' | transloco : { name: name() }) : null
+    "
+    (click)="copy()"
+  >
+    {{ 'sharing.link.copy' | transloco }}
+  </button>
+  @if (canShare) {
+  <button
+    type="button"
+    class="share-link"
+    [disabled]="!url()"
+    [attr.aria-label]="
+      name() ? ('sharing.link.shareNamed' | transloco : { name: name() }) : null
+    "
+    (click)="share()"
+  >
+    {{ 'sharing.link.share' | transloco }}
+  </button>
+  }
+</div>
+@switch (state()) { @case ('copied') {
 <span class="copy-status" role="status"
-  >{{ 'sharing.link.copied' | transloco }} {{ 'sharing.link.privacy' | transloco
-  }}</span
+  >{{ 'sharing.link.copied' | transloco }}</span
 >
 } @case ('failed') {
 <span class="copy-status" role="alert"
-  >{{ 'sharing.link.failed' | transloco }}
-  <input
-    type="text"
-    readonly
-    [value]="url()"
-    [attr.aria-label]="'sharing.link.field' | transloco"
-    (focus)="select($event)"
-/></span>
+  >{{ 'sharing.link.failed' | transloco }}</span
+>
 } }
