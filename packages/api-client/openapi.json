@@ -1655,6 +1655,140 @@
           }
         }
       }
+    },
+    "/stats": {
+      "post": {
+        "operationId": "postStats",
+        "summary": "Count a visit or the use of a feature, in aggregate",
+        "tags": ["stats"],
+        "description": "Adds one to a daily counter. Nothing identifies the caller: no address, no user-agent, no route and no place is stored. A request with `DNT: 1` or `Sec-GPC: 1` is ignored.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": ["event"],
+                "properties": {
+                  "event": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": ["visit"]
+                      },
+                      {
+                        "type": "string",
+                        "enum": ["route"]
+                      },
+                      {
+                        "type": "string",
+                        "enum": ["loop"]
+                      },
+                      {
+                        "type": "string",
+                        "enum": ["export_gpx"]
+                      },
+                      {
+                        "type": "string",
+                        "enum": ["export_fit"]
+                      },
+                      {
+                        "type": "string",
+                        "enum": ["save"]
+                      }
+                    ]
+                  },
+                  "language": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": ["fr"]
+                      },
+                      {
+                        "type": "string",
+                        "enum": ["en"]
+                      }
+                    ]
+                  },
+                  "device": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": ["phone"]
+                      },
+                      {
+                        "type": "string",
+                        "enum": ["tablet"]
+                      },
+                      {
+                        "type": "string",
+                        "enum": ["desktop"]
+                      }
+                    ]
+                  },
+                  "profile": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": ["road"]
+                      },
+                      {
+                        "type": "string",
+                        "enum": ["gravel"]
+                      },
+                      {
+                        "type": "string",
+                        "enum": ["trail"]
+                      }
+                    ]
+                  },
+                  "kilometers": {
+                    "minimum": 0,
+                    "maximum": 5000,
+                    "type": "number"
+                  },
+                  "points": {
+                    "minimum": 0,
+                    "maximum": 100,
+                    "type": "integer"
+                  },
+                  "stops": {
+                    "minimum": 0,
+                    "maximum": 100,
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["code", "message"],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": ["invalid_request"]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "tags": [
@@ -1669,6 +1803,10 @@
     {
       "name": "geocoding",
       "description": "Place and address search"
+    },
+    {
+      "name": "stats",
+      "description": "Aggregated audience counters"
     },
     {
       "name": "sharing",

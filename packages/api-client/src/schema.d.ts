@@ -131,6 +131,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/stats': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Count a visit or the use of a feature, in aggregate
+     * @description Adds one to a daily counter. Nothing identifies the caller: no address, no user-agent, no route and no place is stored. A request with `DNT: 1` or `Sec-GPC: 1` is ignored.
+     */
+    post: operations['postStats'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -736,6 +756,50 @@ export interface operations {
               | 'already_exists'
               | 'forbidden'
               | 'payload_too_large';
+            message: string;
+          };
+        };
+      };
+    };
+  };
+  postStats: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          event:
+            'visit' | 'route' | 'loop' | 'export_gpx' | 'export_fit' | 'save';
+          language?: 'fr' | 'en';
+          device?: 'phone' | 'tablet' | 'desktop';
+          profile?: 'road' | 'gravel' | 'trail';
+          kilometers?: number;
+          points?: number;
+          stops?: number;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'invalid_request';
             message: string;
           };
         };

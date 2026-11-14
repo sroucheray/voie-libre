@@ -14,6 +14,8 @@ import { routeRoutes } from './routes/route';
 import { elevationRoutes } from './routes/elevation';
 import { geocodingRoutes } from './routes/geocoding';
 import { sharedRoutes } from './routes/shared';
+import { statsRoutes } from './routes/stats';
+import { createMemoryStats } from '../db/stats';
 
 export interface AppOptions {
   config: Config;
@@ -69,6 +71,7 @@ export async function buildApp({
         { name: 'system', description: 'Health and diagnostics' },
         { name: 'routing', description: 'Route computation' },
         { name: 'geocoding', description: 'Place and address search' },
+        { name: 'stats', description: 'Aggregated audience counters' },
         {
           name: 'sharing',
           description: 'Routes shared by link, without an account',
@@ -105,6 +108,11 @@ export async function buildApp({
     writeRateLimitMax: config.shareRateLimitMax,
     writeRateLimitWindowMs: config.shareRateLimitWindowMs,
     bodyLimitBytes: config.shareBodyLimitBytes,
+  });
+  await fastify.register(statsRoutes, {
+    store: db.stats ?? createMemoryStats(),
+    rateLimitMax: config.statsRateLimitMax,
+    rateLimitWindowMs: config.rateLimitWindowMs,
   });
   return fastify;
 }

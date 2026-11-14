@@ -21,6 +21,8 @@ export interface Config {
   shareRateLimitWindowMs: number;
   /** Largest accepted body for PUT /p/{id}, in bytes. */
   shareBodyLimitBytes: number;
+  /** Limit for POST /stats (one visit and a few events per person). */
+  statsRateLimitMax: number;
   brouterUrl: string;
   /** Calls sent to BRouter at once: its `MAXTHREADS`, beyond which it kills running requests. */
   brouterMaxConcurrent: number;
@@ -93,6 +95,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       'SHARE_BODY_LIMIT_BYTES',
       env['SHARE_BODY_LIMIT_BYTES'],
       2_000_000,
+    ),
+    statsRateLimitMax: integer(
+      'STATS_RATE_LIMIT_MAX',
+      env['STATS_RATE_LIMIT_MAX'],
+      60,
     ),
     brouterUrl: env['BROUTER_URL'] || 'http://localhost:17777',
     brouterMaxConcurrent: integer(
