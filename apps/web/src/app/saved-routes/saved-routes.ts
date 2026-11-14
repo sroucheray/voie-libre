@@ -161,6 +161,20 @@ export class SavedRoutes {
   protected readonly confirmingId = signal<string | null>(null);
   /** The route whose export formats are offered. */
   protected readonly exportingId = signal<string | null>(null);
+  protected readonly exportingRoute = computed(
+    () => this.routes().find((r) => r.id === this.exportingId()) ?? null,
+  );
+  protected readonly confirmingRoute = computed(
+    () => this.routes().find((r) => r.id === this.confirmingId()) ?? null,
+  );
+  /** A pop-up is over the list: an error is told in it, not behind it. */
+  protected readonly modalOpen = computed(
+    () =>
+      this.importOpen() ||
+      this.exportOpen() ||
+      this.confirmingRoute() !== null ||
+      this.exportingRoute() !== null,
+  );
   protected readonly exportFormats = EXPORT_FORMATS;
   /** The route whose opening waits for the user's yes, because a route is being planned. */
   protected readonly confirmingOpenId = signal<string | null>(null);

@@ -64,7 +64,7 @@
       {{ 'exportDialog.open' | transloco }}
     </button>
   </div>
-  @if (error(); as code) { @if (!importOpen()) {
+  @if (error(); as code) { @if (!modalOpen()) {
   <p class="error" role="alert">{{ errorKey(code) | transloco }}</p>
   } } @if (routes().length === 0) {
   <p class="empty">{{ 'saved.empty' | transloco }}</p>
@@ -147,75 +147,6 @@
         </svg>
         {{ 'sharing.link.badge' | transloco : { date: format.date(until) } }}
       </button>
-      } @if (confirmingId() === route.id) {
-      <div
-        class="confirm"
-        role="group"
-        [attr.aria-label]="confirmDeleteKey(route) | transloco : { name: route.name }"
-      >
-        <span
-          >{{ confirmDeleteKey(route) | transloco : { name: route.name }
-          }}</span
-        >
-        <button
-          type="button"
-          class="danger"
-          [disabled]="busyId() === route.id"
-          (click)="confirmDelete(route.id)"
-        >
-          {{ 'saved.confirmDeleteYes' | transloco }}
-        </button>
-        <button type="button" (click)="cancelDelete()">
-          {{ 'saved.cancel' | transloco }}
-        </button>
-      </div>
-      } @else { @if (exportingId() === route.id) {
-      <div
-        class="confirm export-formats"
-        role="group"
-        [attr.aria-label]="'saved.exportFormat' | transloco"
-        (keydown.escape)="exportingId.set(null)"
-      >
-        @if (isLoop(route)) {
-        <label class="laps">
-          {{ 'saved.laps.label' | transloco }}
-          <input
-            type="number"
-            min="1"
-            [max]="maxLaps"
-            step="1"
-            [value]="lapsOf(route)"
-            (change)="setLaps(route.id, $event)"
-          />
-        </label>
-        @if (lapsOf(route) > 1) {
-        <span class="laps-total"
-          >{{ lapsTotalKey(route) | transloco : lapsTotalParams(route) }}</span
-        >
-        } }
-        <span>{{ 'saved.exportFormat' | transloco }}</span>
-        @for (format of exportFormats; track format) {
-        <button
-          type="button"
-          [attr.aria-label]="'saved.exportAs' | transloco : { name: route.name, format: ('saved.formats.' + format | transloco) }"
-          (click)="exportAs(route.id, format)"
-        >
-          {{ 'saved.formats.' + format | transloco }}
-        </button>
-        } @if (canShareGpx) {
-        <button
-          type="button"
-          class="share-gpx"
-          [attr.aria-label]="'saved.shareGpxNamed' | transloco : { name: route.name }"
-          (click)="exportAs(route.id, 'gpx', 'share')"
-        >
-          {{ 'saved.shareGpx' | transloco }}
-        </button>
-        }
-        <button type="button" (click)="exportingId.set(null)">
-          {{ 'saved.cancel' | transloco }}
-        </button>
-      </div>
       } @if (confirmingOpenId() === route.id) {
       <div
         class="confirm"
@@ -284,11 +215,100 @@
           {{ 'saved.delete' | transloco }}
         </button>
       </div>
-      } }
+      }
     </li>
     }
   </ul>
-  }
+  } @let deleting = confirmingRoute();
+  <vl-modal
+    [open]="deleting !== null"
+    [heading]="'saved.deleteTitle' | transloco"
+    (closed)="cancelDelete()"
+  >
+    @if (deleting; as route) {
+    <div
+      class="confirm"
+      role="group"
+      [attr.aria-label]="confirmDeleteKey(route) | transloco : { name: route.name }"
+    >
+      <span
+        >{{ confirmDeleteKey(route) | transloco : { name: route.name } }}</span
+      >
+      <div class="dialog-buttons">
+        <button
+          type="button"
+          class="danger"
+          [disabled]="busyId() === route.id"
+          (click)="confirmDelete(route.id)"
+        >
+          {{ 'saved.confirmDeleteYes' | transloco }}
+        </button>
+        <button type="button" (click)="cancelDelete()">
+          {{ 'saved.cancel' | transloco }}
+        </button>
+      </div>
+    </div>
+    @if (error(); as code) {
+    <p class="error" role="alert">{{ errorKey(code) | transloco }}</p>
+    } }
+  </vl-modal>
+
+  @let exporting = exportingRoute();
+  <vl-modal
+    [open]="exporting !== null"
+    [heading]="exporting ? ('saved.exportTitle' | transloco : { name: exporting.name }) : ''"
+    (closed)="exportingId.set(null)"
+  >
+    @if (exporting; as route) {
+    <div
+      class="confirm export-formats"
+      role="group"
+      [attr.aria-label]="'saved.exportFormat' | transloco"
+    >
+      @if (isLoop(route)) {
+      <label class="laps">
+        {{ 'saved.laps.label' | transloco }}
+        <input
+          type="number"
+          min="1"
+          [max]="maxLaps"
+          step="1"
+          [value]="lapsOf(route)"
+          (change)="setLaps(route.id, $event)"
+        />
+      </label>
+      @if (lapsOf(route) > 1) {
+      <span class="laps-total"
+        >{{ lapsTotalKey(route) | transloco : lapsTotalParams(route) }}</span
+      >
+      } }
+      <span>{{ 'saved.exportFormat' | transloco }}</span>
+      <div class="dialog-buttons">
+        @for (format of exportFormats; track format) {
+        <button
+          type="button"
+          [attr.aria-label]="'saved.exportAs' | transloco : { name: route.name, format: ('saved.formats.' + format | transloco) }"
+          (click)="exportAs(route.id, format)"
+        >
+          {{ 'saved.formats.' + format | transloco }}
+        </button>
+        } @if (canShareGpx) {
+        <button
+          type="button"
+          class="share-gpx"
+          [attr.aria-label]="'saved.shareGpxNamed' | transloco : { name: route.name }"
+          (click)="exportAs(route.id, 'gpx', 'share')"
+        >
+          {{ 'saved.shareGpx' | transloco }}
+        </button>
+        }
+        <button type="button" (click)="exportingId.set(null)">
+          {{ 'saved.cancel' | transloco }}
+        </button>
+      </div>
+    </div>
+    }
+  </vl-modal>
 
   <vl-modal
     [open]="importOpen()"

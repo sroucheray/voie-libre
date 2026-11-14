@@ -319,7 +319,9 @@
     "showInList": "Show in Saved",
     "nameCount": "{{count}} / {{max}}",
     "shareGpx": "Share GPX…",
-    "shareGpxNamed": "Share {{name}} as a GPX file"
+    "shareGpxNamed": "Share {{name}} as a GPX file",
+    "deleteTitle": "Delete this route",
+    "exportTitle": "Export {{name}}"
   },
   "offline": {
     "title": "Offline map",

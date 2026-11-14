@@ -319,7 +319,9 @@
     "showInList": "Voir dans Enregistrés",
     "nameCount": "{{count}} / {{max}}",
     "shareGpx": "Partager le GPX…",
-    "shareGpxNamed": "Partager {{name}} en fichier GPX"
+    "shareGpxNamed": "Partager {{name}} en fichier GPX",
+    "deleteTitle": "Supprimer ce parcours",
+    "exportTitle": "Exporter {{name}}"
   },
   "offline": {
     "title": "Carte hors ligne",

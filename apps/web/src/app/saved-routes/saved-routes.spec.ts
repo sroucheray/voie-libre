@@ -1194,12 +1194,48 @@ describe('Saved routes', () => {
   describe('the import and export pop-ups', () => {
     it('open from two buttons, and the pop-up is closed until then', async () => {
       const view = await render();
-      const dialogs = () =>
-        [...view.root.querySelectorAll('dialog')].map((d) => d.open);
-      expect(dialogs()).toEqual([false, false]);
+      const importDialog = view.root
+        .querySelector('input[type="file"]')!
+        .closest('dialog')!;
+      expect(importDialog.open).toBe(false);
       view.root.querySelector<HTMLButtonElement>('.import-open')!.click();
       await view.settle();
-      expect(dialogs()).toEqual([true, false]);
+      expect(importDialog.open).toBe(true);
+    });
+
+    it('ask for a deletion in a pop-up, not in the card', async () => {
+      const view = await renderWithSavedRoute();
+      const dialog = () =>
+        [...view.root.querySelectorAll('dialog')].find((d) =>
+          d.querySelector('.danger'),
+        ) ?? null;
+      expect(dialog()).toBeNull();
+      view.button('Delete Road, 41 km').click();
+      await view.settle();
+      expect(dialog()?.open).toBe(true);
+      expect(view.items()[0].querySelector('.confirm')).toBeNull();
+      expect(dialog()?.querySelector('h2')?.textContent).toBe(
+        'Delete this route',
+      );
+    });
+
+    it('offer the formats of a route in a pop-up named after it, and keep renaming in the card', async () => {
+      const view = await renderWithSavedRoute();
+      view.button('Export Road, 41 km').click();
+      await view.settle();
+      const dialog = view.root
+        .querySelector('.export-formats')!
+        .closest('dialog')!;
+      expect(dialog.open).toBe(true);
+      expect(dialog.querySelector('h2')?.textContent).toBe(
+        'Export Road, 41 km',
+      );
+      expect(view.items()[0].querySelector('.export-formats')).toBeNull();
+      view.confirmButton('Cancel').click();
+      await view.settle();
+      view.button('Rename Road, 41 km').click();
+      await view.settle();
+      expect(view.items()[0].querySelector('.rename')).not.toBeNull();
     });
 
     it('offer the two buttons in place of the four they replace', async () => {
