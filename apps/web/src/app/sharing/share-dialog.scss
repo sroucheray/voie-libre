@@ -4,13 +4,21 @@
 
 .share-dialog {
   width: min(28rem, calc(100vw - 2rem));
-  max-height: calc(100dvh - 2rem);
   padding: 0;
   border: 0;
   border-radius: var(--radius-md);
   background: var(--color-surface);
   color: var(--color-text);
   box-shadow: var(--shadow-3, var(--shadow-2));
+  // The dialog rounds and clips; the content inside scrolls, so that its scroll bar stays within the
+  // corners instead of squaring them (as for the layers panel and the welcome window).
+  overflow: hidden;
+  max-height: calc(100dvh - 2rem);
+
+  &[open] {
+    display: flex;
+    flex-direction: column;
+  }
 
   &::backdrop {
     background: rgb(0 0 0 / 0.4);
@@ -18,13 +26,19 @@
 }
 
 .content {
+  min-height: 0;
   padding: 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 0.75rem;
+  // Clear air between the title band, with its close button, and the choices below.
+  margin-bottom: 1rem;
 
   h2 {
     margin: 0;
@@ -33,6 +47,7 @@ header {
 }
 
 .close {
+  flex: none;
   min-width: 2rem;
   min-height: 2rem;
   padding: 0;
@@ -41,7 +56,7 @@ header {
 }
 
 .route-name {
-  margin: 0.25rem 0 0.75rem;
+  margin: 0.25rem 0 0;
   color: var(--color-text-2);
   font-size: var(--font-size-xs);
 }

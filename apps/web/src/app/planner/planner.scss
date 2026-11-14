@@ -372,9 +372,10 @@ vl-saved-routes {
 .help-bar {
   position: absolute;
   bottom: 1.5rem;
-  // On a short map the text scrolls inside instead of climbing over the header.
+  // On a short map the text is cut instead of climbing over the header (it takes no click, so it
+  // never scrolls: no scroll bar to square its corners).
   max-height: calc(100% - 8.5rem);
-  overflow-y: auto;
+  overflow-y: hidden;
   left: 50%;
   transform: translateX(-50%);
   max-width: min(36rem, calc(100% - 1.5rem));

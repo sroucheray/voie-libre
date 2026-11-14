@@ -27,45 +27,47 @@
   tabindex="-1"
   (keydown.escape)="close()"
 >
-  <header>
-    <h2>{{ 'app.title' | transloco }}</h2>
-    <p class="status" [attr.data-status]="health.status()" role="status">
-      {{ 'api.status.' + health.status() | transloco }}
-    </p>
-  </header>
+  <div class="menu-scroll">
+    <header>
+      <h2>{{ 'app.title' | transloco }}</h2>
+      <p class="status" [attr.data-status]="health.status()" role="status">
+        {{ 'api.status.' + health.status() | transloco }}
+      </p>
+    </header>
 
-  <div
-    class="language"
-    role="group"
-    [attr.aria-label]="'language.label' | transloco"
-  >
-    @for (language of languages.supported; track language) {
-    <button
-      type="button"
-      [attr.aria-pressed]="language === languages.current()"
-      (click)="languages.use(language)"
+    <div
+      class="language"
+      role="group"
+      [attr.aria-label]="'language.label' | transloco"
     >
-      {{ name(language) }}
-    </button>
-    }
-  </div>
+      @for (language of languages.supported; track language) {
+      <button
+        type="button"
+        [attr.aria-pressed]="language === languages.current()"
+        (click)="languages.use(language)"
+      >
+        {{ name(language) }}
+      </button>
+      }
+    </div>
 
-  <section class="offline" [attr.aria-label]="'offline.title' | transloco">
-    <h3>{{ 'menu.offline' | transloco }}</h3>
-    <vl-offline-map />
-  </section>
+    <section class="offline" [attr.aria-label]="'offline.title' | transloco">
+      <h3>{{ 'menu.offline' | transloco }}</h3>
+      <vl-offline-map />
+    </section>
 
-  <div class="links">
-    @if (links.donation; as donation) {
-    <a [href]="donation" target="_blank" rel="noopener noreferrer">
-      <vl-icon name="heart" />
-      {{ 'about.donate' | transloco }}
-    </a>
-    }
-    <button type="button" (click)="showAbout()">
-      <vl-icon name="info" />
-      {{ 'about.open' | transloco }}
-    </button>
+    <div class="links">
+      @if (links.donation; as donation) {
+      <a [href]="donation" target="_blank" rel="noopener noreferrer">
+        <vl-icon name="heart" />
+        {{ 'about.donate' | transloco }}
+      </a>
+      }
+      <button type="button" (click)="showAbout()">
+        <vl-icon name="info" />
+        {{ 'about.open' | transloco }}
+      </button>
+    </div>
   </div>
 </div>
 }

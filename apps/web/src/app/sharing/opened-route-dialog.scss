@@ -10,6 +10,15 @@
   background: var(--color-surface);
   color: var(--color-text);
   box-shadow: var(--shadow-3, var(--shadow-2));
+  // The dialog rounds and clips; the content inside scrolls, so that its scroll bar stays within the
+  // corners instead of squaring them (as for the layers panel and the welcome window).
+  overflow: hidden;
+  max-height: calc(100dvh - 2rem);
+
+  &[open] {
+    display: flex;
+    flex-direction: column;
+  }
 
   &::backdrop {
     background: rgb(0 0 0 / 0.4);
@@ -17,7 +26,10 @@
 }
 
 .content {
+  min-height: 0;
   padding: 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 
   h2 {
     margin: 0;

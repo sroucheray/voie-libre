@@ -8,7 +8,12 @@
 >
   <div class="content">
     <header>
-      <h2>{{ 'sharing.dialog.title' | transloco }}</h2>
+      <div class="titles">
+        <h2>{{ 'sharing.dialog.title' | transloco }}</h2>
+        @if (name(); as routeName) {
+        <p class="route-name">{{ routeName }}</p>
+        }
+      </div>
       <button
         type="button"
         class="close"
@@ -18,9 +23,6 @@
         ×
       </button>
     </header>
-    @if (name(); as routeName) {
-    <p class="route-name">{{ routeName }}</p>
-    }
 
     <div
       class="kinds"
