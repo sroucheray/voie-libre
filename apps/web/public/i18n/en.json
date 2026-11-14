@@ -417,7 +417,8 @@
       "needsSave": "Save the route first: a short link is made from a saved route.",
       "privacyContained": "Anyone who has this link can see the route. It is not stored on any server.",
       "privacyShort": "Anyone who has this link can see the route until {{date}}. A copy is kept on our server until then.",
-      "privacyShortPending": "Once created, anyone who has the link can see the route until the date. A copy is kept on our server until then."
+      "privacyShortPending": "Once created, anyone who has the link can see the route until the date. A copy is kept on our server until then.",
+      "loopMayDiffer": "This loop was asked by distance and may come out another way when opened from this link. The short link keeps the exact track."
     }
   },
   "profile": {

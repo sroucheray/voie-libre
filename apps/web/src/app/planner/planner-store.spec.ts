@@ -9,6 +9,7 @@ import {
   pointRole,
 } from './planner-store';
 import type { LngLat3 } from './planner-map-driver';
+import type { LngLat } from '../core/map/map-factory';
 
 const route: PlannedRoute = {
   geometry: [
@@ -573,6 +574,70 @@ describe('PlannerStore', () => {
       store.addPoint([1, 1]);
       store.clear();
       expect(store.points()).toEqual([]);
+    });
+  });
+
+  describe('opening a link', () => {
+    const loop = { mode: 'distance', distanceMeters: 30000 } as const;
+    const start: LngLat = [3.087, 45.777];
+    const three = [
+      route,
+      { ...route, distanceMeters: 2000 },
+      { ...route, distanceMeters: 3000 },
+    ];
+
+    it('puts the route of the link in as unsaved work with nothing computed', () => {
+      store.setStart([2, 46]);
+      store.openLink({
+        points: [start, [3.2, 45.6]],
+        profile: 'gravel',
+        loop: null,
+      });
+      expect(store.points()).toEqual([start, [3.2, 45.6]]);
+      expect(store.profile()).toBe('gravel');
+      expect(store.alternatives()).toBe(1);
+      expect(store.routes()).toEqual([]);
+      expect(store.unsaved()).toBe(true);
+      expect(store.canUndo()).toBe(false);
+    });
+
+    it('asks for the alternatives of a loop and shows the one that was shared', () => {
+      store.openLink({
+        points: [start, start],
+        profile: 'road',
+        loop,
+        alternative: { rank: 2, count: 3 },
+      });
+      expect(store.alternatives()).toBe(3);
+      store.setRoutes(three);
+      expect(store.selectedIndex()).toBe(1);
+      expect(store.routes()[store.selectedIndex()].distanceMeters).toBe(2000);
+    });
+
+    it('selects the first when the link has no alternative, or fewer came back', () => {
+      store.openLink({ points: [start, start], profile: 'road', loop });
+      store.setRoutes(three);
+      expect(store.selectedIndex()).toBe(0);
+      store.openLink({
+        points: [start, start],
+        profile: 'road',
+        loop,
+        alternative: { rank: 3, count: 3 },
+      });
+      store.setRoutes([route]);
+      expect(store.selectedIndex()).toBe(0);
+    });
+
+    it('forgets the wish once the inputs change before the routes arrive', () => {
+      store.openLink({
+        points: [start, start],
+        profile: 'road',
+        loop,
+        alternative: { rank: 2, count: 3 },
+      });
+      store.setProfile('trail');
+      store.setRoutes(three);
+      expect(store.selectedIndex()).toBe(0);
     });
   });
 

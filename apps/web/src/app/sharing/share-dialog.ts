@@ -62,6 +62,15 @@ export class ShareDialog {
   protected readonly target = this.dialogs.target;
   protected readonly name = computed(() => this.target()?.link.name ?? null);
 
+  /**
+   * A loop by distance whose chosen alternative is not known (a saved one): opened from the link
+   * it may come out another way, which the short link, with its exact track, does not.
+   */
+  protected readonly loopMayDiffer = computed(() => {
+    const link = this.target()?.link;
+    return link?.loop?.mode === 'distance' && !link.alternative;
+  });
+
   protected readonly containedUrl = computed(() => {
     const link = this.target()?.link;
     const origin = this.document.defaultView?.location.origin;

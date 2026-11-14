@@ -19,6 +19,63 @@ const ok = (fragment: string): RouteLink => {
 };
 
 describe('route link', () => {
+  it('round-trips which alternative of a loop by distance was chosen', () => {
+    const link: RouteLink = {
+      points: [A, A],
+      profile: 'road',
+      loop: { mode: 'distance', distanceMeters: 30000 },
+      alternative: { rank: 2, count: 3 },
+    };
+    expect(ok(encodeRouteLink(link))).toEqual(link);
+  });
+
+  it('leaves the alternative out when only one was asked, or for another route', () => {
+    const loop = { mode: 'distance', distanceMeters: 30000 } as const;
+    expect(
+      encodeRouteLink({
+        points: [A, A],
+        profile: 'road',
+        loop,
+        alternative: { rank: 1, count: 1 },
+      }),
+    ).not.toContain('a=');
+    expect(
+      encodeRouteLink({
+        points: [A, B],
+        profile: 'road',
+        loop: null,
+        alternative: { rank: 2, count: 3 },
+      }),
+    ).not.toContain('a=');
+  });
+
+  it.each(['a=4.4', 'a=3.2', 'a=0.2', 'a=x', 'a=2'])(
+    'rejects the alternative %s',
+    (alt) => {
+      const base = encodeRouteLink({
+        points: [A, A],
+        profile: 'road',
+        loop: { mode: 'distance', distanceMeters: 30000 },
+      });
+      expect(decodeRouteLink(`${base}&${alt}`)).toEqual({
+        ok: false,
+        code: 'invalid',
+      });
+    },
+  );
+
+  it('rejects an alternative on a route that is no loop by distance', () => {
+    const base = encodeRouteLink({
+      points: [A, B],
+      profile: 'road',
+      loop: null,
+    });
+    expect(decodeRouteLink(`${base}&a=2.3`)).toEqual({
+      ok: false,
+      code: 'invalid',
+    });
+  });
+
   it('round-trips an itinerary, with a name', () => {
     const link: RouteLink = {
       points: [A, S, B],

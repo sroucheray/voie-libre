@@ -20,6 +20,11 @@ export interface RouteLink {
   profile: Profile;
   loop: LoopMode | null;
   name?: string;
+  /**
+   * Which of the alternatives asked was chosen, for a loop by distance: its alternatives head in
+   * different directions, so without this the one that opens is the first, not the one shared.
+   */
+  alternative?: { rank: number; count: number };
 }
 
 /** Why a link could not be read; the UI translates these under `sharing.link.errors.*`. */
@@ -148,6 +153,10 @@ export function encodeRouteLink(link: RouteLink): string {
     `c=${encodePoints(link.points)}`,
   ];
   if (link.loop) parts.push(`l=${encodeLoop(link.loop)}`);
+  const alt = link.alternative;
+  if (link.loop?.mode === 'distance' && alt && alt.count > 1) {
+    parts.push(`a=${alt.rank}.${alt.count}`);
+  }
   const name = link.name?.trim().slice(0, ROUTE_LINK_NAME_MAX);
   if (name) parts.push(`n=${encodeURIComponent(name)}`);
   return parts.join('&');
@@ -186,6 +195,18 @@ export function decodeRouteLink(fragment: string): RouteLinkResult {
     const loop = decodeLoop(loopText);
     if (loop === undefined) return { ok: false, code: 'invalid' };
     link.loop = loop;
+  }
+  const altText = params.get('a');
+  if (altText !== null) {
+    const match = /^([1-3])\.([1-3])$/.exec(altText);
+    if (
+      !match ||
+      Number(match[1]) > Number(match[2]) ||
+      link.loop?.mode !== 'distance'
+    ) {
+      return { ok: false, code: 'invalid' };
+    }
+    link.alternative = { rank: Number(match[1]), count: Number(match[2]) };
   }
   const name = params.get('n')?.trim().slice(0, ROUTE_LINK_NAME_MAX);
   if (name) link.name = name;

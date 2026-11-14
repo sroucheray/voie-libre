@@ -260,6 +260,35 @@ describe('ShareDialog', () => {
     });
   });
 
+  describe('a loop by distance', () => {
+    const loop = { mode: 'distance', distanceMeters: 30000 } as const;
+    const show = async (alternative?: { rank: number; count: number }) => {
+      const fixture = TestBed.createComponent(ShareDialog);
+      TestBed.inject(ShareDialogService).open({
+        link: {
+          ...link,
+          points: [link.points[0], link.points[0]],
+          loop,
+          alternative,
+        },
+        savedId: null,
+      });
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    };
+
+    it('warns that it may come out another way when the chosen alternative is not known', async () => {
+      expect((await show()).textContent).toContain('may come out another way');
+    });
+
+    it('does not warn when the link says which alternative it is', async () => {
+      const el = await show({ rank: 2, count: 3 });
+      expect(el.textContent).not.toContain('may come out another way');
+    });
+  });
+
   it('closes with the cross', async () => {
     const { el, click, fixture } = await open();
     await click('.close');

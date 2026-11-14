@@ -438,6 +438,8 @@ export class PlannerStore {
    * {@link RoutePlanner} must not recompute: the routes are already in the state.
    */
   private restored: string | null = null;
+  /** The alternative of an opened link to show once its routes are computed. */
+  private pendingSelection: { signature: string; index: number } | null = null;
 
   /** Signature of the inputs the routes on screen were computed from, or null (none, or unknown). */
   private routesFor: string | null = null;
@@ -905,6 +907,7 @@ export class PlannerStore {
     points: readonly LngLat[];
     profile: Profile;
     loop: LoopMode | null;
+    alternative?: { rank: number; count: number };
   }): void {
     this.preview.set(null);
     this.undoStack.set([]);
@@ -912,11 +915,18 @@ export class PlannerStore {
     this.removedState.set(null);
     this.noLookup.clear();
     this.openState.set(false);
-    this.alternativesState.set(1);
+    this.alternativesState.set(link.alternative?.count ?? 1);
     this.profileState.set(link.profile);
     this.loopState.set(link.loop);
     this.pointsState.set(link.points.map((p) => [p[0], p[1]] as LngLat));
     this.restored = null;
+    // Of the alternatives asked, the one that was shared is shown when they arrive.
+    this.pendingSelection = link.alternative
+      ? {
+          signature: this.currentSignature(),
+          index: link.alternative.rank - 1,
+        }
+      : null;
     this.savedSignature.set(null);
     this.savedRef.set(null);
     this.resetResult();
@@ -1141,7 +1151,15 @@ export class PlannerStore {
   setRoutes(routes: PlannedRoute[]): void {
     this.routesFor = this.currentSignature();
     this.routesState.set(routes);
-    this.selectedState.set(0);
+    const pending = this.pendingSelection;
+    this.pendingSelection = null;
+    this.selectedState.set(
+      pending &&
+        pending.signature === this.routesFor &&
+        pending.index < routes.length
+        ? pending.index
+        : 0,
+    );
     this.cursor.set(null);
     this.errorState.set(null);
     this.statusState.set('ready');

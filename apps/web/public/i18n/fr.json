@@ -417,7 +417,8 @@
       "needsSave": "Enregistrez d'abord le parcours : un lien court se fait à partir d'un parcours enregistré.",
       "privacyContained": "Toute personne qui a ce lien peut voir le parcours. Il n'est enregistré sur aucun serveur.",
       "privacyShort": "Toute personne qui a ce lien peut voir le parcours jusqu'au {{date}}. Une copie est gardée sur notre serveur jusque-là.",
-      "privacyShortPending": "Une fois créé, toute personne qui a le lien peut voir le parcours jusqu'à la date. Une copie est gardée sur notre serveur jusque-là."
+      "privacyShortPending": "Une fois créé, toute personne qui a le lien peut voir le parcours jusqu'à la date. Une copie est gardée sur notre serveur jusque-là.",
+      "loopMayDiffer": "Cette boucle a été demandée par distance et peut sortir autrement à l'ouverture de ce lien. Le lien court garde le tracé exact."
     }
   },
   "profile": {

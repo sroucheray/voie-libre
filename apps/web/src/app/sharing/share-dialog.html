@@ -42,6 +42,11 @@
           <span class="hint"
             >{{ 'sharing.dialog.contained.hint' | transloco }}</span
           >
+          @if (loopMayDiffer()) {
+          <span class="blocked-why"
+            >{{ 'sharing.dialog.loopMayDiffer' | transloco }}</span
+          >
+          }
         </span>
       </label>
       <label

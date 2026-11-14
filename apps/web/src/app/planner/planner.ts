@@ -164,6 +164,16 @@ export class Planner {
       profile: this.store.profile(),
       loop: this.store.loop(),
       name: this.store.savedAs()?.name,
+      // A loop by distance heads another way for each alternative: the link says which one.
+      ...(this.store.loop()?.mode === 'distance' &&
+      this.store.alternatives() > 1
+        ? {
+            alternative: {
+              rank: this.store.selectedIndex() + 1,
+              count: this.store.alternatives(),
+            },
+          }
+        : {}),
     };
   });
   protected readonly format = inject(FormattingService);
