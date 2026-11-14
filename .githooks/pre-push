@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Before a push of main or of a version tag, run the checks of CI (scripts/ci-local.sh).
+# Installed once with: git config core.hooksPath .githooks
+# Skip once, knowingly: git push --no-verify  (CI will run them anyway).
+# A push that only changes documentation (docs/, *.md) is let through.
+set -euo pipefail
+
+zero=0000000000000000000000000000000000000000
+needs_checks=false
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue # a deletion
+  case "$remote_ref" in
+    refs/heads/main | refs/tags/v*) ;;
+    *) continue ;;
+  esac
+  if [ "$remote_sha" = "$zero" ]; then
+    range="$local_sha" # new ref: look at the commit itself
+    changed="$(git diff-tree --no-commit-id --name-only -r "$local_sha")"
+  else
+    changed="$(git diff --name-only "$remote_sha" "$local_sha" 2>/dev/null || echo unknown)"
+  fi
+  # A version tag publishes the app: always check it.
+  case "$remote_ref" in refs/tags/v*) needs_checks=true ;; esac
+  if printf '%s\n' "$changed" | grep -qvE '^(docs/|.*\.md$|$)'; then
+    needs_checks=true
+  fi
+done
+
+if [ "$needs_checks" = true ]; then
+  echo "pre-push: running the checks of CI (scripts/ci-local.sh)..." >&2
+  exec "$(git rev-parse --show-toplevel)/scripts/ci-local.sh"
+fi
