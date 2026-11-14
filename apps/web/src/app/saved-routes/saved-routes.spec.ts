@@ -1233,6 +1233,28 @@ describe('Saved routes', () => {
     });
   });
 
+  describe('the link buttons of a saved route', () => {
+    it('are enabled and copy a link that opens the route', async () => {
+      const written: string[] = [];
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText: async (text: string) => void written.push(text) },
+      });
+      const view = await renderWithSavedRoute();
+      const copy = view.root.querySelector<HTMLButtonElement>('li .copy-link');
+      const qr = view.root.querySelector<HTMLButtonElement>('li .show-qr');
+      expect(copy?.disabled).toBe(false);
+      expect(qr?.disabled).toBe(false);
+      copy?.click();
+      await view.settle();
+      expect(written).toHaveLength(1);
+      expect(written[0]).toContain('/r#v=1&p=road');
+      qr?.click();
+      await view.settle();
+      expect(view.root.querySelector('li svg path')).not.toBeNull();
+    });
+  });
+
   describe('the backup file', () => {
     async function importBackupText(
       view: Awaited<ReturnType<typeof render>>,
