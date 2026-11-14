@@ -117,6 +117,7 @@ Things found on the way:
 
 - The stretched "Open" button of a saved card covered the link buttons, which sit in another component and are not reached by the card's rules: tests cannot see stacking, only a click in a browser did.
 - A loop by distance computed with one alternative heads north: a link that did not say which alternative was shared opened another loop (tested on the local API: alternative 2 of 3 differs from the single one). Hence `a=2.3`.
+- Dialogs and the phone menu lost their rounded corners when their content scrolled: the scrolling element now sits inside the rounded, clipped box (same cure as the layers panel).
 - An expired short link is a 404, not a 410: the sweep removes the row, so the two cases could not be told apart anyway.
 
 To do: try it on a real phone; the welcome screen of a first visit sits behind the opening dialog; the Capacitor share plugin can replace `SHARE_SHEET` for the future app.
