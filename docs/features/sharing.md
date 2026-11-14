@@ -97,4 +97,12 @@ Phases 1 and 2 are one build (the link, the page `/r`, the Share button); the di
 
 ## Plan
 
-Design approved by the author on 2026-11-14; not started. Proposed steps, one commit each: (1) `route-link` encode and decode with tests; (2) the `/r` page and the confirmation; (3) the Share button (copy, share sheet, GPX through the sheet) with the privacy line and the translations; (4) the backup file, export and import; (5) the QR code, after the author chooses an encoder; (6) documentation and the privacy texts.
+Design approved by the author on 2026-11-14; not started.
+
+Choices made when starting (2026-11-14):
+
+- **First slice**: the link, the `/r` page and "Copy the link", checked end to end from the desktop to the author's phone before anything else (no share sheet, no file, no QR code yet).
+- **Where the button goes**: both in the route summary (the route on screen, saved or not) and on each card of the saved routes list.
+- **Place names**: the link carries the route name only; the names of the places are looked up again when it is opened (reverse geocoding through the API, as when a point is placed by a click), so the link stays short and the coordinates of each point reach the geocoder as they do today.
+
+Steps, one commit each: (1) `route-link` encode and decode with tests; (2) the `/r` page and the confirmation; (3) "Copy the link" in the summary and on the saved cards, with the privacy line and the translations; (4) the share sheet and the GPX through it; (5) the backup file, export and import; (6) the QR code, after the author chooses an encoder; (7) documentation and the privacy texts.
