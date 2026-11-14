@@ -7,6 +7,7 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { PwaInstall } from './core/pwa/pwa-install';
 import { provideServiceWorker } from '@angular/service-worker';
 import { provideTransloco } from '@jsverse/transloco';
 import { appRoutes } from './app.routes';
@@ -29,5 +30,7 @@ export const appConfig: ApplicationConfig = {
       registrationStrategy: 'registerWhenStable:30000',
     }),
     provideAppInitializer(() => inject(LanguageService).init()),
+    // Listens from the start: the browser can say "installable" long before the About window opens.
+    provideAppInitializer(() => void inject(PwaInstall)),
   ],
 };

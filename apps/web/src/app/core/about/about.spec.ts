@@ -3,7 +3,9 @@ import { provideTestTransloco } from '../../../testing/transloco-testing';
 import { LanguageService } from '../i18n/language.service';
 import { ABOUT_LINKS, type AboutLinks } from './about-config';
 import { About } from './about';
+import { PwaInstall } from '../pwa/pwa-install';
 import { WelcomeScreen } from '../welcome/welcome-screen';
+import { ApplicationRef } from '@angular/core';
 
 function setup(links?: Partial<AboutLinks>) {
   TestBed.configureTestingModule({
@@ -105,5 +107,41 @@ describe('About', () => {
     await fixture.whenStable();
     expect(root.querySelector('[role="dialog"]')).toBeNull();
     expect(TestBed.inject(WelcomeScreen).open()).toBe(true);
+  });
+
+  describe('installing the app', () => {
+    it('offers it only when the browser can, and opens its dialog', async () => {
+      const { root, open } = setup();
+      const install = TestBed.inject(PwaInstall);
+      await open();
+      expect(root.querySelector('.about__install')).toBeNull();
+      const event = new Event('beforeinstallprompt', { cancelable: true });
+      const prompt = vi.fn().mockResolvedValue(undefined);
+      Object.assign(event, {
+        prompt,
+        userChoice: Promise.resolve({ outcome: 'accepted' }),
+      });
+      window.dispatchEvent(event);
+      await TestBed.inject(ApplicationRef).whenStable();
+      const button = root.querySelector<HTMLButtonElement>(
+        '.about__install button',
+      );
+      expect(button?.textContent).toContain('Install');
+      button!.click();
+      await install.install().catch(() => undefined);
+      expect(prompt).toHaveBeenCalled();
+    });
+
+    it('explains the gesture on an iPhone', async () => {
+      vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue(
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+      );
+      const { root, open } = setup();
+      await open();
+      expect(root.querySelector('.about__install')?.textContent).toContain(
+        'Add to Home Screen',
+      );
+      expect(root.querySelector('.about__install button')).toBeNull();
+    });
   });
 });

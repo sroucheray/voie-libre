@@ -1,20 +1,47 @@
 {
+  "id": "/",
   "name": "Voie Libre",
   "short_name": "Voie Libre",
   "description": "Plan road, gravel and trail routes. Your routes stay on your device.",
+  "lang": "en",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "categories": ["navigation", "sports", "travel"],
   "background_color": "#f3f6f5",
   "theme_color": "#0f766e",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
     {
       "src": "icons/icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Planning a route on the map, with its elevation profile"
+    },
+    {
+      "src": "screenshots/narrow.png",
+      "sizes": "412x860",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "The same on a phone, with the bottom sheet"
     }
   ]
 }

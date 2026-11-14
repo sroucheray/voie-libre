@@ -10,6 +10,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { Icon } from '../icons/icon';
 import { ABOUT_LINKS } from './about-config';
 import { AboutScreen } from './about-screen';
+import { PwaInstall } from '../pwa/pwa-install';
 import { WelcomeScreen } from '../welcome/welcome-screen';
 import { APP_VERSION } from './version';
 
@@ -26,6 +27,7 @@ export class About {
   protected readonly version = APP_VERSION;
   private readonly welcome = inject(WelcomeScreen);
   protected readonly screen = inject(AboutScreen);
+  protected readonly install = inject(PwaInstall);
   private readonly box = viewChild<ElementRef<HTMLElement>>('box');
 
   constructor() {

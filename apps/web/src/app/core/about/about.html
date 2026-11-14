@@ -72,6 +72,27 @@
           <vl-icon name="externalLink" />
         </a>
       </section>
+      } @if (install.canPrompt()) {
+      <section class="about__install" aria-labelledby="about-install-title">
+        <div>
+          <h3 id="about-install-title">
+            {{ 'about.installTitle' | transloco }}
+          </h3>
+          <p>{{ 'about.install' | transloco }}</p>
+        </div>
+        <button type="button" (click)="install.install()">
+          {{ 'about.installButton' | transloco }}
+        </button>
+      </section>
+      } @else if (install.iosHint()) {
+      <section class="about__install" aria-labelledby="about-install-title">
+        <div>
+          <h3 id="about-install-title">
+            {{ 'about.installTitle' | transloco }}
+          </h3>
+          <p>{{ 'about.installIos' | transloco }}</p>
+        </div>
+      </section>
       }
 
       <button type="button" class="about__welcome" (click)="showWelcome()">
