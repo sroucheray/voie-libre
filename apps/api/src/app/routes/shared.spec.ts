@@ -27,6 +27,7 @@ const body = {
 };
 
 const ID = 'abcdefghjk';
+const DAY = 24 * 60 * 60 * 1000;
 
 describe('shared routes', () => {
   let server: FastifyInstance;
@@ -48,7 +49,7 @@ describe('shared routes', () => {
     await server.ready();
   };
 
-  const put = (id: string, payload: unknown = body) =>
+  const put = (id: string, payload: unknown = { ...body, lifetime: 'week' }) =>
     server.inject({
       method: 'PUT',
       url: `/p/${id}`,
@@ -56,6 +57,7 @@ describe('shared routes', () => {
     });
 
   afterEach(async () => {
+    jest.restoreAllMocks();
     await server.close();
   });
 
@@ -70,6 +72,21 @@ describe('shared routes', () => {
       expect(store.size).toBe(1);
     });
 
+    it.each([
+      ['day', DAY],
+      ['week', 7 * DAY],
+      ['month', 30 * DAY],
+    ])('keeps the route for a %s', async (lifetime, ms) => {
+      await start();
+      const before = Date.now();
+      const response = await put(ID, { ...body, lifetime });
+      expect(response.statusCode).toBe(201);
+      const { expiresAt } = response.json();
+      expect(expiresAt).toBeGreaterThanOrEqual(before + ms);
+      expect(expiresAt).toBeLessThanOrEqual(Date.now() + ms);
+      expect((await store.get(ID))?.expiresAt).toBe(expiresAt);
+    });
+
     it('stores a hash of the token, never the token', async () => {
       await start();
       const { deleteToken } = (await put(ID)).json();
@@ -82,41 +99,64 @@ describe('shared routes', () => {
     it('is immutable: an id already in use answers 409 and keeps the first route', async () => {
       await start();
       await put(ID);
-      const again = await put(ID, { ...body, name: 'Other' });
+      const again = await put(ID, { ...body, lifetime: 'week', name: 'Other' });
       expect(again.statusCode).toBe(409);
       expect(again.json().code).toBe('already_exists');
       expect((await store.get(ID))?.name).toBe('Col de la Ventouse');
     });
 
     it.each([
-      ['an id with ambiguous characters', 'abcdefg0', body],
-      ['an id that is too short', 'abc', body],
-      ['no name', ID, { ...body, name: undefined }],
-      ['an empty name', ID, { ...body, name: '' }],
-      ['an unknown profile', ID, { ...body, profile: 'tank' }],
-      ['a single point', ID, { ...body, points: [[3, 45]] }],
+      [
+        'an id with ambiguous characters',
+        'abcdefg0',
+        { ...body, lifetime: 'week' },
+      ],
+      ['an id that is too short', 'abc', { ...body, lifetime: 'week' }],
+      ['no lifetime', ID, body],
+      ['an unknown lifetime', ID, { ...body, lifetime: 'forever' }],
+      ['no name', ID, { ...body, lifetime: 'week', name: undefined }],
+      ['an empty name', ID, { ...body, lifetime: 'week', name: '' }],
+      [
+        'an unknown profile',
+        ID,
+        { ...body, lifetime: 'week', profile: 'tank' },
+      ],
+      ['a single point', ID, { ...body, lifetime: 'week', points: [[3, 45]] }],
       [
         'a latitude out of range',
         ID,
         {
           ...body,
+          lifetime: 'week',
           points: [
             [3, 95],
             [3, 45],
           ],
         },
       ],
-      ['an empty geometry', ID, { ...body, geometry: [] }],
-      ['a negative distance', ID, { ...body, distanceMeters: -1 }],
+      ['an empty geometry', ID, { ...body, lifetime: 'week', geometry: [] }],
+      [
+        'a negative distance',
+        ID,
+        { ...body, lifetime: 'week', distanceMeters: -1 },
+      ],
       [
         '21 points',
         ID,
-        { ...body, points: Array.from({ length: 21 }, () => [3, 45]) },
+        {
+          ...body,
+          lifetime: 'week',
+          points: Array.from({ length: 21 }, () => [3, 45]),
+        },
       ],
       [
         'too many geometry points',
         ID,
-        { ...body, geometry: Array.from({ length: 5001 }, () => [3, 45, 400]) },
+        {
+          ...body,
+          lifetime: 'week',
+          geometry: Array.from({ length: 5001 }, () => [3, 45, 400]),
+        },
       ],
     ])(
       'rejects %s with the stable invalid_request code',
@@ -158,6 +198,7 @@ describe('shared routes', () => {
         ...body,
         id: ID,
         sharedAt: expect.any(Number),
+        expiresAt: expect.any(Number),
       });
     });
 
@@ -188,6 +229,37 @@ describe('shared routes', () => {
       });
       expect(response.statusCode).toBe(400);
       expect(response.json().code).toBe('invalid_request');
+    });
+  });
+
+  describe('expiry', () => {
+    it('stops serving a route once its time is up, as if it never existed', async () => {
+      await start();
+      await put(ID, { ...body, lifetime: 'day' });
+      const now = Date.now();
+      jest.spyOn(Date, 'now').mockReturnValue(now + DAY + 1000);
+      const route = await server.inject({ method: 'GET', url: `/p/${ID}` });
+      expect(route.statusCode).toBe(404);
+      expect(route.json().code).toBe('not_found');
+      const gpx = await server.inject({ method: 'GET', url: `/p/${ID}.gpx` });
+      expect(gpx.statusCode).toBe(404);
+    });
+
+    it('still serves it just before', async () => {
+      await start();
+      await put(ID, { ...body, lifetime: 'day' });
+      jest.spyOn(Date, 'now').mockReturnValue(Date.now() + DAY - 60_000);
+      const route = await server.inject({ method: 'GET', url: `/p/${ID}` });
+      expect(route.statusCode).toBe(200);
+    });
+
+    it('removes the routes whose time is up and keeps the others', async () => {
+      await start();
+      await put('aaaaaaaa', { ...body, lifetime: 'day' });
+      await put('bbbbbbbb', { ...body, lifetime: 'month' });
+      jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 2 * DAY);
+      expect(await store.deleteExpired()).toBe(1);
+      expect(store.size).toBe(1);
     });
   });
 

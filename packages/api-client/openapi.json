@@ -978,7 +978,7 @@
         "operationId": "shareRoute",
         "summary": "Share a route by link, without an account",
         "tags": ["sharing"],
-        "description": "Creates the shared route under the id drawn on the device. Shared routes are immutable: an id already in use answers 409. The delete token is returned once.",
+        "description": "Creates the shared route under the id drawn on the device, for the lifetime asked (a day, a week or a month). Shared routes are immutable: an id already in use answers 409. The delete token is returned once.",
         "requestBody": {
           "required": true,
           "content": {
@@ -993,7 +993,8 @@
                   "distanceMeters",
                   "ascentMeters",
                   "durationSeconds",
-                  "createdAt"
+                  "createdAt",
+                  "lifetime"
                 ],
                 "properties": {
                   "name": {
@@ -1090,6 +1091,23 @@
                     "maximum": 8640000000000000,
                     "description": "When the route was saved on the device, in milliseconds since the epoch.",
                     "type": "integer"
+                  },
+                  "lifetime": {
+                    "description": "How long the route is kept: one day, one week or one month. After that it is removed.",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": ["day"]
+                      },
+                      {
+                        "type": "string",
+                        "enum": ["week"]
+                      },
+                      {
+                        "type": "string",
+                        "enum": ["month"]
+                      }
+                    ]
                   }
                 }
               }
@@ -1114,11 +1132,15 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["id", "deleteToken"],
+                  "required": ["id", "expiresAt", "deleteToken"],
                   "properties": {
                     "id": {
                       "pattern": "^[abcdefghijkmnpqrstuvwxyz23456789]{8,10}$",
                       "type": "string"
+                    },
+                    "expiresAt": {
+                      "description": "When the route will be removed, in milliseconds since the epoch.",
+                      "type": "integer"
                     },
                     "deleteToken": {
                       "description": "Shown once. Keep it on the device: it is the only way to remove the shared route.",
@@ -1283,7 +1305,8 @@
                     "durationSeconds",
                     "createdAt",
                     "id",
-                    "sharedAt"
+                    "sharedAt",
+                    "expiresAt"
                   ],
                   "properties": {
                     "name": {
@@ -1387,6 +1410,10 @@
                     },
                     "sharedAt": {
                       "description": "When the route reached the server, in milliseconds.",
+                      "type": "integer"
+                    },
+                    "expiresAt": {
+                      "description": "When the route is removed, in milliseconds since the epoch.",
                       "type": "integer"
                     }
                   }

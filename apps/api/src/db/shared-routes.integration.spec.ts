@@ -28,6 +28,7 @@ const route: NewSharedRoute = {
   ascentMeters: 399,
   durationSeconds: 8674,
   createdAt: Date.parse('2026-11-01T10:00:00.123Z'),
+  expiresAt: Math.floor(Date.now() / 1000) * 1000 + 24 * 60 * 60 * 1000,
 };
 
 run('PostgreSQL shared routes', () => {
@@ -52,6 +53,17 @@ run('PostgreSQL shared routes', () => {
       [route.id],
     );
     expect(rows[0]).toEqual({ type: 'ST_LineString', n: 3, srid: 4326 });
+  });
+
+  it('does not serve a route whose time is up, and removes it', async () => {
+    await store.create({ ...route, expiresAt: Date.now() - 1000 }, 'hash-1');
+    expect(await store.get(route.id)).toBeNull();
+    expect(await store.deleteExpired()).toBeGreaterThanOrEqual(1);
+    const { rowCount } = await pool.query(
+      'SELECT 1 FROM shared_routes WHERE id = $1',
+      [route.id],
+    );
+    expect(rowCount).toBe(0);
   });
 
   it('refuses a second route under the same id', async () => {

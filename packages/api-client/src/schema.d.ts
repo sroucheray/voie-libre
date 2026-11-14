@@ -100,7 +100,7 @@ export interface paths {
     get: operations['getSharedRoute'];
     /**
      * Share a route by link, without an account
-     * @description Creates the shared route under the id drawn on the device. Shared routes are immutable: an id already in use answers 409. The delete token is returned once.
+     * @description Creates the shared route under the id drawn on the device, for the lifetime asked (a day, a week or a month). Shared routes are immutable: an id already in use answers 409. The delete token is returned once.
      */
     put: operations['shareRoute'];
     post?: never;
@@ -525,6 +525,8 @@ export interface operations {
             id: string;
             /** @description When the route reached the server, in milliseconds. */
             sharedAt: number;
+            /** @description When the route is removed, in milliseconds since the epoch. */
+            expiresAt: number;
           };
         };
       };
@@ -570,6 +572,8 @@ export interface operations {
           durationSeconds: number;
           /** @description When the route was saved on the device, in milliseconds since the epoch. */
           createdAt: number;
+          /** @description How long the route is kept: one day, one week or one month. After that it is removed. */
+          lifetime: 'day' | 'week' | 'month';
         };
       };
     };
@@ -582,6 +586,8 @@ export interface operations {
         content: {
           'application/json': {
             id: string;
+            /** @description When the route will be removed, in milliseconds since the epoch. */
+            expiresAt: number;
             /** @description Shown once. Keep it on the device: it is the only way to remove the shared route. */
             deleteToken: string;
           };

@@ -18,6 +18,8 @@ export interface SharedRoute {
   /** Milliseconds since the epoch, as saved on the device. */
   createdAt: number;
   sharedAt: number;
+  /** Milliseconds since the epoch: after this the route is no longer served, then removed. */
+  expiresAt: number;
 }
 
 export type NewSharedRoute = Omit<SharedRoute, 'sharedAt'>;
@@ -28,7 +30,10 @@ export type RemoveResult = 'deleted' | 'not_found' | 'forbidden';
 export interface SharedRouteStore {
   /** Returns false, and stores nothing, when the id is already taken. */
   create(route: NewSharedRoute, deleteTokenHash: string): Promise<boolean>;
+  /** `null` when there is no such route, or when it has expired. */
   get(id: string): Promise<SharedRoute | null>;
+  /** Removes the routes whose time is up; returns how many. */
+  deleteExpired(): Promise<number>;
   /** Deletes the route when `deleteTokenHash` is the one stored with it. */
   remove(id: string, deleteTokenHash: string): Promise<RemoveResult>;
 }
@@ -44,6 +49,7 @@ interface Row {
   duration_seconds: number;
   created_at_ms: number;
   shared_at_ms: number;
+  expires_at_ms: number;
 }
 
 /** PostgreSQL implementation: the itinerary is a PostGIS `LineStringZ`. */
@@ -55,10 +61,11 @@ export function createPostgresSharedRoutes(
       const result = await pool.query(
         `INSERT INTO shared_routes
            (id, name, profile, points, geometry, distance_meters, ascent_meters,
-            duration_seconds, created_at, delete_token_hash)
+            duration_seconds, created_at, expires_at, delete_token_hash)
          VALUES ($1, $2, $3, $4::jsonb,
                  ST_SetSRID(ST_GeomFromGeoJSON($5), 4326),
-                 $6, $7, $8, to_timestamp($9::double precision / 1000), $10)
+                 $6, $7, $8, to_timestamp($9::double precision / 1000),
+                 to_timestamp($10::double precision / 1000), $11)
          ON CONFLICT (id) DO NOTHING`,
         [
           route.id,
@@ -70,6 +77,7 @@ export function createPostgresSharedRoutes(
           route.ascentMeters,
           route.durationSeconds,
           route.createdAt,
+          route.expiresAt,
           deleteTokenHash,
         ],
       );
@@ -82,8 +90,9 @@ export function createPostgresSharedRoutes(
                 ST_AsGeoJSON(geometry, 7)::json AS geometry,
                 distance_meters, ascent_meters, duration_seconds,
                 floor(extract(epoch FROM created_at) * 1000)::float8 AS created_at_ms,
-                floor(extract(epoch FROM shared_at) * 1000)::float8 AS shared_at_ms
-           FROM shared_routes WHERE id = $1`,
+                floor(extract(epoch FROM shared_at) * 1000)::float8 AS shared_at_ms,
+                floor(extract(epoch FROM expires_at) * 1000)::float8 AS expires_at_ms
+           FROM shared_routes WHERE id = $1 AND expires_at > now()`,
         [id],
       );
       const row = rows[0];
@@ -99,7 +108,15 @@ export function createPostgresSharedRoutes(
         durationSeconds: row.duration_seconds,
         createdAt: row.created_at_ms,
         sharedAt: row.shared_at_ms,
+        expiresAt: row.expires_at_ms,
       };
+    },
+
+    async deleteExpired() {
+      const result = await pool.query(
+        'DELETE FROM shared_routes WHERE expires_at <= now()',
+      );
+      return result.rowCount ?? 0;
     },
 
     async remove(id, deleteTokenHash) {
@@ -135,7 +152,18 @@ export function createMemorySharedRoutes(): SharedRouteStore & {
       return true;
     },
     async get(id) {
-      return routes.get(id)?.route ?? null;
+      const route = routes.get(id)?.route;
+      return route && route.expiresAt > Date.now() ? route : null;
+    },
+    async deleteExpired() {
+      let removed = 0;
+      for (const [id, { route }] of routes) {
+        if (route.expiresAt <= Date.now()) {
+          routes.delete(id);
+          removed += 1;
+        }
+      }
+      return removed;
     },
     async remove(id, deleteTokenHash) {
       const entry = routes.get(id);

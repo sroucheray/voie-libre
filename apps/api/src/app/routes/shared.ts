@@ -26,6 +26,21 @@ const IdParams = Type.Object({ id: RouteId });
 
 const Metric = Type.Number({ minimum: 0, maximum: 1e9 });
 
+/** How long a shared route is kept, in the words of the choice offered to the person. */
+export const LIFETIMES_MS = {
+  day: 24 * 60 * 60 * 1000,
+  week: 7 * 24 * 60 * 60 * 1000,
+  month: 30 * 24 * 60 * 60 * 1000,
+} as const;
+
+const Lifetime = Type.Union(
+  [Type.Literal('day'), Type.Literal('week'), Type.Literal('month')],
+  {
+    description:
+      'How long the route is kept: one day, one week or one month. After that it is removed.',
+  },
+);
+
 const SharedRouteBody = Type.Object({
   name: Type.String({ minLength: 1, maxLength: 120 }),
   profile: Type.Union([
@@ -68,10 +83,17 @@ const SharedRouteResponse = Type.Object({
   sharedAt: Type.Integer({
     description: 'When the route reached the server, in milliseconds.',
   }),
+  expiresAt: Type.Integer({
+    description: 'When the route is removed, in milliseconds since the epoch.',
+  }),
 });
 
 const Created = Type.Object({
   id: RouteId,
+  expiresAt: Type.Integer({
+    description:
+      'When the route will be removed, in milliseconds since the epoch.',
+  }),
   deleteToken: Type.String({
     description:
       'Shown once. Keep it on the device: it is the only way to remove the shared route.',
@@ -98,6 +120,9 @@ export interface SharedRoutesOptions {
   bodyLimitBytes: number;
 }
 
+/** Routes whose time is up are removed this often (and once at startup). */
+const SWEEP_INTERVAL_MS = 60 * 60 * 1000;
+
 const hashToken = (token: string) =>
   createHash('sha256').update(token).digest('hex');
 
@@ -113,6 +138,18 @@ export const sharedRoutes: FastifyPluginAsyncTypebox<
   fastify,
   { store, writeRateLimitMax, writeRateLimitWindowMs, bodyLimitBytes },
 ) => {
+  // Expired routes are never served (the store hides them); this only frees the space.
+  const sweep = () =>
+    Promise.resolve()
+      .then(() => store.deleteExpired())
+      .catch((error: unknown) =>
+        fastify.log.error(error, 'could not remove expired shared routes'),
+      );
+  void sweep();
+  const timer = setInterval(() => void sweep(), SWEEP_INTERVAL_MS);
+  timer.unref();
+  fastify.addHook('onClose', async () => clearInterval(timer));
+
   // Scoped to this plugin: validation and size failures use the same error body.
   fastify.setErrorHandler((error: FastifyError, _request, reply) => {
     if (error.code === 'FST_ERR_CTP_BODY_TOO_LARGE') {
@@ -143,10 +180,14 @@ export const sharedRoutes: FastifyPluginAsyncTypebox<
         tags: ['sharing'],
         summary: 'Share a route by link, without an account',
         description:
-          'Creates the shared route under the id drawn on the device. Shared routes are ' +
-          'immutable: an id already in use answers 409. The delete token is returned once.',
+          'Creates the shared route under the id drawn on the device, for the lifetime asked ' +
+          '(a day, a week or a month). Shared routes are immutable: an id already in use ' +
+          'answers 409. The delete token is returned once.',
         params: IdParams,
-        body: SharedRouteBody,
+        body: Type.Composite([
+          SharedRouteBody,
+          Type.Object({ lifetime: Lifetime }),
+        ]),
         response: {
           201: Created,
           400: ShareError,
@@ -157,8 +198,10 @@ export const sharedRoutes: FastifyPluginAsyncTypebox<
     },
     async (request, reply) => {
       const deleteToken = randomBytes(32).toString('base64url');
+      const { lifetime, ...route } = request.body;
+      const expiresAt = Date.now() + LIFETIMES_MS[lifetime];
       const created = await store.create(
-        { ...request.body, id: request.params.id },
+        { ...route, id: request.params.id, expiresAt },
         hashToken(deleteToken),
       );
       if (!created) {
@@ -167,7 +210,9 @@ export const sharedRoutes: FastifyPluginAsyncTypebox<
           message: 'A shared route already uses this id.',
         });
       }
-      return reply.code(201).send({ id: request.params.id, deleteToken });
+      return reply
+        .code(201)
+        .send({ id: request.params.id, deleteToken, expiresAt });
     },
   );
 
@@ -260,7 +305,7 @@ export const sharedRoutes: FastifyPluginAsyncTypebox<
 
 const NOT_FOUND = {
   code: 'not_found',
-  message: 'No shared route has this id.',
+  message: 'No shared route has this id, or it has expired.',
 } as const;
 
 const FORBIDDEN = {
