@@ -7,6 +7,7 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { Analytics } from './core/analytics/analytics';
 import { PwaInstall } from './core/pwa/pwa-install';
 import { provideServiceWorker } from '@angular/service-worker';
 import { provideTransloco } from '@jsverse/transloco';
@@ -32,5 +33,8 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(LanguageService).init()),
     // Listens from the start: the browser can say "installable" long before the About window opens.
     provideAppInitializer(() => void inject(PwaInstall)),
+    // One visit per page load that starts online (see docs/features/analytics.md).
+    // Runs after the language is set, which the visit reports.
+    provideAppInitializer(() => inject(Analytics).report({ event: 'visit' })),
   ],
 };

@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { FormattingService } from '../core/format/formatting.service';
+import { Analytics } from '../core/analytics/analytics';
 import { FILE_DOWNLOADER } from '../export/file-download';
 import {
   EXPORT_FORMATS,
@@ -50,6 +51,7 @@ export class OpenedRouteDialog {
   private readonly routeStore = inject(ROUTE_STORE);
   private readonly planner = inject(PlannerStore);
   private readonly download = inject(FILE_DOWNLOADER);
+  private readonly analytics = inject(Analytics);
   private readonly transloco = inject(TranslocoService);
   private readonly dialogs = inject(ShareDialogService);
   private readonly format = inject(FormattingService);
@@ -126,6 +128,7 @@ export class OpenedRouteDialog {
       );
       this.download(file.content, file.fileName, file.mimeType);
       this.notice.set('exported');
+      this.analytics.report({ event: `export_${format}` });
     } catch {
       this.error.set('saved.errors.export_failed');
     }

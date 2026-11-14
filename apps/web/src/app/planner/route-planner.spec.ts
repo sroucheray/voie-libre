@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { createApiClient } from '@voie-libre/api-client';
+import { Analytics } from '../core/analytics/analytics';
 import { API_CLIENT } from '../core/api/api-client';
 import {
   FULL_COMPUTE_RULES,
@@ -119,6 +120,22 @@ describe('RoutePlanner', () => {
     });
     expect(store.status()).toBe('ready');
     expect(store.routes()).toHaveLength(1);
+  });
+
+  it('counts a route computed, as numbers only', async () => {
+    const report = vi.spyOn(TestBed.inject(Analytics), 'report');
+    store.addPoint([3.087, 45.777]);
+    store.addPoint([3.249, 45.544]);
+    TestBed.tick();
+    await vi.advanceTimersByTimeAsync(ROUTE_DEBOUNCE_MS + 10);
+    expect(report).toHaveBeenCalledTimes(1);
+    expect(report).toHaveBeenCalledWith({
+      event: 'route',
+      profile: 'road',
+      kilometers: 41,
+      points: 2,
+      stops: 0,
+    });
   });
 
   it('groups quick edits into one request', async () => {

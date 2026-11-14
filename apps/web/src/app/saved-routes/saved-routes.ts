@@ -25,6 +25,7 @@ import {
 } from '@jsverse/transloco';
 import { FormattingService } from '../core/format/formatting.service';
 import { autoRouteName, type AutoName } from '../planner/route-name';
+import { Analytics } from '../core/analytics/analytics';
 import { FILE_DOWNLOADER } from '../export/file-download';
 import {
   EXPORT_FORMATS,
@@ -95,6 +96,7 @@ export class SavedRoutes {
   protected readonly planner = inject(PlannerStore);
   private readonly routeStore = inject(ROUTE_STORE);
   private readonly download = inject(FILE_DOWNLOADER);
+  private readonly analytics = inject(Analytics);
   private readonly sheet = inject(SHARE_SHEET);
   private readonly transloco = inject(TranslocoService);
   private readonly sharing = inject(ShareService);
@@ -264,6 +266,7 @@ export class SavedRoutes {
       this.routes.update((routes) => [saved, ...routes]);
       this.planner.markSaved({ id: saved.id, name: saved.name });
       this.draft.set(null);
+      this.analytics.report({ event: 'save' });
     });
   }
 
@@ -485,6 +488,7 @@ export class SavedRoutes {
         } catch {
           throw new ExportError();
         }
+        this.analytics.report({ event: `export_${format}` });
         return;
       }
       const outcome = await this.sheet.shareFile(
@@ -492,6 +496,9 @@ export class SavedRoutes {
         saved.name,
       );
       if (outcome === 'failed') throw new ExportError();
+      if (outcome === 'shared') {
+        this.analytics.report({ event: `export_${format}` });
+      }
     });
   }
 

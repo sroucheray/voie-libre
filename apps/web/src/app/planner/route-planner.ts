@@ -5,12 +5,14 @@ import {
   inject,
   untracked,
 } from '@angular/core';
+import { Analytics } from '../core/analytics/analytics';
 import { API_CLIENT } from '../core/api/api-client';
 import {
   PlannedRoute,
   PlannerErrorCode,
   PlannerStore,
   inputsSignature,
+  isLoopOf,
   type LoopMode,
   type Profile,
 } from './planner-store';
@@ -69,6 +71,7 @@ export const FULL_COMPUTE_RULES = new InjectionToken<FullComputeRules>(
 export class RoutePlanner {
   private readonly store = inject(PlannerStore);
   private readonly client = inject(API_CLIENT);
+  private readonly analytics = inject(Analytics);
   private readonly fullComputeRules = inject(FULL_COMPUTE_RULES);
 
   /** The points the last run of the effect saw, to tell a change of points from another one. */
@@ -183,6 +186,24 @@ export class RoutePlanner {
     }
   }
 
+  /** Counts a route computed in full, as numbers only: never the places or the line itself. */
+  private countRoute(
+    points: LngLat[],
+    profile: Profile,
+    loop: LoopMode | null,
+    distanceMeters: number | undefined,
+  ): void {
+    if (distanceMeters === undefined) return;
+    this.analytics.report({
+      event: 'route',
+      profile,
+      kilometers: Math.round(distanceMeters / 100) / 10,
+      points: points.length,
+      stops: Math.max(0, points.length - 2),
+    });
+    if (loop || isLoopOf(points)) this.analytics.report({ event: 'loop' });
+  }
+
   private async compute(
     points: LngLat[],
     profile: Profile,
@@ -214,6 +235,15 @@ export class RoutePlanner {
             elevationSource: 'srtm' as const,
           })),
         );
+        // Asking again for the same route is not a new route.
+        if (!refresh) {
+          this.countRoute(
+            points,
+            profile,
+            loop,
+            data.routes[0]?.distanceMeters,
+          );
+        }
       } else {
         fail(errorCodeFrom(response.status, error));
       }
