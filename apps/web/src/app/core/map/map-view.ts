@@ -25,6 +25,12 @@ import {
 } from './basemap-style';
 import { MapLayers, RELIEF_PROBE, type RouteColour } from './map-layers';
 import { PALETTE } from './palette';
+import {
+  FRANCE_BOX,
+  readStoredView,
+  storeView,
+  viewToFit,
+} from './initial-view';
 import { MapViewport } from './map-viewport';
 import { RELIEF_CREDIT_URL, RELIEF_SOURCE_KIND } from './relief-source';
 import { viewBox, type Box } from '../offline/area-tiles';
@@ -42,9 +48,20 @@ import {
   MapLike,
 } from './map-factory';
 
-/** Clermont-Ferrand, the test region. */
-export const CLERMONT_CENTER: LngLat = [3.087, 45.777];
-export const DEFAULT_ZOOM = 11;
+/**
+ * The view a map has until it is told otherwise, and the one a map that has no size yet starts
+ * from: the middle of France. The real starting view is chosen when the map is created (the last
+ * view of the device, or all of France to fit the screen).
+ */
+export const DEFAULT_CENTER: LngLat = [2.2, 46.7];
+export const DEFAULT_ZOOM = 5;
+
+/** Pixels the page leaves over the map when the first view is chosen (about, to look right). */
+const PHONE_WIDTH_PX = 640;
+const PANEL_ROOM_PX = 360;
+const PHONE_TOP_ROOM_PX = 64;
+const PHONE_BOTTOM_ROOM_PX = 120;
+const MAP_BUTTONS_ROOM_PX = 64;
 
 const CENTER_EPSILON = 1e-6;
 const ZOOM_EPSILON = 1e-3;
@@ -65,7 +82,7 @@ const ZOOM_EPSILON = 1e-3;
   },
 })
 export class MapView {
-  readonly center = model<LngLat>(CLERMONT_CENTER);
+  readonly center = model<LngLat>(DEFAULT_CENTER);
   readonly zoom = model<number>(DEFAULT_ZOOM);
   /** Emits the map once it is created, for features that draw on it. */
   readonly mapReady = output<MapLike>();
@@ -170,6 +187,7 @@ export class MapView {
     const reliefUrl = reliefTilesUrl(this.basemapUrl);
     afterNextRender(async () => {
       let map: MapLike;
+      this.chooseStartingView();
       try {
         map = await this.createMap({
           container: this.container().nativeElement,
@@ -212,6 +230,8 @@ export class MapView {
         const { lng, lat } = map.getCenter();
         this.center.set([lng, lat]);
         this.zoom.set(map.getZoom());
+        // The next visit starts where this one stopped (on this device only).
+        storeView([lng, lat], map.getZoom());
         publishView();
       });
       map.on('rotate', () => this.bearingState.set(map.getBearing()));
@@ -282,6 +302,36 @@ export class MapView {
 
   protected zoomOut(): void {
     this.map()?.zoomOut();
+  }
+
+  /**
+   * The view of the map when it is created, unless a parent already gave it one: where the last
+   * visit stopped, or all of France fitted to the screen (to the right of the side panel, or above
+   * the sheet of a phone), for a first visit.
+   */
+  private chooseStartingView(): void {
+    const given =
+      this.center() !== DEFAULT_CENTER || this.zoom() !== DEFAULT_ZOOM;
+    if (given) return;
+    const stored = readStoredView();
+    if (stored) {
+      this.center.set(stored.center);
+      this.zoom.set(stored.zoom);
+      return;
+    }
+    const host = this.container().nativeElement;
+    const width = host.clientWidth;
+    const height = host.clientHeight;
+    const phone = width <= PHONE_WIDTH_PX;
+    const view = viewToFit(FRANCE_BOX, width, height, {
+      // The side panel takes the left of a wide screen, the closed sheet the foot of a phone.
+      left: phone ? 0 : Math.min(PANEL_ROOM_PX, width / 3),
+      top: phone ? PHONE_TOP_ROOM_PX : 0,
+      bottom: phone ? PHONE_BOTTOM_ROOM_PX : 0,
+      right: MAP_BUTTONS_ROOM_PX,
+    });
+    this.center.set(view.center);
+    this.zoom.set(view.zoom);
   }
 
   protected resetNorth(): void {

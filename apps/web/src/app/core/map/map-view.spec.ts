@@ -5,6 +5,7 @@ import { FakeMap, provideFakeMap } from '../../../testing/fake-map';
 import { LanguageService } from '../i18n/language.service';
 import { BASEMAP_URL, LngLat, MAP_FACTORY } from './map-factory';
 import { MAP_LAYERS_KEY } from './map-layers';
+import { storeView } from './initial-view';
 import { MapView } from './map-view';
 
 /** The factory and MapLibre events are asynchronous and not tracked by whenStable. */
@@ -35,14 +36,23 @@ describe('MapView', () => {
     return fixture;
   }
 
+  it('starts where the last visit stopped', async () => {
+    storeView([3.1, 45.7], 12);
+    await render();
+    expect(maps[0].options.center).toEqual([3.1, 45.7]);
+    expect(maps[0].options.zoom).toBe(12);
+  });
+
   const buttons = (fixture: { nativeElement: HTMLElement }) =>
     Array.from(fixture.nativeElement.querySelectorAll('button'));
 
-  it('creates the map on Clermont-Ferrand at zoom 11 over the local basemap', async () => {
+  it('creates the map on France, over the local basemap, on a first visit', async () => {
     await render();
     expect(maps).toHaveLength(1);
-    expect(maps[0].options.center).toEqual([3.087, 45.777]);
-    expect(maps[0].options.zoom).toBe(11);
+    // No size in the test (nothing is laid out) and no earlier visit: the middle of France.
+    expect(maps[0].options.center[0]).toBeCloseTo(2.2, 1);
+    expect(maps[0].options.center[1]).toBeCloseTo(46.7, 0);
+    expect(maps[0].options.zoom).toBe(5);
     expect(maps[0].options.style.sources['protomaps']).toMatchObject({
       url: 'pmtiles://http://tiles.test/basemap.pmtiles',
     });
@@ -422,8 +432,9 @@ describe('MapView', () => {
     });
 
     it('says so when the map is centred where the basemap has no data', async () => {
+      // The last visit stopped on Clermont-Ferrand, inside the small file of this test.
+      storeView([3.1, 45.7], 12);
       const view = await renderWith(false, [2.6, 45.3, 3.7, 46.1]);
-      // The default view is on Clermont-Ferrand, inside the file.
       expect(view.root.querySelector('.map-note')).toBeNull();
       maps[0].center = { lng: 4.83, lat: 45.76 };
       maps[0].emit('moveend');

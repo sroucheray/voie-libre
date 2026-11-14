@@ -40,7 +40,7 @@ It works well on a phone as well as on a computer, and your routes stay on your 
 
 ### Your routes and your privacy
 
-- Saved routes live in your browser, on your device. There is no account.
+- Saved routes, your choices (layers, speeds, language) and the last view of the map live in your browser, on your device. There is no account.
 - To compute a route or search for a place, the app sends the points or the words concerned to the server. There are no analytics and no advertising.
 - The shaded relief (on by default) is read from public terrain tiles hosted by Amazon, and the aerial photos (optional) from the French IGN: those servers see your address and the area you look at. You can switch the relief off, and the aerial photos stay off until you tick them; the map itself comes from this app's own server.
 - Your position is only used on your device, when you press the position button.
