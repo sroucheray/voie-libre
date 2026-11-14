@@ -5,6 +5,7 @@ A plan only stays whole while its work is open; when the work is done it is fold
 
 | File                                                         | About                                                                             | State       |
 | ------------------------------------------------------------ | --------------------------------------------------------------------------------- | ----------- |
+| [analytics.md](analytics.md)                                 | Measure the traffic without personal data                                         | open        |
 | [backlog.md](backlog.md)                                     | Backlog of 2026-11-08                                                             | done        |
 | [coverage.md](coverage.md)                                   | A map that covers more than one region                                            | done        |
 | [deploy.md](deploy.md)                                       | Put Voie Libre online                                                             | in progress |
