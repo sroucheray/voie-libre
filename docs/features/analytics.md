@@ -1,6 +1,6 @@
 # Brief: measure the traffic without personal data
 
-State: **open**, waiting for the author to approve or change the recommended design.
+State: **in progress**. The author approved design (c) on 2026-11-14 with the reduced first scope below.
 
 ## Why
 
@@ -109,11 +109,19 @@ How we check: API tests (accepted and rejected events, no write of anything but 
 
 Country or city of the visitor, a public statistics page, a graphical dashboard, counting offline use, funnels and sessions, any identifier that lasts more than a day, a consent banner, a third-party service.
 
+## First scope, decided by the author on 2026-11-14
+
+- Design (c), read **from the command line only**, by a script that runs on the author's machine and reaches the server over SSH (same variables as `scripts/deploy.sh`: `DEPLOY_HOST`, `DEPLOY_SSH_KEY`, `DEPLOY_DIR`). Nothing about the server goes in the repository.
+- Counted: visits, uniques of the day, language, device class, and the events `route`, `loop`, `export_gpx`, `export_fit`, `save`.
+- About the routes computed, only numbers that cannot point to one route: how many (by profile), the sum of their kilometres (so the mean is a sum divided by a count), a few distance bands (under 20 km, 20 to 50, 50 to 100, 100 to 200, over 200), and the sums of points and of stops (so their means). No single distance or count is stored by itself. No mean climb.
+- Postponed: where the visit comes from, `offline_area`, `gpx_import`, any dashboard. Excluded for good: the country.
+- The server also ignores a request that carries `DNT: 1` or `Sec-GPC: 1`.
+
 ## Plan
 
-Not started: one commit per step after lint, build and the targeted tests, once the author approves the design.
+One commit per step after lint, build and the targeted tests.
 
-- [ ] **1. API.** Migration for the counters; `POST /stats` with a whitelist schema, daily in-memory salt, rate limit; pruning at 13 months. Targeted tests in `apps/api`.
-- [ ] **2. Web.** `Analytics` service (visit at start, events from the existing code paths, switch and Do Not Track), regenerate the client with `npm run generate-client`. Targeted tests.
+- [ ] **1. API.** Migration `stats_daily(day, metric, dimension, count, total)`; `POST /stats` with a whitelist schema, daily in-memory salt for the uniques, rate limit; pruning at 13 months. Targeted tests in `apps/api`.
+- [ ] **2. Web.** `Analytics` service (visit at start, events from the existing code paths, a switch and Do Not Track), regenerate the client with `npm run generate-client`. Targeted tests.
 - [ ] **3. Texts.** README, `about.privacy`, the About switch, `docs/implementation.md`, `CLAUDE.md`, French and English keys.
-- [ ] **4. Reading the numbers.** `scripts/stats.sh` and the command to give the author to run on the server.
+- [ ] **4. Reading the numbers.** `scripts/stats.sh`, run from the author's machine over SSH.
