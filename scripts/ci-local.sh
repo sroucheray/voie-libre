@@ -9,7 +9,8 @@
 # What cannot be the same: the machine (CI is slower and more loaded, which is where
 # timing-dependent tests have failed) and Node (CI uses 24; a warning says if this
 # machine differs). `npm ci` is not run: it would wipe node_modules under a running
-# dev server; instead `npm ci --dry-run` checks that package-lock.json matches.
+# dev server, and `npm ci --dry-run` disagrees with the npm of CI about optional peers
+# (npm 10 here, 11 there), so the lockfile is checked by CI only.
 #
 # Light on the machine: low priority, one Nx task at a time.
 set -euo pipefail
@@ -37,9 +38,6 @@ node_major="$(node -p 'process.versions.node.split(".")[0]')"
 if [ "$node_major" != "$CI_NODE_MAJOR" ]; then
   echo "warning: Node $(node -v) here, CI uses Node $CI_NODE_MAJOR" >&2
 fi
-
-step "Lockfile matches package.json (npm ci --dry-run)"
-low npm ci --dry-run --ignore-scripts >/dev/null
 
 step "Lint"
 low npm run lint
