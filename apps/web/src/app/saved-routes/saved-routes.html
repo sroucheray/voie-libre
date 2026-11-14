@@ -222,6 +222,15 @@
         >
           {{ 'saved.formats.' + format | transloco }}
         </button>
+        } @if (canShareGpx) {
+        <button
+          type="button"
+          class="share-gpx"
+          [attr.aria-label]="'saved.shareGpxNamed' | transloco : { name: route.name }"
+          (click)="exportAs(route.id, 'gpx', 'share')"
+        >
+          {{ 'saved.shareGpx' | transloco }}
+        </button>
         }
         <button type="button" (click)="exportingId.set(null)">
           {{ 'saved.cancel' | transloco }}

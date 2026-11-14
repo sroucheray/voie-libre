@@ -17,6 +17,7 @@ import { SHARING_ENABLED } from '../sharing/share.service';
 import { Planner } from '../planner/planner';
 import { ROUTE_DEBOUNCE_MS } from '../planner/route-planner';
 import { FILE_DOWNLOADER } from '../export/file-download';
+import { SHARE_SHEET, type ShareOutcome } from '../sharing/share-sheet';
 import { RouteStoreError } from '../storage/route-store';
 
 const geometry: [number, number, number][] = [
@@ -46,6 +47,9 @@ describe('Saved routes', () => {
     mimeType: string;
   }[];
   let downloadFails: boolean;
+  let sheetCanShareFile: boolean;
+  let sheetOutcome: ShareOutcome;
+  let sheetFiles: { name: string; type: string; title?: string }[];
   let sharingEnabled: boolean;
   let sharingCalls: {
     method: string;
@@ -77,6 +81,9 @@ describe('Saved routes', () => {
     routeStore = new InMemoryRouteStore();
     downloads = [];
     downloadFails = false;
+    sheetCanShareFile = true;
+    sheetOutcome = 'shared';
+    sheetFiles = [];
     sharingCalls = [];
     sharingEnabled = true;
     shareRespond = () => json({ id: 'x', deleteToken: 'secret-token' }, 201);
@@ -93,6 +100,18 @@ describe('Saved routes', () => {
         provideFakePlannerDriver(drivers),
         provideInMemoryRouteStore(routeStore),
         { provide: SHARING_ENABLED, useFactory: () => sharingEnabled },
+        {
+          provide: SHARE_SHEET,
+          useFactory: () => ({
+            canShareUrl: () => false,
+            canShareFile: () => sheetCanShareFile,
+            shareUrl: async () => 'failed',
+            shareFile: async (file: File, title?: string) => {
+              sheetFiles.push({ name: file.name, type: file.type, title });
+              return sheetOutcome;
+            },
+          }),
+        },
         {
           provide: FILE_DOWNLOADER,
           useValue: (
@@ -783,6 +802,47 @@ describe('Saved routes', () => {
         ]),
       ).toEqual(geometry);
       expect(view.alert()).toBeNull();
+    });
+
+    it('hands the GPX to the share sheet instead of downloading it', async () => {
+      const view = await renderWithSavedRoute();
+      view.button('Export Road, 41 km').click();
+      await view.settle();
+      view.button('Share Road, 41 km as a GPX file').click();
+      await view.settle();
+      expect(sheetFiles).toEqual([
+        {
+          name: 'road-41-km.gpx',
+          type: 'application/gpx+xml',
+          title: 'Road, 41 km',
+        },
+      ]);
+      expect(downloads).toEqual([]);
+      expect(view.alert()).toBeNull();
+    });
+
+    it('says so when the share sheet fails, and stays quiet when it is closed', async () => {
+      const view = await renderWithSavedRoute();
+      sheetOutcome = 'cancelled';
+      view.button('Export Road, 41 km').click();
+      await view.settle();
+      view.button('Share Road, 41 km as a GPX file').click();
+      await view.settle();
+      expect(view.alert()).toBeNull();
+      sheetOutcome = 'failed';
+      view.button('Export Road, 41 km').click();
+      await view.settle();
+      view.button('Share Road, 41 km as a GPX file').click();
+      await view.settle();
+      expect(view.alert()).not.toBeNull();
+    });
+
+    it('offers no sharing of the GPX where the browser cannot', async () => {
+      sheetCanShareFile = false;
+      const view = await renderWithSavedRoute();
+      view.button('Export Road, 41 km').click();
+      await view.settle();
+      expect(view.root.querySelector('.share-gpx')).toBeNull();
     });
 
     it('writes the start and the end as waypoints, named in the active language', async () => {

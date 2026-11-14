@@ -316,7 +316,9 @@
     },
     "savedAs": "Saved: {{name}}",
     "showInList": "Show in Saved",
-    "nameCount": "{{count}} / {{max}}"
+    "nameCount": "{{count}} / {{max}}",
+    "shareGpx": "Share GPX…",
+    "shareGpxNamed": "Share {{name}} as a GPX file"
   },
   "offline": {
     "title": "Offline map",
@@ -362,7 +364,9 @@
       "copied": "Link copied.",
       "privacy": "Anyone who has this link can see the route. It is not stored on any server.",
       "failed": "The link could not be copied. Select it here:",
-      "field": "Link to the route"
+      "field": "Link to the route",
+      "share": "Share…",
+      "shareNamed": "Share the link to {{name}}"
     },
     "copy": "Copy link",
     "copied": "Link copied",

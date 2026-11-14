@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideTestTransloco } from '../../testing/transloco-testing';
+import { SHARE_SHEET, type ShareOutcome, type ShareSheet } from './share-sheet';
 import { LanguageService } from '../core/i18n/language.service';
 import { CopyLinkButton } from './copy-link-button';
 import { decodeRouteLink, type RouteLink } from './route-link';
@@ -29,9 +30,15 @@ class Host {
 describe('CopyLinkButton', () => {
   let written: string[];
   let writeText: (text: string) => Promise<void>;
+  let canShareUrl: boolean;
+  let outcome: ShareOutcome;
+  let shared: { title?: string; url: string }[];
 
   beforeEach(async () => {
     written = [];
+    canShareUrl = true;
+    outcome = 'shared';
+    shared = [];
     writeText = async (text) => {
       written.push(text);
     };
@@ -40,7 +47,21 @@ describe('CopyLinkButton', () => {
       value: { writeText: (text: string) => writeText(text) },
     });
     await TestBed.configureTestingModule({
-      providers: [provideTestTransloco()],
+      providers: [
+        provideTestTransloco(),
+        {
+          provide: SHARE_SHEET,
+          useFactory: (): ShareSheet => ({
+            canShareUrl: () => canShareUrl,
+            canShareFile: () => false,
+            shareUrl: async (data) => {
+              shared.push(data);
+              return outcome;
+            },
+            shareFile: async () => 'failed',
+          }),
+        },
+      ],
     }).compileComponents();
     TestBed.inject(LanguageService).init();
   });
@@ -89,5 +110,45 @@ describe('CopyLinkButton', () => {
     expect(el.querySelector<HTMLInputElement>('input')?.value).toContain(
       '/r#v=1',
     );
+  });
+
+  describe('share sheet', () => {
+    const shareButton = (el: HTMLElement) =>
+      el.querySelector<HTMLButtonElement>('.share-link');
+
+    it('hands the link and the name to the sheet', async () => {
+      const { fixture, el } = create();
+      shareButton(el)?.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(shared).toHaveLength(1);
+      expect(shared[0].title).toBe('Clermont to Issoire');
+      expect(decodeRouteLink(new URL(shared[0].url).hash)).toEqual({
+        ok: true,
+        link,
+      });
+      expect(el.textContent).not.toContain('could not be copied');
+    });
+
+    it('is offered only where the browser has a share sheet', () => {
+      canShareUrl = false;
+      const { el } = create();
+      expect(shareButton(el)).toBeNull();
+      expect(el.querySelector('.copy-link')).not.toBeNull();
+    });
+
+    it('stays quiet when the sheet is closed, and shows the link when it fails', async () => {
+      outcome = 'cancelled';
+      const { fixture, el } = create();
+      shareButton(el)?.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(el.querySelector('input')).toBeNull();
+      outcome = 'failed';
+      shareButton(el)?.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(el.querySelector('input')).not.toBeNull();
+    });
   });
 });

@@ -316,7 +316,9 @@
     },
     "savedAs": "Enregistré : {{name}}",
     "showInList": "Voir dans Enregistrés",
-    "nameCount": "{{count}} / {{max}}"
+    "nameCount": "{{count}} / {{max}}",
+    "shareGpx": "Partager le GPX…",
+    "shareGpxNamed": "Partager {{name}} en fichier GPX"
   },
   "offline": {
     "title": "Carte hors ligne",
@@ -362,7 +364,9 @@
       "copied": "Lien copié.",
       "privacy": "Toute personne qui a ce lien peut voir le parcours. Il n'est enregistré sur aucun serveur.",
       "failed": "Le lien n'a pas pu être copié. Sélectionnez-le ici :",
-      "field": "Lien vers le parcours"
+      "field": "Lien vers le parcours",
+      "share": "Partager…",
+      "shareNamed": "Partager le lien vers {{name}}"
     },
     "copy": "Copier le lien",
     "copied": "Lien copié",

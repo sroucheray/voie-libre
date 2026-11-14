@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { routeLinkUrl, type RouteLink } from './route-link';
+import { SHARE_SHEET } from './share-sheet';
 
 /** How long "Link copied" stays on screen. */
 export const COPIED_VISIBLE_MS = 6000;
@@ -33,6 +34,9 @@ export class CopyLinkButton implements OnDestroy {
   readonly name = input<string | null>(null);
 
   private readonly document = inject(DOCUMENT);
+  private readonly sheet = inject(SHARE_SHEET);
+  /** The system share sheet is offered only where the browser has one (not Firefox desktop). */
+  protected readonly canShare = this.sheet.canShareUrl();
   protected readonly state = signal<'idle' | 'copied' | 'failed'>('idle');
   protected readonly url = computed(() => {
     const link = this.link();
@@ -57,6 +61,17 @@ export class CopyLinkButton implements OnDestroy {
       state === 'copied'
         ? setTimeout(() => this.state.set('idle'), COPIED_VISIBLE_MS)
         : null;
+  }
+
+  /** Hands the link to the system share sheet; closing the sheet is not an error. */
+  protected async share(): Promise<void> {
+    const url = this.url();
+    if (!url) return;
+    const outcome = await this.sheet.shareUrl({
+      ...(this.name() ? { title: this.name() as string } : {}),
+      url,
+    });
+    this.state.set(outcome === 'failed' ? 'failed' : 'idle');
   }
 
   protected select(event: Event): void {

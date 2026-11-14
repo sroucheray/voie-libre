@@ -1,3 +1,4 @@
+import { SHARE_SHEET } from '../sharing/share-sheet';
 import { CopyLinkButton } from '../sharing/copy-link-button';
 import type { RouteLink } from '../sharing/route-link';
 import { NgTemplateOutlet } from '@angular/common';
@@ -93,6 +94,7 @@ export class SavedRoutes {
   protected readonly planner = inject(PlannerStore);
   private readonly routeStore = inject(ROUTE_STORE);
   private readonly download = inject(FILE_DOWNLOADER);
+  private readonly sheet = inject(SHARE_SHEET);
   private readonly transloco = inject(TranslocoService);
   private readonly sharing = inject(ShareService);
   protected readonly sharingEnabled = inject(SHARING_ENABLED);
@@ -361,8 +363,20 @@ export class SavedRoutes {
     this.exportingId.update((current) => (current === id ? null : id));
   }
 
-  /** Builds the file on the device from the stored geometry and downloads it. */
-  protected async exportAs(id: string, format: ExportFormat): Promise<void> {
+  /** The system share sheet can take a GPX file (not Firefox desktop; Chrome limits the types). */
+  protected readonly canShareGpx = this.sheet.canShareFile(
+    new File([], 'route.gpx', { type: 'application/gpx+xml' }),
+  );
+
+  /**
+   * Builds the file on the device from the stored geometry and downloads it, or hands it to the
+   * system share sheet when `how` is `share` (the GPX only).
+   */
+  protected async exportAs(
+    id: string,
+    format: ExportFormat,
+    how: 'download' | 'share' = 'download',
+  ): Promise<void> {
     this.exportingId.set(null);
     await this.attempt(async () => {
       const saved = await this.routeStore.get(id);
@@ -370,32 +384,44 @@ export class SavedRoutes {
         this.routes.update((routes) => routes.filter((r) => r.id !== id));
         throw new RouteStoreError('not_found');
       }
+      let content: string | Uint8Array<ArrayBuffer>;
+      let name: string;
+      let mime: string;
       try {
         const names = this.pointNames(saved);
         const laps = this.lapsOf(saved);
         if (format === 'fit') {
-          this.download(
-            buildFit(saved, names.slice(1, -1), laps),
-            fitFileName(saved.name),
-            'application/vnd.ant.fit',
-          );
+          content = buildFit(saved, names.slice(1, -1), laps);
+          name = fitFileName(saved.name);
+          mime = 'application/vnd.ant.fit';
         } else {
-          this.download(
-            buildGpx(
-              {
-                ...saved,
-                geometry: repeatGeometry(saved.geometry, laps),
-                withElevation: saved.ascentMeters !== null,
-              },
-              names,
-            ),
-            gpxFileName(saved.name),
-            'application/gpx+xml',
+          content = buildGpx(
+            {
+              ...saved,
+              geometry: repeatGeometry(saved.geometry, laps),
+              withElevation: saved.ascentMeters !== null,
+            },
+            names,
           );
+          name = gpxFileName(saved.name);
+          mime = 'application/gpx+xml';
         }
       } catch {
         throw new ExportError();
       }
+      if (how === 'download') {
+        try {
+          this.download(content, name, mime);
+        } catch {
+          throw new ExportError();
+        }
+        return;
+      }
+      const outcome = await this.sheet.shareFile(
+        new File([content], name, { type: mime }),
+        saved.name,
+      );
+      if (outcome === 'failed') throw new ExportError();
     });
   }
 
